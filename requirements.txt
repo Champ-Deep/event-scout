@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic
+requests
+numpy
+faiss-cpu
+sentence-transformers
+qrcode
+Pillow
+pyzbar  # For QR code decoding
+python-multipart # For file uploads in FastAPI
+google-generativeai # For Gemini API integration (also used for image OCR)

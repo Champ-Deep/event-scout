@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+.eggs
+*.egg
+.venv
+venv
+ENV
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Data files (created by app at runtime)
+temp_images/
+
+# Misc
+*.log
+*.jpg
+*.jpeg
+*.png
+!saved_qr/*.png
+README.md

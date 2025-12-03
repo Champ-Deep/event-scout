@@ -1,0 +1,23 @@
+services:
+  contact-assistant:
+    build: .
+    image: contact-assistant:latest
+    container_name: contact-assistant-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - contact_data:/app/data
+      - contact_qr:/app/saved_qr
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  contact_data:
+  contact_qr:
