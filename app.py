@@ -15,31 +15,45 @@ from typing import List, Dict, Any, Optional
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 from sentence_transformers import SentenceTransformer
+from passlib.context import CryptContext
 
 import google.generativeai as genai
 
 # --- CONFIG ---
 APP_API_KEY = os.environ.get("APP_API_KEY", "1234")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyDezZZCXGTjHFk1-y7WfzPFwEmTeFDZ95A")  # Set your Gemini API key
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")  # Set your Gemini API key
 
 BASE_DIR = os.getcwd()
 TEMP_DIR = os.path.join(BASE_DIR, "temp_images")
 QR_DIR = os.path.join(BASE_DIR, "saved_qr")
 DATA_DIR = os.path.join(BASE_DIR, "data")
+USERS_DIR = os.path.join(BASE_DIR, "users")
+USERS_FILE = os.path.join(BASE_DIR, "users.json")
 METADATA_PATH = os.path.join(DATA_DIR, "metadata.pickle")
 FAISS_INDEX_PATH = os.path.join(DATA_DIR, "faiss.index")
+
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def initialize_directories_and_files():
     """Initialize all required directories and files on startup."""
     # Create directories
-    for directory in [TEMP_DIR, QR_DIR, DATA_DIR]:
+    for directory in [TEMP_DIR, QR_DIR, DATA_DIR, USERS_DIR]:
         os.makedirs(directory, exist_ok=True)
         print(f"[INIT] Directory ensured: {directory}")
 
-    # Initialize empty metadata file if it doesn't exist
+    # Initialize users file if it doesn't exist
+    if not os.path.exists(USERS_FILE):
+        with open(USERS_FILE, "w") as f:
+            json.dump({}, f)
+        print(f"[INIT] Created empty users file: {USERS_FILE}")
+    else:
+        print(f"[INIT] Users file exists: {USERS_FILE}")
+
+    # Initialize empty metadata file if it doesn't exist (legacy support)
     if not os.path.exists(METADATA_PATH):
         with open(METADATA_PATH, "wb") as f:
             pickle.dump({"doc_texts": [], "doc_metadata": []}, f)
@@ -83,11 +97,127 @@ class ContactUpdate(BaseModel):
     linkedin: Optional[str] = None
     company_name: Optional[str] = None
 
+class UserRegister(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    user_id: str
+    name: str
+    email: str
+
 # --- AUTH ---
 def verify_api_key(x_api_key: str = Header(None)):
     if x_api_key != APP_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
     return x_api_key
+
+# --- USER MANAGEMENT ---
+class UserManager:
+    def __init__(self):
+        self.users_file = USERS_FILE
+
+    def _load_users(self) -> Dict:
+        """Load users from JSON file."""
+        try:
+            with open(self.users_file, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[USER] Error loading users: {e}")
+            return {}
+
+    def _save_users(self, users: Dict):
+        """Save users to JSON file."""
+        with open(self.users_file, "w") as f:
+            json.dump(users, f, indent=2)
+
+    def hash_password(self, password: str) -> str:
+        """Hash a password using bcrypt."""
+        return pwd_context.hash(password)
+
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        """Verify a password against its hash."""
+        return pwd_context.verify(plain_password, hashed_password)
+
+    def create_user(self, name: str, email: str, password: str) -> str:
+        """Create a new user and return the user_id (UUID)."""
+        users = self._load_users()
+
+        # Check if user already exists
+        for user_id, user_data in users.items():
+            if user_data.get("email") == email:
+                raise HTTPException(status_code=400, detail="Email already registered")
+
+        # Generate unique user_id
+        user_id = str(uuid.uuid4())
+
+        # Hash password
+        hashed_password = self.hash_password(password)
+
+        # Store user
+        users[user_id] = {
+            "name": name,
+            "email": email,
+            "password": hashed_password,
+            "created_at": str(uuid.uuid4())  # Using UUID as timestamp placeholder
+        }
+
+        self._save_users(users)
+
+        # Create user-specific directory
+        user_dir = os.path.join(USERS_DIR, user_id)
+        os.makedirs(user_dir, exist_ok=True)
+
+        # Initialize empty metadata for user
+        user_metadata_path = os.path.join(user_dir, "metadata.pickle")
+        with open(user_metadata_path, "wb") as f:
+            pickle.dump({"doc_texts": [], "doc_metadata": []}, f)
+
+        print(f"[USER] Created new user: {email} with ID: {user_id}")
+        return user_id
+
+    def authenticate_user(self, email: str, password: str) -> Optional[Dict]:
+        """Authenticate user and return user data if successful."""
+        users = self._load_users()
+
+        for user_id, user_data in users.items():
+            if user_data.get("email") == email:
+                if self.verify_password(password, user_data.get("password")):
+                    return {
+                        "user_id": user_id,
+                        "name": user_data.get("name"),
+                        "email": user_data.get("email")
+                    }
+                else:
+                    raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    def get_user(self, user_id: str) -> Optional[Dict]:
+        """Get user data by user_id."""
+        users = self._load_users()
+        user_data = users.get(user_id)
+
+        if not user_data:
+            return None
+
+        return {
+            "user_id": user_id,
+            "name": user_data.get("name"),
+            "email": user_data.get("email")
+        }
+
+    def user_exists(self, user_id: str) -> bool:
+        """Check if a user exists."""
+        users = self._load_users()
+        return user_id in users
+
+user_manager = UserManager()
 
 # --- EMBEDDING MODEL ---
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')  # small but powerful
@@ -97,7 +227,11 @@ def get_embedding(text: str) -> np.ndarray:
 
 # --- FAISS MANAGER ---
 class FAISSManager:
-    def __init__(self):
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        self.user_dir = os.path.join(USERS_DIR, user_id)
+        self.metadata_path = os.path.join(self.user_dir, "metadata.pickle")
+        self.index_path = os.path.join(self.user_dir, "faiss.index")
         self.index: faiss.IndexFlatIP = None
         self.doc_texts: List[str] = []
         self.doc_metadata: List[dict] = []
@@ -106,37 +240,37 @@ class FAISSManager:
         self._load_index()
         if self.index is None:
             self.rebuild_index()
-        print(f"[FAISS] Initialized with {len(self.doc_texts)} contacts")
+        print(f"[FAISS] Initialized for user {user_id} with {len(self.doc_texts)} contacts")
 
     def _ensure_data_files(self):
-        """Ensure data directory and metadata file exist."""
-        os.makedirs(DATA_DIR, exist_ok=True)
-        if not os.path.exists(METADATA_PATH):
-            with open(METADATA_PATH, "wb") as f:
+        """Ensure user directory and metadata file exist."""
+        os.makedirs(self.user_dir, exist_ok=True)
+        if not os.path.exists(self.metadata_path):
+            with open(self.metadata_path, "wb") as f:
                 pickle.dump({"doc_texts": [], "doc_metadata": []}, f)
-            print(f"[FAISS] Created new metadata file")
+            print(f"[FAISS] Created new metadata file for user {self.user_id}")
 
     def _load_metadata(self):
         try:
-            if os.path.exists(METADATA_PATH):
-                with open(METADATA_PATH, "rb") as f:
+            if os.path.exists(self.metadata_path):
+                with open(self.metadata_path, "rb") as f:
                     data = pickle.load(f)
                     self.doc_texts = data.get("doc_texts", [])
                     self.doc_metadata = data.get("doc_metadata", [])
         except Exception as e:
-            print(f"[FAISS] Error loading metadata, starting fresh: {e}")
+            print(f"[FAISS] Error loading metadata for user {self.user_id}, starting fresh: {e}")
             self.doc_texts = []
             self.doc_metadata = []
             self._save_metadata()
 
     def _save_metadata(self):
-        with open(METADATA_PATH, "wb") as f:
+        with open(self.metadata_path, "wb") as f:
             pickle.dump({"doc_texts": self.doc_texts, "doc_metadata": self.doc_metadata}, f)
 
     def _load_index(self):
-        if os.path.exists(FAISS_INDEX_PATH):
+        if os.path.exists(self.index_path):
             try:
-                self.index = faiss.read_index(FAISS_INDEX_PATH)
+                self.index = faiss.read_index(self.index_path)
             except:
                 self.index = None
 
@@ -147,7 +281,7 @@ class FAISSManager:
         vecs = np.array([get_embedding(t) for t in self.doc_texts]).astype("float32")
         self.index = faiss.IndexFlatIP(vecs.shape[1])
         self.index.add(vecs)
-        faiss.write_index(self.index, FAISS_INDEX_PATH)
+        faiss.write_index(self.index, self.index_path)
 
     def add_document(self, text: str, metadata: dict):
         self.doc_texts.append(text)
@@ -189,8 +323,8 @@ class FAISSManager:
 
         # Also save empty index if no documents left
         if not self.doc_texts:
-            if os.path.exists(FAISS_INDEX_PATH):
-                os.remove(FAISS_INDEX_PATH)
+            if os.path.exists(self.index_path):
+                os.remove(self.index_path)
 
         return True
 
@@ -210,7 +344,15 @@ class FAISSManager:
 
         return True
 
-faiss_manager = FAISSManager()
+# Helper function to get user-specific FAISS manager
+def get_user_faiss_manager(user_id: str) -> FAISSManager:
+    """Get or create a FAISS manager for a specific user."""
+    if not user_manager.user_exists(user_id):
+        raise HTTPException(status_code=404, detail="User not found")
+    return FAISSManager(user_id)
+
+# Legacy global faiss_manager for backward compatibility (will be removed)
+faiss_manager = None  # Deprecated - use get_user_faiss_manager instead
 
 # --- GEMINI CONVERSATIONAL ENGINE ---
 class GeminiConversationEngine:
@@ -389,8 +531,8 @@ def scan_qr_image(image_path: str) -> str:
         return None
     return decoded_objects[0].data.decode("utf-8")
 
-async def add_contact_from_qr(file: UploadFile):
-    """Scan QR code, extract vCard data, save contact to FAISS, and return details."""
+async def add_contact_from_qr(file: UploadFile, user_id: str):
+    """Scan QR code, extract vCard data, save contact to user-specific FAISS, and return details."""
     temp_filename = os.path.join(TEMP_DIR, file.filename or f"{uuid.uuid4()}.png")
     content = await file.read()
     with open(temp_filename, "wb") as f:
@@ -411,7 +553,7 @@ async def add_contact_from_qr(file: UploadFile):
 
         # Create contact and save to FAISS
         contact_obj = Contact(**fields)
-        result = add_contact_logic(contact_obj)
+        result = add_contact_logic(contact_obj, user_id)
 
         return {
             "status": "success",
@@ -482,22 +624,23 @@ Important: Return ONLY the JSON object, no other text or markdown formatting."""
         return fields
 
 # --- CONTACT LOGIC ---
-def add_contact_logic(contact: Contact):
-    """Add contact to FAISS index and auto-generate QR code."""
+def add_contact_logic(contact: Contact, user_id: str):
+    """Add contact to user-specific FAISS index and auto-generate QR code."""
+    faiss_mgr = get_user_faiss_manager(user_id)
     contact_id = str(uuid.uuid4())
     summary = f"{contact.name}, {contact.email}, {contact.phone}, {contact.linkedin}, {contact.company_name}"
     metadata = contact.model_dump()
     metadata["summary"] = summary
     metadata["id"] = contact_id
-    
+
     # Auto-generate QR code and store path in metadata
     qr_result = create_qr(contact, contact_id)
     metadata["qr_path"] = qr_result["qr_path"]
-    
-    faiss_manager.add_document(summary, metadata)
+
+    faiss_mgr.add_document(summary, metadata)
     return {"contact_id": contact_id, "qr_base64": qr_result["qr_base64"]}
 
-async def add_contact_from_image(file: UploadFile):
+async def add_contact_from_image(file: UploadFile, user_id: str):
     temp_filename = os.path.join(TEMP_DIR, file.filename or f"{uuid.uuid4()}.png")
     content = await file.read()
     with open(temp_filename, "wb") as f:
@@ -513,7 +656,7 @@ async def add_contact_from_image(file: UploadFile):
             raise HTTPException(status_code=400, detail="No contact information found in image")
 
         contact_obj = Contact(**fields)
-        result = add_contact_logic(contact_obj)
+        result = add_contact_logic(contact_obj, user_id)
 
         return {
             "status": "success",
@@ -526,8 +669,9 @@ async def add_contact_from_image(file: UploadFile):
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
 
-def search_logic(query: str):
-    results = faiss_manager.search(query, k=4)
+def search_logic(query: str, user_id: str):
+    faiss_mgr = get_user_faiss_manager(user_id)
+    results = faiss_mgr.search(query, k=4)
     return [{"text": r[0], "meta": r[1]} for r in results]
 
 # --- FASTAPI APP ---
@@ -539,20 +683,71 @@ async def startup_event():
     """Log startup information and verify all systems are ready."""
     print("=" * 50)
     print("[STARTUP] Contact Assistant API Starting...")
-    print(f"[STARTUP] Data directory: {DATA_DIR}")
+    print(f"[STARTUP] Users directory: {USERS_DIR}")
     print(f"[STARTUP] QR directory: {QR_DIR}")
-    print(f"[STARTUP] Metadata path: {METADATA_PATH}")
-    print(f"[STARTUP] FAISS index path: {FAISS_INDEX_PATH}")
-    print(f"[STARTUP] Contacts loaded: {len(faiss_manager.doc_metadata)}")
-    print(f"[STARTUP] FAISS index ready: {faiss_manager.index is not None}")
+    print(f"[STARTUP] Multi-user system enabled")
     print("=" * 50)
 
 @app.get("/")
-async def root(): return {"message": "Contact Assistant API", "version": "1.0.0"}
+async def root(): return {"message": "Contact Assistant API - Multi-User", "version": "2.0.0"}
 
 @app.get("/health/")
 async def health_check():
-    return {"status": "healthy", "contacts_indexed": len(faiss_manager.doc_metadata), "faiss_ready": faiss_manager.index is not None}
+    users = user_manager._load_users()
+    return {
+        "status": "healthy",
+        "multi_user": True,
+        "total_users": len(users)
+    }
+
+@app.post("/register/")
+async def register_user(user: UserRegister):
+    """
+    Register a new user with name, email, and password.
+    Returns the user_id (UUID) which should be stored on frontend for authentication.
+    """
+    try:
+        user_id = user_manager.create_user(
+            name=user.name,
+            email=user.email,
+            password=user.password
+        )
+        return {
+            "status": "success",
+            "message": "User registered successfully",
+            "user_id": user_id,
+            "name": user.name,
+            "email": user.email
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/login/")
+async def login_user(credentials: UserLogin):
+    """
+    Login with email and password.
+    Returns the user_id (UUID) which should be stored on frontend for authentication.
+    """
+    try:
+        user_data = user_manager.authenticate_user(
+            email=credentials.email,
+            password=credentials.password
+        )
+        return {
+            "status": "success",
+            "message": "Login successful",
+            "user_id": user_data["user_id"],
+            "name": user_data["name"],
+            "email": user_data["email"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/add_contact/")
 async def add_contact_route(contact: Contact, api_key: str = Depends(verify_api_key)):
@@ -566,7 +761,8 @@ async def add_contact_route(contact: Contact, api_key: str = Depends(verify_api_
         }
     except Exception as e: traceback.print_exc(); raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/add_contact_from_image/")
+@app.post("" \
+"")
 async def add_contact_image_route(file: UploadFile = File(...), api_key: str = Depends(verify_api_key)):
     return await add_contact_from_image(file)
 

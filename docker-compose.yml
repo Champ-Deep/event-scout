@@ -10,6 +10,8 @@ services:
     volumes:
       - contact_data:/app/data
       - contact_qr:/app/saved_qr
+      - users_data:/app/users
+      - users_db:/app
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
@@ -21,3 +23,5 @@ services:
 volumes:
   contact_data:
   contact_qr:
+  users_data:
+  users_db:

@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/home/hemang/Desktop/Round_Table_Conferrance_app_Updated-master/app.py", line 6, in <module>
+    import qrcode
+ModuleNotFoundError: No module named 'qrcode'

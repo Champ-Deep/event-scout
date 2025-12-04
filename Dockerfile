@@ -26,7 +26,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 COPY app.py .
 
 # Create directories for data persistence
-RUN mkdir -p /app/temp_images /app/saved_qr /app/data
+RUN mkdir -p /app/temp_images /app/saved_qr /app/data /app/users
 
 # Expose port
 EXPOSE 8000

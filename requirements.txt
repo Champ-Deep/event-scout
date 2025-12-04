@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 pydantic
+pydantic[email]  # For EmailStr validation
 requests
 numpy
 faiss-cpu
@@ -10,3 +11,5 @@ Pillow
 pyzbar  # For QR code decoding
 python-multipart # For file uploads in FastAPI
 google-generativeai # For Gemini API integration (also used for image OCR)
+passlib[bcrypt]  # For password hashing
+email-validator  # For email validation
