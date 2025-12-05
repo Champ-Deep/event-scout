@@ -12,13 +12,15 @@ import numpy as np
 import faiss
 from io import BytesIO
 from typing import List, Dict, Any, Optional
+import hashlib
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
+from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 
 from sentence_transformers import SentenceTransformer
-from passlib.context import CryptContext
+
+import bcrypt
 
 import google.generativeai as genai
 
@@ -35,8 +37,6 @@ USERS_FILE = os.path.join(BASE_DIR, "users.json")
 METADATA_PATH = os.path.join(DATA_DIR, "metadata.pickle")
 FAISS_INDEX_PATH = os.path.join(DATA_DIR, "faiss.index")
 
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def initialize_directories_and_files():
     """Initialize all required directories and files on startup."""
@@ -67,12 +67,22 @@ def initialize_directories_and_files():
     else:
         print(f"[INIT] FAISS index will be created when first contact is added")
 
+
 # Run initialization on module load
 initialize_directories_and_files()
 
 # --- Configure Gemini ---
+gemini_configured = False
 if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        gemini_configured = True
+        print("[INIT] Gemini API configured successfully")
+    except Exception as e:
+        print(f"[INIT] Failed to configure Gemini: {e}")
+else:
+    print("[INIT] WARNING: GEMINI_API_KEY not set")
+
 
 # --- Pydantic models ---
 class Contact(BaseModel):
@@ -82,13 +92,18 @@ class Contact(BaseModel):
     linkedin: str
     company_name: str = "N/A"
 
+
 class SearchQuery(BaseModel):
     query: str
+    user_id: str
+
 
 class ConverseQuery(BaseModel):
     query: str
-    conversation_history: Optional[List[Dict[str, str]]] = None  # For multi-turn conversations
-    top_k: Optional[int] = 4  # Number of contacts to retrieve for context
+    user_id: str
+    conversation_history: Optional[List[Dict[str, str]]] = None
+    top_k: Optional[int] = 4
+
 
 class ContactUpdate(BaseModel):
     name: Optional[str] = None
@@ -97,25 +112,46 @@ class ContactUpdate(BaseModel):
     linkedin: Optional[str] = None
     company_name: Optional[str] = None
 
+
 class UserRegister(BaseModel):
     name: str
     email: EmailStr
     password: str
 
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class UserResponse(BaseModel):
+
+class AddContactRequest(BaseModel):
+    contact: Contact
     user_id: str
-    name: str
-    email: str
+
 
 # --- AUTH ---
 def verify_api_key(x_api_key: str = Header(None)):
     if x_api_key != APP_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
     return x_api_key
+
+
+# --- PASSWORD HASHING (using bcrypt directly) ---
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt directly."""
+    # Truncate to 72 bytes (bcrypt limit)
+    password_bytes = password.encode('utf-8')[:72]
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    return hashed.decode('utf-8')
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against its hash."""
+    password_bytes = plain_password.encode('utf-8')[:72]
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
+
 
 # --- USER MANAGEMENT ---
 class UserManager:
@@ -136,14 +172,6 @@ class UserManager:
         with open(self.users_file, "w") as f:
             json.dump(users, f, indent=2)
 
-    def hash_password(self, password: str) -> str:
-        """Hash a password using bcrypt."""
-        return pwd_context.hash(password)
-
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        """Verify a password against its hash."""
-        return pwd_context.verify(plain_password, hashed_password)
-
     def create_user(self, name: str, email: str, password: str) -> str:
         """Create a new user and return the user_id (UUID)."""
         users = self._load_users()
@@ -157,14 +185,14 @@ class UserManager:
         user_id = str(uuid.uuid4())
 
         # Hash password
-        hashed_password = self.hash_password(password)
+        hashed_password = hash_password(password)
 
         # Store user
         users[user_id] = {
             "name": name,
             "email": email,
             "password": hashed_password,
-            "created_at": str(uuid.uuid4())  # Using UUID as timestamp placeholder
+            "created_at": str(uuid.uuid1())
         }
 
         self._save_users(users)
@@ -187,7 +215,7 @@ class UserManager:
 
         for user_id, user_data in users.items():
             if user_data.get("email") == email:
-                if self.verify_password(password, user_data.get("password")):
+                if verify_password(password, user_data.get("password")):
                     return {
                         "user_id": user_id,
                         "name": user_data.get("name"),
@@ -217,13 +245,16 @@ class UserManager:
         users = self._load_users()
         return user_id in users
 
+
 user_manager = UserManager()
 
 # --- EMBEDDING MODEL ---
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')  # small but powerful
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+
 
 def get_embedding(text: str) -> np.ndarray:
     return embedding_model.encode([text], convert_to_numpy=True, normalize_embeddings=True)[0]
+
 
 # --- FAISS MANAGER ---
 class FAISSManager:
@@ -313,15 +344,11 @@ class FAISSManager:
         if idx == -1:
             return False
 
-        # Remove from lists
         self.doc_texts.pop(idx)
         self.doc_metadata.pop(idx)
-
-        # Save metadata and rebuild index
         self._save_metadata()
         self.rebuild_index()
 
-        # Also save empty index if no documents left
         if not self.doc_texts:
             if os.path.exists(self.index_path):
                 os.remove(self.index_path)
@@ -334,31 +361,26 @@ class FAISSManager:
         if idx == -1:
             return False
 
-        # Update the document
         self.doc_texts[idx] = new_text
         self.doc_metadata[idx] = new_metadata
-
-        # Save metadata and rebuild index
         self._save_metadata()
         self.rebuild_index()
 
         return True
 
-# Helper function to get user-specific FAISS manager
+
 def get_user_faiss_manager(user_id: str) -> FAISSManager:
     """Get or create a FAISS manager for a specific user."""
     if not user_manager.user_exists(user_id):
         raise HTTPException(status_code=404, detail="User not found")
     return FAISSManager(user_id)
 
-# Legacy global faiss_manager for backward compatibility (will be removed)
-faiss_manager = None  # Deprecated - use get_user_faiss_manager instead
 
 # --- GEMINI CONVERSATIONAL ENGINE ---
 class GeminiConversationEngine:
     def __init__(self):
-        self.model_name = "gemini-3-pro-preview"
-        
+        self.model_name = "gemini-1.5-flash"
+
     def _build_system_prompt(self) -> str:
         return """You are an intelligent Contact Assistant. Your role is to help users find and manage their contacts in a friendly, conversational manner.
 
@@ -375,7 +397,7 @@ Important: Only use information from the provided contact context. Do not make u
     def _build_context_from_contacts(self, contacts: List[tuple]) -> str:
         if not contacts:
             return "No contacts found in the database matching your query."
-        
+
         context_parts = ["Here are the relevant contacts from your database:\n"]
         for i, (text, meta) in enumerate(contacts, 1):
             context_parts.append(f"""
@@ -392,7 +414,7 @@ Contact {i}:
         """Convert conversation history to Gemini format."""
         if not history:
             return []
-        
+
         gemini_history = []
         for msg in history:
             role = "user" if msg.get("role") == "user" else "model"
@@ -402,30 +424,41 @@ Contact {i}:
             })
         return gemini_history
 
+    def _generate_fallback_response(self, query: str, retrieved_contacts: List[tuple]) -> str:
+        """Generate a simple response without Gemini when API is unavailable."""
+        if not retrieved_contacts:
+            return f"No contacts found matching your query: '{query}'. Try adding some contacts first."
+
+        response_parts = [f"Found {len(retrieved_contacts)} contact(s):\n"]
+        for i, (text, meta) in enumerate(retrieved_contacts, 1):
+            response_parts.append(f"""
+**{i}. {meta.get('name', 'N/A')}**
+- Email: {meta.get('email', 'N/A')}
+- Phone: {meta.get('phone', 'N/A')}
+- LinkedIn: {meta.get('linkedin', 'N/A')}
+- Company: {meta.get('company_name', 'N/A')}
+""")
+        return "\n".join(response_parts)
+
     def generate_response(
-        self, 
-        query: str, 
+        self,
+        query: str,
         retrieved_contacts: List[tuple],
         conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> str:
         """Generate a conversational response using Gemini."""
-        
-        if not GEMINI_API_KEY:
-            raise HTTPException(
-                status_code=500, 
-                detail="Gemini API key not configured. Set GEMINI_API_KEY environment variable."
-            )
-        
+
+        if not GEMINI_API_KEY or not gemini_configured:
+            return self._generate_fallback_response(query, retrieved_contacts)
+
         try:
             model = genai.GenerativeModel(
                 model_name=self.model_name,
                 system_instruction=self._build_system_prompt()
             )
-            
-            # Build the context from retrieved contacts
+
             contact_context = self._build_context_from_contacts(retrieved_contacts)
-            
-            # Build the full prompt
+
             full_prompt = f"""Based on the following contact information from the database:
 
 {contact_context}
@@ -434,7 +467,6 @@ User Query: {query}
 
 Please provide a helpful, conversational response to the user's query using the contact information above."""
 
-            # Handle conversation history for multi-turn
             if conversation_history:
                 chat = model.start_chat(
                     history=self._build_conversation_history(conversation_history)
@@ -442,21 +474,24 @@ Please provide a helpful, conversational response to the user's query using the 
                 response = chat.send_message(full_prompt)
             else:
                 response = model.generate_content(full_prompt)
-            
+
             return response.text
-            
+
         except Exception as e:
+            print(f"[GEMINI] API error: {e}")
             traceback.print_exc()
-            raise HTTPException(status_code=500, detail=f"Gemini API error: {str(e)}")
+            return self._generate_fallback_response(query, retrieved_contacts)
+
 
 gemini_engine = GeminiConversationEngine()
 
+
 # --- QR GENERATOR ---
 def create_qr(contact: Contact, contact_id: str = None):
-    """Generate QR code for a contact. If contact_id provided, use it; otherwise generate new one."""
+    """Generate QR code for a contact."""
     if contact_id is None:
         contact_id = str(uuid.uuid4())
-    
+
     vcard = f"""BEGIN:VCARD
 VERSION:3.0
 N:{contact.name}
@@ -477,6 +512,7 @@ END:VCARD"""
     qr_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
     return {"qr_path": qr_path, "qr_base64": qr_base64, "contact_id": contact_id}
 
+
 def get_qr_base64(contact_id: str) -> str:
     """Retrieve QR code as base64 for a given contact_id."""
     qr_path = os.path.join(QR_DIR, f"qr_{contact_id}.png")
@@ -485,43 +521,38 @@ def get_qr_base64(contact_id: str) -> str:
             return base64.b64encode(f.read()).decode("utf-8")
     return None
 
+
 # --- QR SCANNER ---
 def parse_vcard(vcard_text: str) -> dict:
     """Parse vCard format and extract contact fields."""
     fields = {"name": "N/A", "email": "N/A", "phone": "N/A", "linkedin": "N/A", "company_name": "N/A"}
 
-    # Extract FN (Full Name)
     fn_match = re.search(r"FN[;:]([^\r\n]+)", vcard_text)
     if fn_match:
         fields["name"] = fn_match.group(1).strip()
     else:
-        # Try N field
         n_match = re.search(r"^N[;:]([^\r\n]+)", vcard_text, re.MULTILINE)
         if n_match:
             fields["name"] = n_match.group(1).strip()
 
-    # Extract Email
     email_match = re.search(r"EMAIL[^:]*:([^\r\n]+)", vcard_text)
     if email_match:
         fields["email"] = email_match.group(1).strip()
 
-    # Extract Phone
     tel_match = re.search(r"TEL[^:]*:([^\r\n]+)", vcard_text)
     if tel_match:
         fields["phone"] = tel_match.group(1).strip()
 
-    # Extract Organization
     org_match = re.search(r"ORG[;:]([^\r\n]+)", vcard_text)
     if org_match:
         fields["company_name"] = org_match.group(1).strip()
 
-    # Extract URL (LinkedIn)
     url_match = re.search(r"URL[^:]*:([^\r\n]+)", vcard_text)
     if url_match:
-        url = url_match.group(1).strip()
-        fields["linkedin"] = url
+        fields["linkedin"] = url_match.group(1).strip()
 
     return fields
+
 
 def scan_qr_image(image_path: str) -> str:
     """Decode QR code from image and return the data."""
@@ -531,56 +562,19 @@ def scan_qr_image(image_path: str) -> str:
         return None
     return decoded_objects[0].data.decode("utf-8")
 
-async def add_contact_from_qr(file: UploadFile, user_id: str):
-    """Scan QR code, extract vCard data, save contact to user-specific FAISS, and return details."""
-    temp_filename = os.path.join(TEMP_DIR, file.filename or f"{uuid.uuid4()}.png")
-    content = await file.read()
-    with open(temp_filename, "wb") as f:
-        f.write(content)
-
-    try:
-        # Decode QR code
-        qr_data = scan_qr_image(temp_filename)
-        if not qr_data:
-            raise HTTPException(status_code=400, detail="No QR code found in image")
-
-        # Check if it's a vCard
-        if "BEGIN:VCARD" not in qr_data.upper():
-            raise HTTPException(status_code=400, detail="QR code does not contain vCard data")
-
-        # Parse vCard
-        fields = parse_vcard(qr_data)
-
-        # Create contact and save to FAISS
-        contact_obj = Contact(**fields)
-        result = add_contact_logic(contact_obj, user_id)
-
-        return {
-            "status": "success",
-            "message": "Contact added from QR code",
-            "extracted_fields": fields,
-            "contact_id": result["contact_id"],
-            "qr_base64": result["qr_base64"]
-        }
-    finally:
-        if os.path.exists(temp_filename):
-            os.remove(temp_filename)
 
 # --- IMAGE TEXT EXTRACTION WITH GEMINI ---
 def extract_contact_from_image_with_gemini(image_path: str) -> dict:
     """Extract contact information directly from image using Gemini Vision."""
     fields = {"name": "N/A", "email": "N/A", "phone": "N/A", "linkedin": "N/A", "company_name": "N/A"}
 
-    if not GEMINI_API_KEY:
+    if not GEMINI_API_KEY or not gemini_configured:
         print("[GEMINI] API key not configured")
         return fields
 
     try:
-        # Load image
         img = Image.open(image_path)
-
-        # Use Gemini to extract contact info directly from image
-        model = genai.GenerativeModel('gemini-3-pro-preview')
+        model = genai.GenerativeModel('gemini-1.5-flash')
 
         prompt = """Analyze this business card or contact image and extract the following information.
 Return ONLY a JSON object with these exact keys (use "N/A" if not found):
@@ -597,17 +591,14 @@ Important: Return ONLY the JSON object, no other text or markdown formatting."""
         response = model.generate_content([prompt, img])
         response_text = response.text.strip()
 
-        # Clean up response - remove markdown code blocks if present
         if response_text.startswith("```"):
             response_text = response_text.split("```")[1]
             if response_text.startswith("json"):
                 response_text = response_text[4:]
             response_text = response_text.strip()
 
-        # Parse JSON response
         extracted = json.loads(response_text)
 
-        # Update fields with extracted values
         for key in fields:
             if key in extracted and extracted[key] and extracted[key] != "N/A":
                 fields[key] = extracted[key]
@@ -616,12 +607,13 @@ Important: Return ONLY the JSON object, no other text or markdown formatting."""
         return fields
 
     except json.JSONDecodeError as e:
-        print(f"[GEMINI] JSON parse error: {e}, response: {response_text}")
+        print(f"[GEMINI] JSON parse error: {e}")
         return fields
     except Exception as e:
         print(f"[GEMINI] Error extracting contact from image: {e}")
         traceback.print_exc()
         return fields
+
 
 # --- CONTACT LOGIC ---
 def add_contact_logic(contact: Contact, user_id: str):
@@ -633,12 +625,43 @@ def add_contact_logic(contact: Contact, user_id: str):
     metadata["summary"] = summary
     metadata["id"] = contact_id
 
-    # Auto-generate QR code and store path in metadata
     qr_result = create_qr(contact, contact_id)
     metadata["qr_path"] = qr_result["qr_path"]
 
     faiss_mgr.add_document(summary, metadata)
     return {"contact_id": contact_id, "qr_base64": qr_result["qr_base64"]}
+
+
+async def add_contact_from_qr(file: UploadFile, user_id: str):
+    """Scan QR code, extract vCard data, save contact to user-specific FAISS."""
+    temp_filename = os.path.join(TEMP_DIR, file.filename or f"{uuid.uuid4()}.png")
+    content = await file.read()
+    with open(temp_filename, "wb") as f:
+        f.write(content)
+
+    try:
+        qr_data = scan_qr_image(temp_filename)
+        if not qr_data:
+            raise HTTPException(status_code=400, detail="No QR code found in image")
+
+        if "BEGIN:VCARD" not in qr_data.upper():
+            raise HTTPException(status_code=400, detail="QR code does not contain vCard data")
+
+        fields = parse_vcard(qr_data)
+        contact_obj = Contact(**fields)
+        result = add_contact_logic(contact_obj, user_id)
+
+        return {
+            "status": "success",
+            "message": "Contact added from QR code",
+            "extracted_fields": fields,
+            "contact_id": result["contact_id"],
+            "qr_base64": result["qr_base64"]
+        }
+    finally:
+        if os.path.exists(temp_filename):
+            os.remove(temp_filename)
+
 
 async def add_contact_from_image(file: UploadFile, user_id: str):
     temp_filename = os.path.join(TEMP_DIR, file.filename or f"{uuid.uuid4()}.png")
@@ -647,10 +670,7 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         f.write(content)
 
     try:
-        # Use Gemini to extract contact info directly from image
         fields = extract_contact_from_image_with_gemini(temp_filename)
-
-        # Check if at least some contact info was extracted
         has_info = any(v != "N/A" for k, v in fields.items() if k != "linkedin")
         if not has_info:
             raise HTTPException(status_code=400, detail="No contact information found in image")
@@ -669,27 +689,33 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
 
+
 def search_logic(query: str, user_id: str):
     faiss_mgr = get_user_faiss_manager(user_id)
     results = faiss_mgr.search(query, k=4)
     return [{"text": r[0], "meta": r[1]} for r in results]
 
+
 # --- FASTAPI APP ---
-app = FastAPI(title="Contact Assistant API (OpenSource Embedding)")
+app = FastAPI(title="Contact Assistant API - Multi-User")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
 
 @app.on_event("startup")
 async def startup_event():
-    """Log startup information and verify all systems are ready."""
     print("=" * 50)
     print("[STARTUP] Contact Assistant API Starting...")
     print(f"[STARTUP] Users directory: {USERS_DIR}")
     print(f"[STARTUP] QR directory: {QR_DIR}")
+    print(f"[STARTUP] Gemini configured: {gemini_configured}")
     print(f"[STARTUP] Multi-user system enabled")
     print("=" * 50)
 
+
 @app.get("/")
-async def root(): return {"message": "Contact Assistant API - Multi-User", "version": "2.0.0"}
+async def root():
+    return {"message": "Contact Assistant API - Multi-User", "version": "2.0.0"}
+
 
 @app.get("/health/")
 async def health_check():
@@ -697,15 +723,14 @@ async def health_check():
     return {
         "status": "healthy",
         "multi_user": True,
-        "total_users": len(users)
+        "total_users": len(users),
+        "gemini_configured": gemini_configured
     }
+
 
 @app.post("/register/")
 async def register_user(user: UserRegister):
-    """
-    Register a new user with name, email, and password.
-    Returns the user_id (UUID) which should be stored on frontend for authentication.
-    """
+    """Register a new user with name, email, and password."""
     try:
         user_id = user_manager.create_user(
             name=user.name,
@@ -725,12 +750,10 @@ async def register_user(user: UserRegister):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/login/")
 async def login_user(credentials: UserLogin):
-    """
-    Login with email and password.
-    Returns the user_id (UUID) which should be stored on frontend for authentication.
-    """
+    """Login with email and password."""
     try:
         user_data = user_manager.authenticate_user(
             email=credentials.email,
@@ -749,52 +772,76 @@ async def login_user(credentials: UserLogin):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/add_contact/")
-async def add_contact_route(contact: Contact, api_key: str = Depends(verify_api_key)):
-    try: 
-        result = add_contact_logic(contact)
+async def add_contact_route(request: AddContactRequest, api_key: str = Depends(verify_api_key)):
+    """Add a new contact for a specific user."""
+    try:
+        result = add_contact_logic(request.contact, request.user_id)
         return {
-            "status": "success", 
+            "status": "success",
             "message": "Contact added",
             "contact_id": result["contact_id"],
             "qr_base64": result["qr_base64"]
         }
-    except Exception as e: traceback.print_exc(); raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("" \
-"")
-async def add_contact_image_route(file: UploadFile = File(...), api_key: str = Depends(verify_api_key)):
-    return await add_contact_from_image(file)
+
+@app.post("/add_contact_from_image/")
+async def add_contact_image_route(
+    file: UploadFile = File(...),
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key)
+):
+    """Add contact from business card image for a specific user."""
+    return await add_contact_from_image(file, user_id)
+
 
 @app.post("/scan_qr/")
-async def scan_qr_route(file: UploadFile = File(...), api_key: str = Depends(verify_api_key)):
-    """
-    Scan a QR code image containing vCard data, save the contact to the database,
-    and return the extracted contact details.
-    """
-    return await add_contact_from_qr(file)
+async def scan_qr_route(
+    file: UploadFile = File(...),
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key)
+):
+    """Scan a QR code image containing vCard data and save to user's contacts."""
+    return await add_contact_from_qr(file, user_id)
+
 
 @app.post("/generate_qr/")
 async def generate_qr_route(contact: Contact, api_key: str = Depends(verify_api_key)):
-    try: 
+    """Generate QR code for a contact (does not save to database)."""
+    try:
         result = create_qr(contact)
         return {"status": "success", **result}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/search/")
 async def search_route(query: SearchQuery, api_key: str = Depends(verify_api_key)):
-    try: return {"status": "success", "results": search_logic(query.query)}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
+    """Search contacts for a specific user."""
+    try:
+        return {"status": "success", "results": search_logic(query.query, query.user_id)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/list_contacts/")
-async def list_contacts_route(api_key: str = Depends(verify_api_key)):
-    """
-    List all contacts with their QR codes as base64.
-    Returns all contact details including the QR code for each contact.
-    """
+async def list_contacts_route(
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key)
+):
+    """List all contacts for a specific user with their QR codes."""
     try:
+        faiss_mgr = get_user_faiss_manager(user_id)
         contacts = []
-        for meta in faiss_manager.doc_metadata:
+        for meta in faiss_mgr.doc_metadata:
             contact_data = {
                 "id": meta.get("id", "N/A"),
                 "name": meta.get("name", "N/A"),
@@ -804,32 +851,37 @@ async def list_contacts_route(api_key: str = Depends(verify_api_key)):
                 "company_name": meta.get("company_name", "N/A"),
                 "qr_base64": None
             }
-            
-            # Fetch QR code base64 if available
+
             contact_id = meta.get("id")
             if contact_id:
                 qr_base64 = get_qr_base64(contact_id)
                 if qr_base64:
                     contact_data["qr_base64"] = qr_base64
-            
+
             contacts.append(contact_data)
-        
+
         return {
             "status": "success",
             "total_contacts": len(contacts),
             "contacts": contacts
         }
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/contact/{contact_id}")
-async def get_contact_route(contact_id: str, api_key: str = Depends(verify_api_key)):
-    """
-    Get a specific contact by ID with QR code.
-    """
+async def get_contact_route(
+    contact_id: str,
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key)
+):
+    """Get a specific contact by ID for a user."""
     try:
-        for meta in faiss_manager.doc_metadata:
+        faiss_mgr = get_user_faiss_manager(user_id)
+        for meta in faiss_mgr.doc_metadata:
             if meta.get("id") == contact_id:
                 contact_data = {
                     "id": meta.get("id", "N/A"),
@@ -849,29 +901,28 @@ async def get_contact_route(contact_id: str, api_key: str = Depends(verify_api_k
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.delete("/contact/{contact_id}")
-async def delete_contact_route(contact_id: str, api_key: str = Depends(verify_api_key)):
-    """
-    Delete a contact by ID.
-    Also removes the associated QR code file.
-    """
+async def delete_contact_route(
+    contact_id: str,
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key)
+):
+    """Delete a contact by ID for a specific user."""
     try:
-        # Check if contact exists first
-        idx = faiss_manager.find_index_by_id(contact_id)
+        faiss_mgr = get_user_faiss_manager(user_id)
+        idx = faiss_mgr.find_index_by_id(contact_id)
         if idx == -1:
             raise HTTPException(status_code=404, detail="Contact not found")
 
-        # Get contact info before deletion for response
-        contact_meta = faiss_manager.doc_metadata[idx]
+        contact_meta = faiss_mgr.doc_metadata[idx]
         contact_name = contact_meta.get("name", "Unknown")
 
-        # Delete QR code file if it exists
         qr_path = os.path.join(QR_DIR, f"qr_{contact_id}.png")
         if os.path.exists(qr_path):
             os.remove(qr_path)
 
-        # Delete from FAISS
-        deleted = faiss_manager.delete_document(contact_id)
+        deleted = faiss_mgr.delete_document(contact_id)
 
         if deleted:
             return {
@@ -887,23 +938,23 @@ async def delete_contact_route(contact_id: str, api_key: str = Depends(verify_ap
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.put("/contact/{contact_id}")
-async def update_contact_route(contact_id: str, contact_update: ContactUpdate, api_key: str = Depends(verify_api_key)):
-    """
-    Update a contact by ID.
-    Only fields provided in the request body will be updated.
-    Automatically regenerates the QR code with updated information.
-    """
+async def update_contact_route(
+    contact_id: str,
+    contact_update: ContactUpdate,
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key)
+):
+    """Update a contact by ID for a specific user."""
     try:
-        # Check if contact exists
-        idx = faiss_manager.find_index_by_id(contact_id)
+        faiss_mgr = get_user_faiss_manager(user_id)
+        idx = faiss_mgr.find_index_by_id(contact_id)
         if idx == -1:
             raise HTTPException(status_code=404, detail="Contact not found")
 
-        # Get current metadata
-        current_meta = faiss_manager.doc_metadata[idx].copy()
+        current_meta = faiss_mgr.doc_metadata[idx].copy()
 
-        # Update only provided fields
         update_data = contact_update.model_dump(exclude_unset=True)
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields provided for update")
@@ -912,11 +963,9 @@ async def update_contact_route(contact_id: str, contact_update: ContactUpdate, a
             if value is not None:
                 current_meta[field] = value
 
-        # Rebuild summary text
         new_summary = f"{current_meta.get('name', 'N/A')}, {current_meta.get('email', 'N/A')}, {current_meta.get('phone', 'N/A')}, {current_meta.get('linkedin', 'N/A')}, {current_meta.get('company_name', 'N/A')}"
         current_meta["summary"] = new_summary
 
-        # Regenerate QR code with updated info
         updated_contact = Contact(
             name=current_meta.get("name", "N/A"),
             email=current_meta.get("email", "N/A"),
@@ -925,17 +974,14 @@ async def update_contact_route(contact_id: str, contact_update: ContactUpdate, a
             company_name=current_meta.get("company_name", "N/A")
         )
 
-        # Delete old QR code if exists
         old_qr_path = os.path.join(QR_DIR, f"qr_{contact_id}.png")
         if os.path.exists(old_qr_path):
             os.remove(old_qr_path)
 
-        # Generate new QR code with same contact_id
         qr_result = create_qr(updated_contact, contact_id)
         current_meta["qr_path"] = qr_result["qr_path"]
 
-        # Update in FAISS
-        updated = faiss_manager.update_document(contact_id, new_summary, current_meta)
+        updated = faiss_mgr.update_document(contact_id, new_summary, current_meta)
 
         if updated:
             return {
@@ -959,29 +1005,20 @@ async def update_contact_route(contact_id: str, contact_update: ContactUpdate, a
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/converse/")
 async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api_key)):
-    """
-    Conversational endpoint that uses Gemini to provide natural language responses
-    based on contact data retrieved from the FAISS database.
-    
-    Example queries:
-    - "Who do I know at Google?"
-    - "Find me someone in marketing"
-    - "What's John's email address?"
-    """
+    """Conversational endpoint using Gemini for a specific user's contacts."""
     try:
-        # Step 1: Retrieve relevant contacts from FAISS
-        retrieved_contacts = faiss_manager.search(query.query, k=query.top_k or 4)
-        
-        # Step 2: Generate conversational response using Gemini
+        faiss_mgr = get_user_faiss_manager(query.user_id)
+        retrieved_contacts = faiss_mgr.search(query.query, k=query.top_k or 4)
+
         response_text = gemini_engine.generate_response(
             query=query.query,
             retrieved_contacts=retrieved_contacts,
             conversation_history=query.conversation_history
         )
-        
-        # Step 3: Return structured response
+
         return {
             "status": "success",
             "response": response_text,
@@ -997,12 +1034,13 @@ async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api
             ],
             "query": query.query
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Conversation error: {str(e)}")
+
 
 if __name__ == "__main__":
     import uvicorn
