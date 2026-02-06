@@ -45,6 +45,19 @@ def initialize_directories_and_files():
         os.makedirs(directory, exist_ok=True)
         print(f"[INIT] Directory ensured: {directory}")
 
+    # Test volume persistence (critical for production)
+    print("[INIT] Testing volume persistence...")
+    for critical_dir in [DATA_DIR, USERS_DIR, QR_DIR]:
+        test_file = os.path.join(critical_dir, ".volume_test")
+        try:
+            with open(test_file, "w") as f:
+                f.write("volume_test")
+            os.remove(test_file)
+            print(f"[INIT] ✓ Volume persistence verified: {critical_dir}")
+        except Exception as e:
+            print(f"[INIT] ✗ WARNING: Volume persistence test failed for {critical_dir}: {e}")
+            print(f"[INIT] ✗ Data may not persist across container restarts!")
+
     # Initialize users file if it doesn't exist
     if not os.path.exists(USERS_FILE):
         with open(USERS_FILE, "w") as f:
