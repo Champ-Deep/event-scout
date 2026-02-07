@@ -392,7 +392,7 @@ def get_user_faiss_manager(user_id: str) -> FAISSManager:
 # --- GEMINI CONVERSATIONAL ENGINE ---
 class GeminiConversationEngine:
     def __init__(self):
-        self.model_name = "gemini-1.5-flash"
+        self.model_name = "gemini-2.0-flash"
 
     def _build_system_prompt(self) -> str:
         return """You are an intelligent Contact Assistant. Your role is to help users find and manage their contacts in a friendly, conversational manner.
@@ -585,8 +585,8 @@ def extract_contact_from_image_with_gemini(image_path: str) -> dict:
         print("[GEMINI] API key not configured")
         return fields
 
-    # Try multiple model names for compatibility across SDK versions
-    model_names = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+    # Use latest available Gemini models (1.5 series has been retired)
+    model_names = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite']
 
     img = Image.open(image_path)
     print(f"[GEMINI] Image opened: {img.size}, mode={img.mode}")
