@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
     libzbar0 \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -24,6 +25,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 # Copy application code
 COPY app.py .
+COPY database.py .
 
 # Create directories for data persistence
 RUN mkdir -p /app/temp_images /app/saved_qr /app/data /app/users

@@ -328,21 +328,26 @@
 
             <!-- SCAN SCREEN -->
             <div id="scanScreen" class="content-screen hidden">
-                <div class="h-screen flex flex-col bg-black">
-                    <!-- Camera View -->
-                    <div id="cameraView" class="flex-1 relative">
+                <div class="fixed inset-0 flex flex-col bg-black" style="top:0;bottom:0;z-index:40;">
+                    <!-- Camera View - fills available space -->
+                    <div id="cameraView" class="flex-1 relative overflow-hidden" style="min-height:0;">
                         <!-- Video Stream -->
                         <video id="cameraStream" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
 
                         <!-- Overlay Guide -->
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div class="border-4 border-white rounded-2xl w-80 h-48 shadow-2xl relative">
-                                <div class="absolute -top-12 left-0 right-0 text-center">
-                                    <p class="text-white text-sm font-medium bg-black/60 px-4 py-2 rounded-full inline-block">
-                                        Align business card within frame
+                            <div class="border-4 border-white/80 rounded-2xl shadow-2xl relative" style="width:85%;max-width:340px;aspect-ratio:1.7/1;">
+                                <div class="absolute -top-10 left-0 right-0 text-center">
+                                    <p class="text-white text-xs font-medium bg-black/60 px-3 py-1.5 rounded-full inline-block">
+                                        Align card within frame
                                     </p>
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- Bulk scan counter toast -->
+                        <div id="scanCounter" class="hidden absolute top-4 right-4 bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg z-10">
+                            <i class="fas fa-check mr-1"></i><span id="scanCountText">0 scanned</span>
                         </div>
 
                         <!-- Camera Error State -->
@@ -360,30 +365,60 @@
                         </div>
                     </div>
 
-                    <!-- Controls -->
-                    <div class="bg-gray-900 p-6 pb-safe-area">
-                        <div class="flex justify-center gap-6 items-center">
-                            <button onclick="uploadFromGallery()" class="w-12 h-12 bg-gray-700 rounded-full text-white flex items-center justify-center">
-                                <i class="fas fa-image"></i>
+                    <!-- Controls - fixed at bottom, always visible -->
+                    <div class="bg-gray-900/95 backdrop-blur-sm px-4 py-3 safe-area-inset-bottom" style="flex-shrink:0;">
+                        <div class="flex justify-center gap-5 items-center">
+                            <button onclick="uploadFromGallery()" class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
+                                <i class="fas fa-image text-sm"></i>
                             </button>
 
-                            <button id="captureBtn" onclick="captureBusinessCard()" class="w-16 h-16 bg-white rounded-full shadow-lg active:scale-95 transition flex items-center justify-center">
-                                <i class="fas fa-camera text-2xl text-gray-800"></i>
+                            <button id="captureBtn" onclick="captureBusinessCard()" class="w-16 h-16 bg-white rounded-full shadow-lg active:scale-95 transition flex items-center justify-center border-4 border-gray-300">
+                                <div class="w-12 h-12 bg-white rounded-full border-2 border-gray-400"></div>
                             </button>
 
-                            <button onclick="switchCamera()" class="w-12 h-12 bg-gray-700 rounded-full text-white flex items-center justify-center">
-                                <i class="fas fa-sync-alt"></i>
+                            <button onclick="switchCamera()" class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
+                                <i class="fas fa-sync-alt text-sm"></i>
+                            </button>
+                        </div>
+                        <!-- Done button for bulk scan mode -->
+                        <div id="bulkScanDone" class="hidden mt-2">
+                            <button onclick="finishBulkScan()" class="w-full py-2 bg-green-500 text-white rounded-lg font-semibold text-sm active:bg-green-600">
+                                <i class="fas fa-check mr-1"></i>Done - View Contacts
                             </button>
                         </div>
                     </div>
 
-                    <!-- Hidden file input -->
-                    <input type="file" id="galleryInput" accept="image/*" class="hidden" onchange="handleGalleryUpload(event)">
+                    <!-- Hidden file input (supports multiple) -->
+                    <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
 
-                    <!-- Processing Overlay -->
+                    <!-- Processing Overlay - multi-step -->
                     <div id="processingOverlay" class="hidden absolute inset-0 bg-black/90 flex-col items-center justify-center z-50">
-                        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-white mb-4"></div>
-                        <p class="text-white text-lg">Extracting contact info...</p>
+                        <div class="text-center px-8">
+                            <div id="processStep1" class="flex items-center gap-3 text-white mb-3">
+                                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                    <i class="fas fa-upload text-sm"></i>
+                                </div>
+                                <span class="text-sm">Uploading image...</span>
+                            </div>
+                            <div id="processStep2" class="flex items-center gap-3 text-gray-500 mb-3">
+                                <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+                                    <i class="fas fa-brain text-sm"></i>
+                                </div>
+                                <span class="text-sm">AI analyzing card...</span>
+                            </div>
+                            <div id="processStep3" class="flex items-center gap-3 text-gray-500 mb-3">
+                                <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+                                    <i class="fas fa-save text-sm"></i>
+                                </div>
+                                <span class="text-sm">Saving contact...</span>
+                            </div>
+                            <div id="processStep4" class="flex items-center gap-3 text-gray-500">
+                                <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+                                    <i class="fas fa-check text-sm"></i>
+                                </div>
+                                <span class="text-sm">Done!</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -404,14 +439,17 @@
                 <!-- Suggested Queries (shown when empty) -->
                 <div id="chatSuggestions" class="p-4 space-y-2">
                     <p class="text-sm text-gray-600 mb-3">Try asking:</p>
-                    <button onclick="askAI('Who should I contact about marketing?')" class="block w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm text-gray-700 active:bg-blue-200">
-                        "Who should I contact about marketing?"
+                    <button onclick="askAI('Who are my hottest leads to prioritize?')" class="block w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm text-gray-700 active:bg-blue-200">
+                        "Who are my hottest leads to prioritize?"
                     </button>
-                    <button onclick="askAI('Find contacts from tech companies')" class="block w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm text-gray-700 active:bg-blue-200">
-                        "Find contacts from tech companies"
+                    <button onclick="askAI('Suggest a pitch angle for my top contacts')" class="block w-full text-left px-4 py-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm text-gray-700 active:bg-purple-200">
+                        "Suggest a pitch angle for my top contacts"
                     </button>
-                    <button onclick="askAI('Show me all product managers')" class="block w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm text-gray-700 active:bg-blue-200">
-                        "Show me all product managers"
+                    <button onclick="askAI('Which contacts haven\\'t been followed up with?')" class="block w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg text-sm text-gray-700 active:bg-green-200">
+                        "Which contacts haven't been followed up?"
+                    </button>
+                    <button onclick="askAI('Summarize my best leads from this event')" class="block w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-sm text-gray-700 active:bg-orange-200">
+                        "Summarize my best leads from this event"
                     </button>
                 </div>
 
@@ -458,6 +496,63 @@
                                 <span class="font-semibold text-gray-900" id="totalContacts">0</span>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Personalization Settings -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm space-y-3">
+                        <h3 class="font-semibold text-gray-900">Personalization</h3>
+                        <p class="text-xs text-gray-500">Help AI personalize scoring, pitches, and advice</p>
+                        <button onclick="openSettingsSheet('products')" class="w-full flex items-center justify-between py-3 px-4 bg-purple-50 rounded-lg active:bg-purple-100 transition">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-box text-purple-600 text-lg w-6 text-center"></i>
+                                <span class="text-gray-700">Products & Services</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+                        <button onclick="openSettingsSheet('targeting')" class="w-full flex items-center justify-between py-3 px-4 bg-blue-50 rounded-lg active:bg-blue-100 transition">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-crosshairs text-blue-600 text-lg w-6 text-center"></i>
+                                <span class="text-gray-700">Target Market</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+                        <button onclick="openSettingsSheet('pitch')" class="w-full flex items-center justify-between py-3 px-4 bg-green-50 rounded-lg active:bg-green-100 transition">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-bullseye text-green-600 text-lg w-6 text-center"></i>
+                                <span class="text-gray-700">Pitch & Value Props</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+                        <button onclick="openSettingsSheet('event')" class="w-full flex items-center justify-between py-3 px-4 bg-orange-50 rounded-lg active:bg-orange-100 transition">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-calendar-star text-orange-600 text-lg w-6 text-center"></i>
+                                <span class="text-gray-700">Current Event</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+                    </div>
+
+                    <!-- Lead Intelligence -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm space-y-3">
+                        <h3 class="font-semibold text-gray-900">Lead Intelligence</h3>
+                        <div id="dashboardStats" class="grid grid-cols-3 gap-3 text-center">
+                            <div class="bg-red-50 rounded-lg p-3">
+                                <p class="text-2xl font-bold text-red-600" id="statHot">-</p>
+                                <p class="text-xs text-gray-500">Hot</p>
+                            </div>
+                            <div class="bg-orange-50 rounded-lg p-3">
+                                <p class="text-2xl font-bold text-orange-500" id="statWarm">-</p>
+                                <p class="text-xs text-gray-500">Warm</p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-2xl font-bold text-gray-500" id="statCold">-</p>
+                                <p class="text-xs text-gray-500">Cold</p>
+                            </div>
+                        </div>
+                        <button onclick="scoreAllContacts()" id="scoreAllBtn" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg font-semibold active:opacity-90 transition">
+                            <i class="fas fa-bolt"></i>
+                            <span>Score All Contacts</span>
+                        </button>
                     </div>
 
                     <!-- Export Section -->
@@ -605,6 +700,27 @@
     </div>
 
     <!-- ========================================
+         BOTTOM SHEET - Settings
+    ======================================== -->
+    <div id="settingsSheet" class="fixed inset-0 z-50 hidden">
+        <div class="backdrop absolute inset-0 bg-black/50" onclick="closeSettingsSheet()"></div>
+        <div class="sheet-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[90vh] flex flex-col transform translate-y-full transition-transform duration-300 slide-up">
+            <div class="flex justify-center py-3 border-b border-gray-200">
+                <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+            </div>
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h2 id="settingsSheetTitle" class="text-xl font-semibold">Settings</h2>
+                <button onclick="closeSettingsSheet()" class="p-2 text-gray-400 active:bg-gray-100 rounded-lg transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="settingsSheetBody" class="flex-1 overflow-y-auto p-6 space-y-5">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================
          JAVASCRIPT
     ======================================== -->
     <script>
@@ -621,7 +737,8 @@
             currentUser: null,
             contacts: [],
             activeScreen: 'contacts',
-            editingContactId: null
+            editingContactId: null,
+            userProfile: {}
         };
 
         // ==================== INITIALIZATION ====================
@@ -763,6 +880,7 @@
             document.getElementById('profileEmail').textContent = AppState.currentUser.email;
             document.getElementById('profileInitial').textContent = AppState.currentUser.name.charAt(0).toUpperCase();
             loadContacts();
+            loadUserProfile();
         }
 
         function switchScreen(screenName) {
@@ -802,8 +920,12 @@
             // Initialize screen-specific features
             if (screenName === 'profile') {
                 document.getElementById('totalContacts').textContent = AppState.contacts.length;
+                loadDashboardStats();
             } else if (screenName === 'scan') {
-                // Initialize camera when entering scan screen
+                // Initialize camera and reset bulk scan counter
+                scanSessionCount = 0;
+                document.getElementById('scanCounter').classList.add('hidden');
+                document.getElementById('bulkScanDone').classList.add('hidden');
                 initCamera();
             } else if (screenName === 'chat') {
                 // Load chat history when entering chat screen
@@ -863,13 +985,19 @@
                 const hasLinks = contact.links && contact.links.length > 0;
                 const company = contact.company_name && contact.company_name !== 'N/A' ? contact.company_name : '';
                 const escapedName = contact.name.replace(/'/g, "\\'");
+                const score = contact.lead_score;
+                const temp = contact.lead_temperature;
+                const scoreColor = temp === 'hot' ? 'bg-red-500' : temp === 'warm' ? 'bg-orange-400' : temp === 'cold' ? 'bg-gray-400' : '';
 
                 return `
                 <div class="contact-card bg-white border-b border-gray-100 active:bg-gray-50 transition" data-id="${contact.id}" onclick="openContactDetail('${contact.id}')">
                     <div class="flex items-start p-4 gap-3">
-                        <!-- Avatar -->
-                        <div class="w-12 h-12 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white font-bold text-lg flex-shrink-0 mt-0.5">
-                            ${contact.name.charAt(0).toUpperCase()}
+                        <!-- Avatar with score badge -->
+                        <div class="relative flex-shrink-0 mt-0.5">
+                            <div class="w-12 h-12 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white font-bold text-lg">
+                                ${contact.name.charAt(0).toUpperCase()}
+                            </div>
+                            ${score != null ? `<div class="absolute -top-1 -right-1 w-6 h-6 rounded-full ${scoreColor} text-white text-[10px] flex items-center justify-center font-bold shadow-sm">${score}</div>` : ''}
                         </div>
 
                         <!-- Info -->
@@ -877,6 +1005,7 @@
                             <div class="flex items-center gap-2">
                                 <h3 class="font-semibold text-gray-900 truncate">${contact.name}</h3>
                                 ${contact.source === 'scan' ? '<span class="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">scanned</span>' : ''}
+                                ${temp === 'hot' ? '<span class="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">hot</span>' : ''}
                             </div>
                             ${company ? `<p class="text-sm font-medium text-gray-600 truncate">${company}</p>` : ''}
                             <div class="flex items-center gap-3 mt-1">
@@ -1115,15 +1244,15 @@
 
         // ==================== CAMERA SCANNER FUNCTIONS ====================
         let cameraStream = null;
-        let facingMode = 'environment'; // Start with back camera
+        let facingMode = 'environment';
+        let scanSessionCount = 0; // Bulk scan counter
+        let scanProcessing = false; // Prevent double-tap
 
         async function initCamera() {
             try {
-                // Stop existing stream if any
                 if (cameraStream) {
                     cameraStream.getTracks().forEach(track => track.stop());
                 }
-
                 const constraints = {
                     video: {
                         facingMode: facingMode,
@@ -1131,28 +1260,22 @@
                         height: { ideal: 1080 }
                     }
                 };
-
                 cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                 const videoElement = document.getElementById('cameraStream');
                 videoElement.srcObject = cameraStream;
-
-                // Hide error, show camera view
                 document.getElementById('cameraError').classList.add('hidden');
                 videoElement.classList.remove('hidden');
             } catch (error) {
                 console.error('Camera initialization error:', error);
-
-                // Show error state with fallback to gallery upload
                 const errorDiv = document.getElementById('cameraError');
                 errorDiv.classList.remove('hidden');
                 document.getElementById('cameraStream').classList.add('hidden');
-
                 errorDiv.innerHTML = `
                     <div class="text-center text-white">
                         <i class="fas fa-camera-slash text-6xl mb-4 text-gray-400"></i>
                         <h3 class="text-xl font-semibold mb-2">Camera Not Available</h3>
                         <p class="text-sm text-gray-300 mb-6">
-                            ${error.name === 'NotAllowedError' ? 'Camera permission denied. Please enable camera access in your browser settings.' : 'Unable to access camera. Please use the gallery upload instead.'}
+                            ${error.name === 'NotAllowedError' ? 'Camera permission denied. Please enable camera access in settings.' : 'Unable to access camera. Use gallery upload instead.'}
                         </p>
                         <button onclick="uploadFromGallery()" class="bg-blue-600 px-6 py-3 rounded-lg text-white font-medium">
                             <i class="fas fa-image mr-2"></i>Upload from Gallery
@@ -1162,123 +1285,90 @@
             }
         }
 
-        async function captureBusinessCard() {
-            const videoElement = document.getElementById('cameraStream');
-
-            if (!videoElement.srcObject) {
-                showToast('Camera not initialized', 'error');
-                return;
-            }
-
-            // Create canvas to capture frame
-            const canvas = document.createElement('canvas');
-            canvas.width = videoElement.videoWidth;
-            canvas.height = videoElement.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(videoElement, 0, 0);
-
-            // Show processing overlay
-            document.getElementById('processingOverlay').classList.remove('hidden');
-            document.getElementById('processingOverlay').classList.add('flex');
-
-            // Convert canvas to blob
-            canvas.toBlob(async (blob) => {
-                try {
-                    const formData = new FormData();
-                    formData.append('file', blob, 'business-card.jpg');
-
-                    // user_id must be a URL query parameter (not FormData)
-                    const url = `${CONFIG.API_BASE_URL}/add_contact_from_image/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`;
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY },
-                        body: formData
-                    });
-
-                    const data = await response.json();
-
-                    // Hide processing overlay
-                    document.getElementById('processingOverlay').classList.add('hidden');
-                    document.getElementById('processingOverlay').classList.remove('flex');
-
-                    if (response.ok && data.status === 'success') {
-                        // Backend already saved the contact - show details and refresh list
-                        const fields = data.extracted_fields || {};
-                        const name = fields.name || 'Unknown';
-
-                        // Stop camera
-                        if (cameraStream) {
-                            cameraStream.getTracks().forEach(track => track.stop());
-                            cameraStream = null;
-                        }
-
-                        switchScreen('contacts');
-                        loadContacts();
-                        showToast(`✓ ${name} added from business card!`, 'success');
-                    } else {
-                        // Safely extract error message (data.detail can be an object)
-                        let errMsg = 'Failed to extract contact info';
-                        if (data.detail) {
-                            errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
-                        } else if (data.message) {
-                            errMsg = data.message;
-                        }
-                        showToast(errMsg, 'error');
-                    }
-                } catch (error) {
-                    document.getElementById('processingOverlay').classList.add('hidden');
-                    document.getElementById('processingOverlay').classList.remove('flex');
-                    showToast('Network error. Check console for details.', 'error');
-                    console.error('Capture error:', error);
+        function updateProcessStep(step) {
+            for (let i = 1; i <= 4; i++) {
+                const el = document.getElementById(`processStep${i}`);
+                const icon = el.querySelector('.w-8');
+                if (i < step) {
+                    el.classList.remove('text-gray-500');
+                    el.classList.add('text-green-400');
+                    icon.classList.remove('bg-gray-700', 'bg-blue-500');
+                    icon.classList.add('bg-green-500');
+                } else if (i === step) {
+                    el.classList.remove('text-gray-500');
+                    el.classList.add('text-white');
+                    icon.classList.remove('bg-gray-700');
+                    icon.classList.add('bg-blue-500');
+                } else {
+                    el.classList.remove('text-white', 'text-green-400');
+                    el.classList.add('text-gray-500');
+                    icon.classList.remove('bg-blue-500', 'bg-green-500');
+                    icon.classList.add('bg-gray-700');
                 }
-            }, 'image/jpeg', 0.95);
+            }
         }
 
-        function uploadFromGallery() {
-            document.getElementById('galleryInput').click();
-        }
-
-        async function handleGalleryUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            // Show processing overlay
+        function showProcessing() {
+            updateProcessStep(1);
             document.getElementById('processingOverlay').classList.remove('hidden');
             document.getElementById('processingOverlay').classList.add('flex');
+        }
+
+        function hideProcessing() {
+            document.getElementById('processingOverlay').classList.add('hidden');
+            document.getElementById('processingOverlay').classList.remove('flex');
+        }
+
+        function updateScanCounter() {
+            const counter = document.getElementById('scanCounter');
+            const text = document.getElementById('scanCountText');
+            if (scanSessionCount > 0) {
+                counter.classList.remove('hidden');
+                text.textContent = `${scanSessionCount} scanned`;
+                document.getElementById('bulkScanDone').classList.remove('hidden');
+            }
+        }
+
+        async function processImageUpload(blob, filename) {
+            /** Core upload function used by both camera capture and gallery. */
+            showProcessing();
 
             try {
                 const formData = new FormData();
-                formData.append('file', file);
+                formData.append('file', blob, filename);
 
-                // user_id must be a URL query parameter (not FormData)
+                // Step 1: Uploading
+                updateProcessStep(1);
                 const url = `${CONFIG.API_BASE_URL}/add_contact_from_image/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`;
+
+                // Step 2: AI analyzing
+                setTimeout(() => updateProcessStep(2), 500);
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY },
                     body: formData
                 });
 
+                // Step 3: Saving
+                updateProcessStep(3);
                 const data = await response.json();
 
-                // Hide processing overlay
-                document.getElementById('processingOverlay').classList.add('hidden');
-                document.getElementById('processingOverlay').classList.remove('flex');
-
                 if (response.ok && data.status === 'success') {
-                    // Backend already saved the contact - show details and refresh list
+                    // Step 4: Done
+                    updateProcessStep(4);
                     const fields = data.extracted_fields || {};
                     const name = fields.name || 'Unknown';
+                    scanSessionCount++;
+                    updateScanCounter();
 
-                    // Stop camera
-                    if (cameraStream) {
-                        cameraStream.getTracks().forEach(track => track.stop());
-                        cameraStream = null;
-                    }
+                    await new Promise(r => setTimeout(r, 600));
+                    hideProcessing();
 
-                    switchScreen('contacts');
-                    loadContacts();
-                    showToast(`✓ ${name} added from business card!`, 'success');
+                    // Show toast but DON'T leave camera - bulk scan mode
+                    showToast(`${name} saved!`, 'success');
+                    return true;
                 } else {
+                    hideProcessing();
                     let errMsg = 'Failed to extract contact info';
                     if (data.detail) {
                         errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
@@ -1286,15 +1376,78 @@
                         errMsg = data.message;
                     }
                     showToast(errMsg, 'error');
+                    return false;
                 }
             } catch (error) {
-                document.getElementById('processingOverlay').classList.add('hidden');
-                document.getElementById('processingOverlay').classList.remove('flex');
+                hideProcessing();
                 showToast('Network error', 'error');
-                console.error('Gallery upload error:', error);
+                console.error('Upload error:', error);
+                return false;
+            }
+        }
+
+        async function captureBusinessCard() {
+            if (scanProcessing) return;
+            scanProcessing = true;
+
+            const videoElement = document.getElementById('cameraStream');
+            if (!videoElement.srcObject) {
+                showToast('Camera not initialized', 'error');
+                scanProcessing = false;
+                return;
             }
 
-            // Reset input
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoElement, 0, 0);
+
+            canvas.toBlob(async (blob) => {
+                await processImageUpload(blob, 'business-card.jpg');
+                scanProcessing = false;
+                // Camera stays open for next scan
+            }, 'image/jpeg', 0.95);
+        }
+
+        function finishBulkScan() {
+            // Stop camera and go to contacts
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            scanSessionCount = 0;
+            document.getElementById('scanCounter').classList.add('hidden');
+            document.getElementById('bulkScanDone').classList.add('hidden');
+            switchScreen('contacts');
+            loadContacts();
+        }
+
+        function uploadFromGallery() {
+            document.getElementById('galleryInput').click();
+        }
+
+        async function handleGalleryUpload(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+
+            // Process multiple files in sequence
+            for (const file of files) {
+                await processImageUpload(file, file.name);
+            }
+
+            if (files.length > 1) {
+                showToast(`${scanSessionCount} cards processed!`, 'success');
+            }
+
+            // If not in camera mode, go to contacts
+            if (!cameraStream) {
+                loadContacts();
+                if (AppState.activeScreen !== 'scan') {
+                    switchScreen('contacts');
+                }
+            }
+
             event.target.value = '';
         }
 
@@ -1534,7 +1687,7 @@
                             <i class="fab fa-linkedin text-gray-400 w-5 text-center"></i>
                             <div>
                                 <p class="text-sm text-blue-600 truncate">${linkedin}</p>
-                                <p class="text-xs text-gray-400">LinkedIn</p>
+                                <p class="text-xs text-gray-400">LinkedIn ${contact.linkedin_source === 'ai_detected' ? '<span class="bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded text-[10px] ml-1">AI found</span>' : ''}</p>
                             </div>
                         </div>` : ''}
                         ${company ? `
@@ -1674,6 +1827,366 @@
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+        // ==================== USER PROFILE FUNCTIONS ====================
+        async function loadUserProfile() {
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_BASE_URL}/user/profile/?user_id=${AppState.currentUser.user_id}`,
+                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    AppState.userProfile = data.profile || {};
+                }
+            } catch (error) {
+                console.error('Load profile error:', error);
+            }
+        }
+
+        async function saveUserProfile(updates) {
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_BASE_URL}/user/profile/?user_id=${AppState.currentUser.user_id}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': CONFIG.API_KEY
+                        },
+                        body: JSON.stringify(updates)
+                    }
+                );
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    AppState.userProfile = data.profile;
+                    showToast('Settings saved', 'success');
+                    return true;
+                } else {
+                    showToast('Failed to save settings', 'error');
+                    return false;
+                }
+            } catch (error) {
+                showToast('Network error', 'error');
+                console.error('Save profile error:', error);
+                return false;
+            }
+        }
+
+        // ==================== SETTINGS SHEET FUNCTIONS ====================
+        function openSettingsSheet(section) {
+            const sheet = document.getElementById('settingsSheet');
+            const title = document.getElementById('settingsSheetTitle');
+            const body = document.getElementById('settingsSheetBody');
+            const p = AppState.userProfile;
+
+            if (section === 'products') {
+                title.textContent = 'Products & Services';
+                const products = p.products || [{ name: '', description: '', ideal_customer: '' }];
+                body.innerHTML = `
+                    <p class="text-sm text-gray-500 mb-4">What do you sell? This helps AI suggest relevant pitch angles.</p>
+                    <div id="productsContainer">
+                        ${products.map((prod, i) => `
+                        <div class="product-entry bg-gray-50 rounded-xl p-4 mb-3 space-y-3">
+                            <input type="text" placeholder="Product/Service name" value="${escapeHtml(prod.name || '')}"
+                                class="product-name w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                            <textarea placeholder="Brief description" rows="2"
+                                class="product-desc w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none resize-none">${escapeHtml(prod.description || '')}</textarea>
+                            <input type="text" placeholder="Ideal customer (e.g., VP Marketing at mid-market SaaS)" value="${escapeHtml(prod.ideal_customer || '')}"
+                                class="product-customer w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                        </div>`).join('')}
+                    </div>
+                    <button onclick="addProductEntry()" class="text-sm text-purple-600 font-medium mb-4"><i class="fas fa-plus mr-1"></i>Add another product</button>
+                    <div class="space-y-3 mt-2">
+                        <label class="block text-sm font-medium text-gray-700">Your Company</label>
+                        <input type="text" id="settCompanyName" value="${escapeHtml(p.company_name || '')}" placeholder="Company name"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                        <input type="text" id="settJobTitle" value="${escapeHtml(p.job_title || '')}" placeholder="Your job title"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                    </div>
+                    <button onclick="saveProductsSettings()" class="w-full mt-6 bg-purple-600 text-white py-3 rounded-lg font-semibold active:bg-purple-700">Save</button>
+                `;
+            } else if (section === 'targeting') {
+                title.textContent = 'Target Market';
+                body.innerHTML = `
+                    <p class="text-sm text-gray-500 mb-4">Who are you trying to reach? This helps AI score leads.</p>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Target Industries</label>
+                            <textarea id="settIndustries" rows="3" placeholder="One per line: Healthcare, FinTech, Manufacturing..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none">${(p.target_industries || []).join('\n')}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Target Roles</label>
+                            <textarea id="settRoles" rows="3" placeholder="One per line: CTO, VP Marketing, Head of Data..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none">${(p.target_roles || []).join('\n')}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Target Company Sizes</label>
+                            <textarea id="settSizes" rows="2" placeholder="One per line: startup, mid-market, enterprise..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none">${(p.target_company_sizes || []).join('\n')}</textarea>
+                        </div>
+                    </div>
+                    <button onclick="saveTargetingSettings()" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-semibold active:bg-blue-700">Save</button>
+                `;
+            } else if (section === 'pitch') {
+                title.textContent = 'Pitch & Value Props';
+                body.innerHTML = `
+                    <p class="text-sm text-gray-500 mb-4">How do you sell? This shapes AI-generated pitch angles.</p>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pitch Style</label>
+                            <select id="settPitchStyle" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none">
+                                <option value="consultative" ${p.pitch_style === 'consultative' ? 'selected' : ''}>Consultative (discover needs first)</option>
+                                <option value="direct" ${p.pitch_style === 'direct' ? 'selected' : ''}>Direct (lead with solution)</option>
+                                <option value="challenger" ${p.pitch_style === 'challenger' ? 'selected' : ''}>Challenger (reframe their thinking)</option>
+                                <option value="relationship" ${p.pitch_style === 'relationship' ? 'selected' : ''}>Relationship (build trust first)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Value Propositions</label>
+                            <textarea id="settValueProps" rows="4" placeholder="One per line: your key selling points in your own words..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none resize-none">${(p.value_propositions || []).join('\n')}</textarea>
+                        </div>
+                    </div>
+                    <button onclick="savePitchSettings()" class="w-full mt-6 bg-green-600 text-white py-3 rounded-lg font-semibold active:bg-green-700">Save</button>
+                `;
+            } else if (section === 'event') {
+                title.textContent = 'Current Event';
+                body.innerHTML = `
+                    <p class="text-sm text-gray-500 mb-4">Tell AI about the event you're attending.</p>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
+                            <input type="text" id="settEventName" value="${escapeHtml(p.current_event_name || '')}" placeholder="e.g., CES 2026, GITEX Dubai"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Event Description</label>
+                            <textarea id="settEventDesc" rows="3" placeholder="What is this event about? Who attends?"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none">${escapeHtml(p.current_event_description || '')}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Your Goals</label>
+                            <textarea id="settEventGoals" rows="3" placeholder="One per line: Find healthcare partners, Meet CTOs..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none">${(p.event_goals || []).join('\n')}</textarea>
+                        </div>
+                    </div>
+                    <button onclick="saveEventSettings()" class="w-full mt-6 bg-orange-500 text-white py-3 rounded-lg font-semibold active:bg-orange-600">Save</button>
+                `;
+            }
+
+            sheet.classList.remove('hidden');
+            setTimeout(() => {
+                sheet.querySelector('.sheet-content').style.transform = 'translateY(0)';
+            }, 10);
+        }
+
+        function closeSettingsSheet() {
+            const sheet = document.getElementById('settingsSheet');
+            const content = sheet.querySelector('.sheet-content');
+            content.style.transform = 'translateY(100%)';
+            setTimeout(() => sheet.classList.add('hidden'), 300);
+        }
+
+        function addProductEntry() {
+            const container = document.getElementById('productsContainer');
+            const entry = document.createElement('div');
+            entry.className = 'product-entry bg-gray-50 rounded-xl p-4 mb-3 space-y-3';
+            entry.innerHTML = `
+                <input type="text" placeholder="Product/Service name" class="product-name w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                <textarea placeholder="Brief description" rows="2" class="product-desc w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none resize-none"></textarea>
+                <input type="text" placeholder="Ideal customer" class="product-customer w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+            `;
+            container.appendChild(entry);
+        }
+
+        async function saveProductsSettings() {
+            const entries = document.querySelectorAll('.product-entry');
+            const products = [];
+            entries.forEach(entry => {
+                const name = entry.querySelector('.product-name').value.trim();
+                if (name) {
+                    products.push({
+                        name: name,
+                        description: entry.querySelector('.product-desc').value.trim(),
+                        ideal_customer: entry.querySelector('.product-customer').value.trim()
+                    });
+                }
+            });
+            const saved = await saveUserProfile({
+                products: products,
+                company_name: document.getElementById('settCompanyName').value.trim() || undefined,
+                job_title: document.getElementById('settJobTitle').value.trim() || undefined
+            });
+            if (saved) closeSettingsSheet();
+        }
+
+        async function saveTargetingSettings() {
+            const toList = (id) => document.getElementById(id).value.split('\n').map(s => s.trim()).filter(Boolean);
+            const saved = await saveUserProfile({
+                target_industries: toList('settIndustries'),
+                target_roles: toList('settRoles'),
+                target_company_sizes: toList('settSizes')
+            });
+            if (saved) closeSettingsSheet();
+        }
+
+        async function savePitchSettings() {
+            const saved = await saveUserProfile({
+                pitch_style: document.getElementById('settPitchStyle').value,
+                value_propositions: document.getElementById('settValueProps').value.split('\n').map(s => s.trim()).filter(Boolean)
+            });
+            if (saved) closeSettingsSheet();
+        }
+
+        async function saveEventSettings() {
+            const saved = await saveUserProfile({
+                current_event_name: document.getElementById('settEventName').value.trim(),
+                current_event_description: document.getElementById('settEventDesc').value.trim(),
+                event_goals: document.getElementById('settEventGoals').value.split('\n').map(s => s.trim()).filter(Boolean)
+            });
+            if (saved) closeSettingsSheet();
+        }
+
+        // ==================== LEAD SCORING FUNCTIONS ====================
+        async function scoreContact(contactId) {
+            showToast('Scoring contact...', 'info');
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_BASE_URL}/contact/${contactId}/score?user_id=${AppState.currentUser.user_id}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                    }
+                );
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    showToast(`Score: ${data.score}/100 (${data.temperature})`, 'success');
+                    // Update local state
+                    const contact = AppState.contacts.find(c => c.id === contactId);
+                    if (contact) {
+                        contact.lead_score = data.score;
+                        contact.lead_temperature = data.temperature;
+                        contact.lead_score_reasoning = data.reasoning;
+                    }
+                    renderContacts(AppState.contacts);
+                    return data;
+                } else {
+                    showToast('Scoring failed', 'error');
+                    return null;
+                }
+            } catch (error) {
+                showToast('Network error', 'error');
+                console.error('Score error:', error);
+                return null;
+            }
+        }
+
+        async function scoreAllContacts() {
+            const btn = document.getElementById('scoreAllBtn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Scoring...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_BASE_URL}/contacts/score_all?user_id=${AppState.currentUser.user_id}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                    }
+                );
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    showToast(`Scored ${data.scored} contacts (${data.skipped} already scored)`, 'success');
+                    loadContacts();
+                    loadDashboardStats();
+                } else {
+                    showToast('Scoring failed', 'error');
+                }
+            } catch (error) {
+                showToast('Network error', 'error');
+                console.error('Score all error:', error);
+            }
+
+            btn.innerHTML = '<i class="fas fa-bolt mr-2"></i>Score All Contacts';
+            btn.disabled = false;
+        }
+
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_BASE_URL}/dashboard?user_id=${AppState.currentUser.user_id}`,
+                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    document.getElementById('statHot').textContent = data.by_temperature.hot || 0;
+                    document.getElementById('statWarm').textContent = data.by_temperature.warm || 0;
+                    document.getElementById('statCold').textContent = data.by_temperature.cold || 0;
+                }
+            } catch (error) {
+                console.error('Dashboard stats error:', error);
+            }
+        }
+
+        // ==================== ENHANCED CONTACT DETAIL ====================
+        // Override openContactDetail to include lead score section
+        const _originalOpenContactDetail = openContactDetail;
+        openContactDetail = function(contactId) {
+            const contact = AppState.contacts.find(c => c.id === contactId);
+            if (!contact) return;
+
+            // Call original to set up the base view
+            _originalOpenContactDetail(contactId);
+
+            // Now inject lead score section if score exists
+            const detailContent = document.getElementById('contactDetailContent');
+            const actionsSection = detailContent.querySelector('.flex.gap-3.pt-2.pb-24');
+            if (!actionsSection) return;
+
+            const score = contact.lead_score;
+            const temp = contact.lead_temperature;
+            const reasoning = contact.lead_score_reasoning || '';
+            const scoreColor = temp === 'hot' ? 'border-red-500 text-red-600' : temp === 'warm' ? 'border-orange-400 text-orange-500' : temp === 'cold' ? 'border-gray-400 text-gray-500' : 'border-gray-300 text-gray-400';
+            const scoreBg = temp === 'hot' ? 'bg-red-50' : temp === 'warm' ? 'bg-orange-50' : temp === 'cold' ? 'bg-gray-50' : 'bg-gray-50';
+            const tempLabel = temp ? temp.charAt(0).toUpperCase() + temp.slice(1) + ' Lead' : 'Not Scored';
+
+            const scoreSection = document.createElement('div');
+            scoreSection.className = 'bg-white rounded-xl p-4 shadow-sm';
+            scoreSection.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Lead Score</h3>
+                    <button onclick="scoreContactAndRefresh('${contactId}')" class="text-xs text-blue-600 font-medium">
+                        <i class="fas fa-sync-alt mr-1"></i>${score != null ? 'Rescore' : 'Score Now'}
+                    </button>
+                </div>
+                ${score != null ? `
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-full border-4 ${scoreColor} flex items-center justify-center ${scoreBg}">
+                        <span class="text-2xl font-bold">${score}</span>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold ${scoreColor}">${tempLabel}</p>
+                        <p class="text-xs text-gray-500 mt-1">${escapeHtml(reasoning)}</p>
+                    </div>
+                </div>
+                ` : `
+                <div class="text-center py-4">
+                    <p class="text-sm text-gray-400 italic">Not scored yet. Tap "Score Now" to analyze this lead.</p>
+                </div>
+                `}
+            `;
+
+            actionsSection.parentElement.insertBefore(scoreSection, actionsSection);
+        };
+
+        async function scoreContactAndRefresh(contactId) {
+            const result = await scoreContact(contactId);
+            if (result) {
+                // Re-open the detail to show updated score
+                openContactDetail(contactId);
+            }
         }
     </script>
 </body>
