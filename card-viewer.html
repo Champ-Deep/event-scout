@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digital Business Card</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .card-container {
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .action-btn {
+            transition: all 0.2s;
+        }
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="w-full max-w-md px-4 py-8">
+        <!-- Loading State -->
+        <div id="loadingCard" class="card-container bg-white rounded-3xl shadow-2xl p-8">
+            <div class="text-center space-y-4">
+                <div class="shimmer h-24 w-24 mx-auto rounded-full"></div>
+                <div class="shimmer h-6 w-48 mx-auto rounded"></div>
+                <div class="shimmer h-4 w-32 mx-auto rounded"></div>
+                <div class="shimmer h-4 w-40 mx-auto rounded mt-4"></div>
+            </div>
+        </div>
+
+        <!-- Card Display -->
+        <div id="cardDisplay" class="hidden card-container bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <!-- Header Background -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 h-32"></div>
+
+            <!-- Card Content -->
+            <div class="px-8 pb-8 -mt-16">
+                <!-- Profile Photo (placeholder) -->
+                <div class="w-24 h-24 mx-auto mb-4 bg-white rounded-full shadow-lg flex items-center justify-center text-4xl font-bold text-blue-600" id="cardInitials">
+                    AB
+                </div>
+
+                <!-- Name & Title -->
+                <div class="text-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-1" id="cardName">Loading...</h1>
+                    <p class="text-gray-600 font-medium" id="cardTitle">Loading...</p>
+                    <p class="text-gray-500 text-sm" id="cardCompany">Loading...</p>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="space-y-3 mb-6">
+                    <!-- Email -->
+                    <div id="emailSection" class="hidden">
+                        <a href="#" id="emailLink" class="action-btn flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-envelope text-blue-600"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <p class="text-xs text-gray-500">Email</p>
+                                <p class="text-sm font-medium text-gray-900" id="cardEmail"></p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </a>
+                    </div>
+
+                    <!-- Phone -->
+                    <div id="phoneSection" class="hidden">
+                        <a href="#" id="phoneLink" class="action-btn flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-phone text-green-600"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <p class="text-xs text-gray-500">Phone</p>
+                                <p class="text-sm font-medium text-gray-900" id="cardPhone"></p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </a>
+                    </div>
+
+                    <!-- LinkedIn -->
+                    <div id="linkedinSection" class="hidden">
+                        <a href="#" id="linkedinLink" target="_blank" class="action-btn flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fab fa-linkedin text-blue-700"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <p class="text-xs text-gray-500">LinkedIn</p>
+                                <p class="text-sm font-medium text-gray-900">View Profile</p>
+                            </div>
+                            <i class="fas fa-external-link-alt text-gray-400"></i>
+                        </a>
+                    </div>
+
+                    <!-- Zoom -->
+                    <div id="zoomSection" class="hidden">
+                        <a href="#" id="zoomLink" class="action-btn flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-video text-purple-600"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <p class="text-xs text-gray-500">Zoom</p>
+                                <p class="text-sm font-medium text-gray-900" id="cardZoom"></p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </a>
+                    </div>
+
+                    <!-- Website -->
+                    <div id="websiteSection" class="hidden">
+                        <a href="#" id="websiteLink" target="_blank" class="action-btn flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-globe text-orange-600"></i>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <p class="text-xs text-gray-500">Website</p>
+                                <p class="text-sm font-medium text-gray-900" id="cardWebsite"></p>
+                            </div>
+                            <i class="fas fa-external-link-alt text-gray-400"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Save Contact Button -->
+                <button onclick="saveToContacts()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition action-btn">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Save to Contacts
+                </button>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center py-4 border-t border-gray-100">
+                <p class="text-xs text-gray-400">Powered by <span class="font-semibold">Event Scout</span></p>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorCard" class="hidden card-container bg-white rounded-3xl shadow-2xl p-8 text-center">
+            <div class="text-red-500 text-6xl mb-4">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 mb-2">Card Not Found</h2>
+            <p class="text-gray-600 mb-6">This digital business card is no longer available or the link is invalid.</p>
+            <a href="https://event-scout.com" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                Learn More About Event Scout
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            API_BASE_URL: 'https://event-scout-production.up.railway.app'
+        };
+
+        let cardData = null;
+
+        // Load card on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const token = getTokenFromURL();
+            if (!token) {
+                showError();
+                return;
+            }
+
+            await loadCard(token);
+        });
+
+        function getTokenFromURL() {
+            // Get token from path: /card/{token} or from query param
+            const path = window.location.pathname;
+            const match = path.match(/\/card\/([a-f0-9-]+)/i);
+            if (match) {
+                return match[1];
+            }
+
+            // Fallback: check query param
+            const params = new URLSearchParams(window.location.search);
+            return params.get('token');
+        }
+
+        async function loadCard(token) {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/card/${token}`);
+
+                if (!response.ok) {
+                    showError();
+                    return;
+                }
+
+                const data = await response.json();
+                cardData = data.card || {};
+
+                if (!cardData || Object.keys(cardData).length === 0) {
+                    showError();
+                    return;
+                }
+
+                displayCard(cardData);
+            } catch (error) {
+                console.error('Error loading card:', error);
+                showError();
+            }
+        }
+
+        function displayCard(card) {
+            // Hide loading, show card
+            document.getElementById('loadingCard').classList.add('hidden');
+            document.getElementById('cardDisplay').classList.remove('hidden');
+
+            // Set initials
+            const initials = getInitials(card.full_name || 'User');
+            document.getElementById('cardInitials').textContent = initials;
+
+            // Set name, title, company
+            document.getElementById('cardName').textContent = card.full_name || 'No Name';
+            document.getElementById('cardTitle').textContent = card.job_title || 'No Title';
+            document.getElementById('cardCompany').textContent = card.company_name || '';
+
+            // Set contact info (only show if available)
+            if (card.email) {
+                document.getElementById('emailSection').classList.remove('hidden');
+                document.getElementById('cardEmail').textContent = card.email;
+                document.getElementById('emailLink').href = `mailto:${card.email}`;
+            }
+
+            if (card.phone) {
+                document.getElementById('phoneSection').classList.remove('hidden');
+                document.getElementById('cardPhone').textContent = card.phone;
+                document.getElementById('phoneLink').href = `tel:${card.phone}`;
+            }
+
+            if (card.linkedin_url) {
+                document.getElementById('linkedinSection').classList.remove('hidden');
+                document.getElementById('linkedinLink').href = card.linkedin_url;
+            }
+
+            if (card.zoom_number) {
+                document.getElementById('zoomSection').classList.remove('hidden');
+                document.getElementById('cardZoom').textContent = card.zoom_number;
+                document.getElementById('zoomLink').href = `https://zoom.us/j/${card.zoom_number.replace(/\D/g, '')}`;
+            }
+
+            if (card.website) {
+                document.getElementById('websiteSection').classList.remove('hidden');
+                document.getElementById('cardWebsite').textContent = card.website.replace(/^https?:\/\//, '');
+                document.getElementById('websiteLink').href = card.website.startsWith('http') ? card.website : `https://${card.website}`;
+            }
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            const parts = name.trim().split(' ');
+            if (parts.length === 1) {
+                return parts[0][0].toUpperCase();
+            }
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        function showError() {
+            document.getElementById('loadingCard').classList.add('hidden');
+            document.getElementById('errorCard').classList.remove('hidden');
+        }
+
+        function saveToContacts() {
+            if (!cardData) return;
+
+            // Generate vCard
+            const vcard = generateVCard(cardData);
+
+            // Create blob and download
+            const blob = new Blob([vcard], { type: 'text/vcard' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${(cardData.full_name || 'contact').replace(/\s/g, '_')}.vcf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Show feedback
+            alert('Contact saved! Check your downloads folder.');
+        }
+
+        function generateVCard(card) {
+            const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
+
+            if (card.full_name) {
+                const nameParts = card.full_name.split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                lines.push(`N:${lastName};${firstName};;;`);
+                lines.push(`FN:${card.full_name}`);
+            }
+
+            if (card.job_title) lines.push(`TITLE:${card.job_title}`);
+            if (card.company_name) lines.push(`ORG:${card.company_name}`);
+            if (card.email) lines.push(`EMAIL;TYPE=INTERNET:${card.email}`);
+            if (card.phone) lines.push(`TEL;TYPE=CELL:${card.phone}`);
+            if (card.linkedin_url) lines.push(`URL:${card.linkedin_url}`);
+            if (card.website) lines.push(`URL:${card.website}`);
+
+            lines.push('END:VCARD');
+            return lines.join('\r\n');
+        }
+    </script>
+</body>
+</html>

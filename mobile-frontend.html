@@ -450,7 +450,7 @@
                     </div>
 
                     <!-- Controls - fixed at bottom, always visible -->
-                    <div class="bg-gray-900/95 backdrop-blur-sm px-4 py-3 safe-area-inset-bottom" style="flex-shrink:0;">
+                    <div class="bg-gray-900/95 backdrop-blur-sm px-4 pt-3 pb-20 safe-area-inset-bottom" style="flex-shrink:0;">
                         <div class="flex justify-center gap-5 items-center">
                             <button onclick="uploadFromGallery()" class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
                                 <i class="fas fa-image text-sm"></i>
@@ -682,6 +682,48 @@
                             <i class="fas fa-bolt"></i>
                             <span>Score All Contacts</span>
                         </button>
+                    </div>
+
+                    <!-- Digital Business Card -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-gray-900">My Digital Card</h3>
+                            <i class="fas fa-qrcode text-blue-500 text-lg"></i>
+                        </div>
+                        <p class="text-xs text-gray-500">Share your contact info via QR code or NFC tap</p>
+
+                        <!-- Card Form -->
+                        <div class="space-y-2">
+                            <input type="text" id="cardFullName" placeholder="Full Name" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="cardJobTitle" placeholder="Job Title" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="cardCompanyName" placeholder="Company" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="email" id="cardEmail" placeholder="Email" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="tel" id="cardPhone" placeholder="Phone Number" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="url" id="cardLinkedIn" placeholder="LinkedIn URL" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="tel" id="cardZoom" placeholder="Zoom Number (optional)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="url" id="cardWebsite" placeholder="Website (optional)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+
+                        <!-- Save Card Button -->
+                        <button onclick="saveDigitalCard()" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg font-semibold active:opacity-90 transition">
+                            <i class="fas fa-save"></i>
+                            <span>Save Card</span>
+                        </button>
+
+                        <!-- Generate QR Button -->
+                        <button onclick="generateCardQR()" id="generateQRBtn" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold active:opacity-90 transition">
+                            <i class="fas fa-qrcode"></i>
+                            <span>Generate QR Code</span>
+                        </button>
+
+                        <!-- QR Code Display -->
+                        <div id="cardQRContainer" class="hidden mt-3">
+                            <div class="bg-gray-50 rounded-lg p-4 text-center">
+                                <img id="cardQRImage" src="" alt="QR Code" class="mx-auto max-w-full" style="max-width: 250px;">
+                                <p class="text-xs text-gray-600 mt-2">Share this QR code with people you meet!</p>
+                                <p id="cardShareableURL" class="text-xs text-blue-600 mt-1 break-all"></p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Export Section -->
@@ -1103,6 +1145,7 @@
 
             loadContacts();
             loadUserProfile();
+            loadDigitalCard();
         }
 
         function switchScreen(screenName) {
@@ -1143,6 +1186,7 @@
             if (screenName === 'profile') {
                 document.getElementById('totalContacts').textContent = AppState.contacts.length;
                 loadDashboardStats();
+                loadDigitalCard();
             } else if (screenName === 'scan') {
                 // Initialize camera and reset bulk scan counter
                 scanSessionCount = 0;
@@ -1614,11 +1658,17 @@
                     updateProcessStep(4);
                     const fields = data.extracted_fields || {};
                     const name = fields.name || 'Unknown';
+                    const contactId = data.contact_id;
                     scanSessionCount++;
                     updateScanCounter();
 
                     await new Promise(r => setTimeout(r, 600));
                     hideProcessing();
+
+                    // Trigger webhook for card acceptance (sends CookieMail)
+                    if (contactId) {
+                        triggerCardAcceptedWebhook(contactId, name);
+                    }
 
                     // Show toast but DON'T leave camera - bulk scan mode
                     showToast(`${name} saved!`, 'success');
@@ -1872,7 +1922,10 @@
         }
 
         // ==================== CONTACT DETAIL VIEW ====================
+        let _swipeVoiceTriggered = 0;
         function openContactDetail(contactId) {
+            // Skip if voice recording was just triggered by swipe
+            if (Date.now() - _swipeVoiceTriggered < 500) return;
             const contact = AppState.contacts.find(c => c.id === contactId);
             if (!contact) return;
 
@@ -2087,6 +2140,139 @@
             } catch (error) {
                 console.error('Export error:', error);
                 showToast('Export failed. Please try again.', 'error');
+            }
+        }
+
+        // ==================== DIGITAL BUSINESS CARD FUNCTIONS ====================
+        async function loadDigitalCard() {
+            if (!AppState.currentUser) return;
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/user/card/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+
+                if (!response.ok) throw new Error('Failed to load card');
+
+                const data = await response.json();
+                const card = data.card || {};
+
+                // Populate form fields
+                document.getElementById('cardFullName').value = card.full_name || '';
+                document.getElementById('cardJobTitle').value = card.job_title || '';
+                document.getElementById('cardCompanyName').value = card.company_name || '';
+                document.getElementById('cardEmail').value = card.email || '';
+                document.getElementById('cardPhone').value = card.phone || '';
+                document.getElementById('cardLinkedIn').value = card.linkedin_url || '';
+                document.getElementById('cardZoom').value = card.zoom_number || '';
+                document.getElementById('cardWebsite').value = card.website || '';
+
+                // Show QR if exists
+                if (data.shareable_url) {
+                    document.getElementById('cardShareableURL').textContent = data.shareable_url;
+                }
+            } catch (error) {
+                console.error('Load card error:', error);
+            }
+        }
+
+        async function saveDigitalCard() {
+            if (!AppState.currentUser) return;
+
+            const cardData = {
+                full_name: document.getElementById('cardFullName').value.trim(),
+                job_title: document.getElementById('cardJobTitle').value.trim(),
+                company_name: document.getElementById('cardCompanyName').value.trim(),
+                email: document.getElementById('cardEmail').value.trim(),
+                phone: document.getElementById('cardPhone').value.trim(),
+                linkedin_url: document.getElementById('cardLinkedIn').value.trim(),
+                zoom_number: document.getElementById('cardZoom').value.trim(),
+                website: document.getElementById('cardWebsite').value.trim(),
+            };
+
+            // Validation
+            if (!cardData.full_name || !cardData.email) {
+                showToast('Please enter at least your name and email', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/user/card/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': CONFIG.API_KEY
+                    },
+                    body: JSON.stringify(cardData)
+                });
+
+                if (!response.ok) throw new Error('Failed to save card');
+
+                const data = await response.json();
+                showToast('Digital card saved successfully!', 'success');
+
+                if (data.shareable_url) {
+                    document.getElementById('cardShareableURL').textContent = data.shareable_url;
+                }
+            } catch (error) {
+                console.error('Save card error:', error);
+                showToast('Failed to save card. Please try again.', 'error');
+            }
+        }
+
+        async function generateCardQR() {
+            if (!AppState.currentUser) return;
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/user/card/generate_token/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
+                    method: 'POST',
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+
+                if (!response.ok) throw new Error('Failed to generate QR');
+
+                const data = await response.json();
+
+                // Display QR code
+                const qrContainer = document.getElementById('cardQRContainer');
+                const qrImage = document.getElementById('cardQRImage');
+                const urlDisplay = document.getElementById('cardShareableURL');
+
+                qrImage.src = `data:image/png;base64,${data.qr_code_base64}`;
+                urlDisplay.textContent = data.shareable_url;
+                qrContainer.classList.remove('hidden');
+
+                showToast('QR code generated! Share it with people you meet.', 'success');
+            } catch (error) {
+                console.error('Generate QR error:', error);
+                showToast('Failed to generate QR code. Please try again.', 'error');
+            }
+        }
+
+        async function triggerCardAcceptedWebhook(contactId, contactName) {
+            /**
+             * Triggered when user accepts/scans a card.
+             * Sends webhook to n8n to trigger automated CookieMail.
+             */
+            if (!AppState.currentUser || !contactId) return;
+
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/accepted?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
+                    method: 'POST',
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.webhook_sent) {
+                        console.log(`[WEBHOOK] CookieMail triggered for ${contactName}`);
+                    } else {
+                        console.warn(`[WEBHOOK] ${data.webhook_message}`);
+                    }
+                }
+            } catch (error) {
+                // Silent failure - don't interrupt user flow
+                console.error('[WEBHOOK] Error triggering card acceptance:', error);
             }
         }
 
@@ -2655,7 +2841,7 @@
             let sx = 0, sy = 0, sc = null;
             cl.addEventListener('touchstart', e => { const c = e.target.closest('.contact-card'); if (!c) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; sc = c; }, { passive: true });
             cl.addEventListener('touchmove', e => { if (!sc) return; const dx = e.touches[0].clientX - sx, dy = Math.abs(e.touches[0].clientY - sy); if (dy > 30) { sc.style.transform = ''; sc.style.background = ''; sc = null; return; } if (dx > 20 && dx < 120) { sc.style.transform = 'translateX(' + Math.min(dx * 0.3, 30) + 'px)'; sc.style.background = 'linear-gradient(90deg, rgba(124,58,237,' + (dx/300) + ') 0%, transparent 40%)'; } }, { passive: true });
-            cl.addEventListener('touchend', e => { if (!sc) return; const dx = e.changedTouches[0].clientX - sx, dy = Math.abs(e.changedTouches[0].clientY - sy); sc.style.transform = ''; sc.style.background = ''; if (dx > 80 && dy < 40) { const cid = sc.dataset.id; const ct = AppState.contacts.find(c => c.id === cid); if (ct) openVoiceRecordingOverlay(cid, ct.name); } sc = null; }, { passive: true });
+            cl.addEventListener('touchend', e => { if (!sc) return; const dx = e.changedTouches[0].clientX - sx, dy = Math.abs(e.changedTouches[0].clientY - sy); sc.style.transform = ''; sc.style.background = ''; if (dx > 80 && dy < 40) { _swipeVoiceTriggered = Date.now(); const cid = sc.dataset.id; const ct = AppState.contacts.find(c => c.id === cid); if (ct) openVoiceRecordingOverlay(cid, ct.name); } sc = null; }, { passive: true });
         }
 
         const _origRender = renderContacts;

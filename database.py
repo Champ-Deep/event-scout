@@ -166,6 +166,23 @@ class ConversationDB(Base):
     )
 
 
+class UserCardDB(Base):
+    """Store user's digital business card for QR/NFC sharing."""
+    __tablename__ = "user_cards"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    card_data = Column(JSON, default=dict)  # {name, title, company, email, phone, linkedin, zoom, photo_url, etc.}
+    shareable_token = Column(String(100), unique=True, nullable=True, index=True)  # UUID for public access
+    is_active = Column(Boolean, default=True)  # Allow users to temporarily disable card sharing
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_user_cards_token", "shareable_token"),
+    )
+
+
 # --- Engine & Session ---
 engine = None
 async_session_factory = None

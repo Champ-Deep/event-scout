@@ -1,4 +1,17 @@
 Traceback (most recent call last):
-  File "/home/hemang/Desktop/Round_Table_Conferrance_app_Updated-master/app.py", line 6, in <module>
-    import qrcode
-ModuleNotFoundError: No module named 'qrcode'
+  File "/Users/champion/projects/Round_Table_Conferrance_app_Authenticated/app.py", line 7, in <module>
+    from pyzbar.pyzbar import decode as decode_qr
+  File "/Users/champion/projects/Round_Table_Conferrance_app_Authenticated/venv/lib/python3.12/site-packages/pyzbar/pyzbar.py", line 7, in <module>
+    from .wrapper import (
+  File "/Users/champion/projects/Round_Table_Conferrance_app_Authenticated/venv/lib/python3.12/site-packages/pyzbar/wrapper.py", line 151, in <module>
+    zbar_version = zbar_function(
+                   ^^^^^^^^^^^^^^
+  File "/Users/champion/projects/Round_Table_Conferrance_app_Authenticated/venv/lib/python3.12/site-packages/pyzbar/wrapper.py", line 148, in zbar_function
+    return prototype((fname, load_libzbar()))
+                             ^^^^^^^^^^^^^^
+  File "/Users/champion/projects/Round_Table_Conferrance_app_Authenticated/venv/lib/python3.12/site-packages/pyzbar/wrapper.py", line 127, in load_libzbar
+    libzbar, dependencies = zbar_library.load()
+                            ^^^^^^^^^^^^^^^^^^^
+  File "/Users/champion/projects/Round_Table_Conferrance_app_Authenticated/venv/lib/python3.12/site-packages/pyzbar/zbar_library.py", line 65, in load
+    raise ImportError('Unable to find zbar shared library')
+ImportError: Unable to find zbar shared library

@@ -27,7 +27,7 @@ from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import (
-    UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB,
+    UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB, UserCardDB,
     get_engine, get_session_factory, init_db, ASYNC_DATABASE_URL
 )
 
@@ -159,6 +159,31 @@ class AudioNoteRequest(BaseModel):
     contact_id: str
     audio_base64: Optional[str] = None
     transcript: Optional[str] = None
+
+
+class UserCardUpdate(BaseModel):
+    """Update user's digital business card for QR/NFC sharing."""
+    full_name: Optional[str] = None
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    zoom_number: Optional[str] = None
+    website: Optional[str] = None
+    photo_url: Optional[str] = None
+    bio: Optional[str] = None
+    custom_fields: Optional[Dict[str, str]] = None  # For any additional fields
+
+
+class ContactAcceptedWebhook(BaseModel):
+    """Payload for card acceptance webhook to trigger n8n email workflow."""
+    contact_email: str
+    contact_name: str
+    user_name: str
+    user_email: str
+    user_company: Optional[str] = None
+    timestamp: str
 
 
 # --- AUTH ---
@@ -2341,6 +2366,266 @@ async def transcribe_audio(
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+
+# --- DIGITAL BUSINESS CARD ENDPOINTS ---
+
+@app.get("/user/card/")
+async def get_user_card(
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key),
+):
+    """Get user's digital business card."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserCardDB).where(UserCardDB.user_id == uuid.UUID(user_id))
+        )
+        card = result.scalar_one_or_none()
+
+        if not card:
+            return {"status": "success", "card": {}, "shareable_url": None}
+
+        shareable_url = None
+        if card.shareable_token and card.is_active:
+            # Generate full URL (use env var or request base URL in production)
+            shareable_url = f"https://event-scout-card.vercel.app/card/{card.shareable_token}"
+
+        return {
+            "status": "success",
+            "card": card.card_data,
+            "shareable_url": shareable_url,
+            "is_active": card.is_active,
+            "updated_at": card.updated_at.isoformat() if card.updated_at else None
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.put("/user/card/")
+async def update_user_card(
+    card_update: UserCardUpdate,
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key),
+):
+    """Update user's digital business card."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserCardDB).where(UserCardDB.user_id == uuid.UUID(user_id))
+        )
+        card = result.scalar_one_or_none()
+
+        update_data = card_update.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields provided for update")
+
+        if card:
+            # Update existing card
+            existing = card.card_data or {}
+            for key, value in update_data.items():
+                if value is not None:
+                    existing[key] = value
+            card.card_data = existing
+            card.updated_at = datetime.now(timezone.utc)
+        else:
+            # Create new card
+            card = UserCardDB(
+                user_id=uuid.UUID(user_id),
+                card_data={k: v for k, v in update_data.items() if v is not None},
+            )
+            session.add(card)
+
+        await session.commit()
+
+        shareable_url = None
+        if card.shareable_token and card.is_active:
+            shareable_url = f"https://event-scout-card.vercel.app/card/{card.shareable_token}"
+
+        return {
+            "status": "success",
+            "card": card.card_data,
+            "shareable_url": shareable_url
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.post("/user/card/generate_token/")
+async def generate_card_token(
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key),
+):
+    """Generate a shareable token for user's digital card. Creates QR code."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserCardDB).where(UserCardDB.user_id == uuid.UUID(user_id))
+        )
+        card = result.scalar_one_or_none()
+
+        if not card:
+            # Create card if it doesn't exist
+            card = UserCardDB(
+                user_id=uuid.UUID(user_id),
+                card_data={},
+                shareable_token=str(uuid.uuid4()),
+                is_active=True
+            )
+            session.add(card)
+        elif not card.shareable_token:
+            # Generate token if it doesn't exist
+            card.shareable_token = str(uuid.uuid4())
+            card.is_active = True
+
+        await session.commit()
+
+        # Generate QR code
+        shareable_url = f"https://event-scout-card.vercel.app/card/{card.shareable_token}"
+
+        qr = qrcode.QRCode(version=1, box_size=10, border=4)
+        qr.add_data(shareable_url)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+
+        # Save QR code
+        qr_path = os.path.join(QR_DIR, f"card_{user_id}.png")
+        qr_img.save(qr_path)
+
+        # Convert to base64 for frontend
+        buffered = BytesIO()
+        qr_img.save(buffered, format="PNG")
+        qr_base64 = base64.b64encode(buffered.getvalue()).decode()
+
+        return {
+            "status": "success",
+            "shareable_url": shareable_url,
+            "shareable_token": card.shareable_token,
+            "qr_code_base64": qr_base64,
+            "message": "Share this QR code or URL with people you meet!"
+        }
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/card/{token}")
+async def view_card_public(token: str):
+    """Public endpoint to view a digital business card (no auth required)."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserCardDB).where(UserCardDB.shareable_token == token)
+        )
+        card = result.scalar_one_or_none()
+
+        if not card:
+            raise HTTPException(status_code=404, detail="Card not found")
+
+        if not card.is_active:
+            raise HTTPException(status_code=403, detail="This card is no longer active")
+
+        return {
+            "status": "success",
+            "card": card.card_data,
+            "created_at": card.created_at.isoformat() if card.created_at else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.post("/contact/{contact_id}/accepted")
+async def contact_accepted_webhook(
+    contact_id: str,
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key),
+):
+    """Triggered when user accepts a scanned card. Sends webhook to n8n for email automation."""
+    session = await get_db_session()
+    try:
+        # Get contact details
+        result = await session.execute(
+            select(ContactDB).where(ContactDB.id == uuid.UUID(contact_id), ContactDB.user_id == uuid.UUID(user_id))
+        )
+        contact = result.scalar_one_or_none()
+
+        if not contact:
+            raise HTTPException(status_code=404, detail="Contact not found")
+
+        # Get user details
+        user_result = await session.execute(
+            select(UserDB).where(UserDB.id == uuid.UUID(user_id))
+        )
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Prepare webhook payload
+        webhook_payload = {
+            "contact_email": contact.email,
+            "contact_name": contact.name,
+            "contact_phone": contact.phone,
+            "contact_company": contact.company_name,
+            "contact_linkedin": contact.linkedin,
+            "user_name": user.name,
+            "user_email": user.email,
+            "user_id": user_id,
+            "contact_id": contact_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": "card_accepted"
+        }
+
+        # Send to n8n webhook (if configured)
+        if WEBHOOK_URL:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    response = await client.post(WEBHOOK_URL, json=webhook_payload)
+                    webhook_sent = response.status_code == 200
+                    webhook_message = "Webhook sent successfully" if webhook_sent else f"Webhook failed: {response.status_code}"
+            except Exception as webhook_err:
+                print(f"[WEBHOOK ERROR] {webhook_err}")
+                webhook_sent = False
+                webhook_message = f"Webhook error: {str(webhook_err)}"
+        else:
+            webhook_sent = False
+            webhook_message = "WEBHOOK_URL not configured"
+
+        return {
+            "status": "success",
+            "message": "Contact acceptance recorded",
+            "webhook_sent": webhook_sent,
+            "webhook_message": webhook_message,
+            "contact": {
+                "id": str(contact.id),
+                "name": contact.name,
+                "email": contact.email
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
 
 
 if __name__ == "__main__":

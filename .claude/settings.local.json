@@ -3,7 +3,12 @@
     "allow": [
       "Bash(cat:*)",
       "Bash(python3 -m pip:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(docker info:*)",
+      "Bash(python3:*)",
+      "Bash(git checkout:*)",
+      "Bash(ls:*)",
+      "Bash(du:*)"
     ],
     "deny": [],
     "ask": []
