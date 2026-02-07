@@ -585,47 +585,89 @@ def extract_contact_from_image_with_gemini(image_path: str) -> dict:
         print("[GEMINI] API key not configured")
         return fields
 
-    try:
-        img = Image.open(image_path)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+    # Try multiple model names for compatibility across SDK versions
+    model_names = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
 
-        prompt = """Analyze this business card or contact image and extract the following information.
-Return ONLY a JSON object with these exact keys (use "N/A" if not found):
-{
-    "name": "full name of the person",
-    "email": "email address",
-    "phone": "phone number",
-    "linkedin": "linkedin profile URL",
-    "company_name": "company or organization name"
-}
+    img = Image.open(image_path)
+    print(f"[GEMINI] Image opened: {img.size}, mode={img.mode}")
 
-Important: Return ONLY the JSON object, no other text or markdown formatting."""
+    # Convert RGBA to RGB if needed (Gemini doesn't handle alpha channel well)
+    if img.mode == 'RGBA':
+        bg = Image.new('RGB', img.size, (255, 255, 255))
+        bg.paste(img, mask=img.split()[3])
+        img = bg
+    elif img.mode != 'RGB':
+        img = img.convert('RGB')
 
-        response = model.generate_content([prompt, img])
-        response_text = response.text.strip()
+    prompt = """You are an expert at reading business cards. Look at this image carefully and extract ALL contact information you can find.
 
-        if response_text.startswith("```"):
-            response_text = response_text.split("```")[1]
-            if response_text.startswith("json"):
-                response_text = response_text[4:]
-            response_text = response_text.strip()
+This is a business card or contact information image. Extract the following fields:
+- name: The person's full name (first and last name)
+- email: Their email address (look for @ symbol)
+- phone: Their phone number (look for digits, +, -, parentheses)
+- linkedin: Their LinkedIn URL or profile (look for linkedin.com or "LinkedIn:")
+- company_name: Their company or organization name
 
-        extracted = json.loads(response_text)
+Return ONLY a valid JSON object with exactly these keys. Use "N/A" for any field you cannot find:
+{"name": "...", "email": "...", "phone": "...", "linkedin": "...", "company_name": "..."}
 
-        for key in fields:
-            if key in extracted and extracted[key] and extracted[key] != "N/A":
-                fields[key] = extracted[key]
+CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explanation."""
 
-        print(f"[GEMINI] Extracted: {fields}")
-        return fields
+    last_error = None
+    for model_name in model_names:
+        try:
+            print(f"[GEMINI] Trying model: {model_name}")
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content([prompt, img])
 
-    except json.JSONDecodeError as e:
-        print(f"[GEMINI] JSON parse error: {e}")
-        return fields
-    except Exception as e:
-        print(f"[GEMINI] Error extracting contact from image: {e}")
-        traceback.print_exc()
-        return fields
+            if not response or not response.text:
+                print(f"[GEMINI] Empty response from {model_name}")
+                continue
+
+            response_text = response.text.strip()
+            print(f"[GEMINI] Raw response from {model_name}: {response_text[:500]}")
+
+            # Strip markdown code fences if present
+            if response_text.startswith("```"):
+                # Find content between first and last ```
+                parts = response_text.split("```")
+                if len(parts) >= 3:
+                    response_text = parts[1]
+                else:
+                    response_text = parts[1] if len(parts) > 1 else response_text
+                if response_text.startswith("json"):
+                    response_text = response_text[4:]
+                response_text = response_text.strip()
+
+            # Try to find JSON in the response if it contains extra text
+            if not response_text.startswith("{"):
+                json_start = response_text.find("{")
+                json_end = response_text.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    response_text = response_text[json_start:json_end]
+
+            extracted = json.loads(response_text)
+
+            for key in fields:
+                if key in extracted and extracted[key] and str(extracted[key]).strip() and extracted[key] != "N/A":
+                    fields[key] = str(extracted[key]).strip()
+
+            print(f"[GEMINI] Extracted: {fields}")
+            return fields
+
+        except json.JSONDecodeError as e:
+            print(f"[GEMINI] JSON parse error with {model_name}: {e}")
+            print(f"[GEMINI] Response text was: {response_text[:500] if 'response_text' in dir() else 'N/A'}")
+            last_error = e
+            continue
+        except Exception as e:
+            print(f"[GEMINI] Error with {model_name}: {e}")
+            traceback.print_exc()
+            last_error = e
+            continue
+
+    print(f"[GEMINI] All models failed. Last error: {last_error}")
+    return fields
 
 
 # --- CONTACT LOGIC ---
