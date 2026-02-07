@@ -1,8 +1,10 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "version": 2,
-    "name": "event-scout",
     "public": true,
+    "framework": null,
+    "buildCommand": "",
+    "outputDirectory": ".",
     "rewrites": [
         { "source": "/", "destination": "/mobile-frontend.html" }
     ],

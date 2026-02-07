@@ -518,8 +518,10 @@
     <script>
         // ==================== CONFIGURATION ====================
         const CONFIG = {
-            API_BASE_URL: 'http://localhost:8000', // UPDATE FOR PRODUCTION
-            API_KEY: 'OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s' // UPDATE FOR PRODUCTION
+            API_BASE_URL: window.location.hostname === 'localhost'
+                ? 'http://localhost:8000'
+                : 'https://event-scout-production.up.railway.app',
+            API_KEY: 'OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s'
         };
 
         // ==================== STATE MANAGEMENT ====================
