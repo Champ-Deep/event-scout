@@ -7,3 +7,10 @@ node_modules/
 
 # Environment variables (contains secrets)
 .env
+
+# OS and log files
+.DS_Store
+server.log
+
+# Claude settings (local only)
+.claude/settings.local.json

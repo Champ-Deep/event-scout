@@ -2,7 +2,7 @@ services:
   contact-assistant:
     build: .
     image: contact-assistant:latest
-    container_name: contact-assistant-api
+    # container_name: contact-assistant-api
     ports:
       - "8000:8000"
     env_file:

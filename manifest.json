@@ -1,0 +1,18 @@
+{
+    "name": "Event Scout",
+    "short_name": "EventScout",
+    "description": "Scout your way to better connections. Contact management for events.",
+    "start_url": "/mobile-frontend.html",
+    "display": "standalone",
+    "background_color": "#F5A623",
+    "theme_color": "#F5A623",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "Circle Scout Mascot.jpeg",
+            "sizes": "1024x1024",
+            "type": "image/jpeg"
+        }
+    ],
+    "categories": ["business", "productivity"]
+}
