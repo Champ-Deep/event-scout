@@ -1072,9 +1072,10 @@
                 try {
                     const formData = new FormData();
                     formData.append('file', blob, 'business-card.jpg');
-                    formData.append('user_id', AppState.currentUser.user_id);
 
-                    const response = await fetch(`${CONFIG.API_BASE_URL}/add_contact_from_image/`, {
+                    // user_id must be a URL query parameter (not FormData)
+                    const url = `${CONFIG.API_BASE_URL}/add_contact_from_image/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`;
+                    const response = await fetch(url, {
                         method: 'POST',
                         headers: { 'X-API-Key': CONFIG.API_KEY },
                         body: formData
@@ -1091,25 +1092,24 @@
                         const fields = data.extracted_fields || {};
                         const name = fields.name || 'Unknown';
 
-                        // Switch to contacts screen and refresh
-                        document.querySelectorAll('.nav-btn').forEach(btn => {
-                            btn.classList.remove('active', 'text-blue-600');
-                            btn.classList.add('text-gray-600');
-                        });
-                        document.querySelectorAll('.content-screen').forEach(s => s.classList.add('hidden'));
-                        document.getElementById('contactsScreen').classList.remove('hidden');
-                        AppState.activeScreen = 'contacts';
-
                         // Stop camera
                         if (cameraStream) {
                             cameraStream.getTracks().forEach(track => track.stop());
                             cameraStream = null;
                         }
 
+                        switchScreen('contacts');
                         loadContacts();
                         showToast(`✓ ${name} added from business card!`, 'success');
                     } else {
-                        showToast(data.detail || data.message || 'Failed to extract contact info', 'error');
+                        // Safely extract error message (data.detail can be an object)
+                        let errMsg = 'Failed to extract contact info';
+                        if (data.detail) {
+                            errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+                        } else if (data.message) {
+                            errMsg = data.message;
+                        }
+                        showToast(errMsg, 'error');
                     }
                 } catch (error) {
                     document.getElementById('processingOverlay').classList.add('hidden');
@@ -1135,9 +1135,10 @@
             try {
                 const formData = new FormData();
                 formData.append('file', file);
-                formData.append('user_id', AppState.currentUser.user_id);
 
-                const response = await fetch(`${CONFIG.API_BASE_URL}/add_contact_from_image/`, {
+                // user_id must be a URL query parameter (not FormData)
+                const url = `${CONFIG.API_BASE_URL}/add_contact_from_image/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`;
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY },
                     body: formData
@@ -1154,25 +1155,23 @@
                     const fields = data.extracted_fields || {};
                     const name = fields.name || 'Unknown';
 
-                    // Switch to contacts screen and refresh
-                    document.querySelectorAll('.nav-btn').forEach(btn => {
-                        btn.classList.remove('active', 'text-blue-600');
-                        btn.classList.add('text-gray-600');
-                    });
-                    document.querySelectorAll('.content-screen').forEach(s => s.classList.add('hidden'));
-                    document.getElementById('contactsScreen').classList.remove('hidden');
-                    AppState.activeScreen = 'contacts';
-
                     // Stop camera
                     if (cameraStream) {
                         cameraStream.getTracks().forEach(track => track.stop());
                         cameraStream = null;
                     }
 
+                    switchScreen('contacts');
                     loadContacts();
                     showToast(`✓ ${name} added from business card!`, 'success');
                 } else {
-                    showToast(data.detail || data.message || 'Failed to extract contact info', 'error');
+                    let errMsg = 'Failed to extract contact info';
+                    if (data.detail) {
+                        errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+                    } else if (data.message) {
+                        errMsg = data.message;
+                    }
+                    showToast(errMsg, 'error');
                 }
             } catch (error) {
                 document.getElementById('processingOverlay').classList.add('hidden');
