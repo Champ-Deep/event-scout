@@ -104,6 +104,8 @@ class Contact(BaseModel):
     phone: str
     linkedin: str
     company_name: str = "N/A"
+    notes: str = ""
+    links: List[Dict[str, str]] = []  # [{url, label, added_by}]
 
 
 class SearchQuery(BaseModel):
@@ -124,6 +126,8 @@ class ContactUpdate(BaseModel):
     phone: Optional[str] = None
     linkedin: Optional[str] = None
     company_name: Optional[str] = None
+    notes: Optional[str] = None
+    links: Optional[List[Dict[str, str]]] = None
 
 
 class UserRegister(BaseModel):
@@ -671,14 +675,18 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
 
 
 # --- CONTACT LOGIC ---
-def add_contact_logic(contact: Contact, user_id: str):
+def add_contact_logic(contact: Contact, user_id: str, source: str = "manual"):
     """Add contact to user-specific FAISS index and auto-generate QR code."""
     faiss_mgr = get_user_faiss_manager(user_id)
     contact_id = str(uuid.uuid4())
     summary = f"{contact.name}, {contact.email}, {contact.phone}, {contact.linkedin}, {contact.company_name}"
+    if contact.notes:
+        summary += f", {contact.notes}"
     metadata = contact.model_dump()
     metadata["summary"] = summary
     metadata["id"] = contact_id
+    metadata["source"] = source
+    metadata["created_at"] = str(uuid.uuid1().time)
 
     qr_result = create_qr(contact, contact_id)
     metadata["qr_path"] = qr_result["qr_path"]
@@ -704,7 +712,7 @@ async def add_contact_from_qr(file: UploadFile, user_id: str):
 
         fields = parse_vcard(qr_data)
         contact_obj = Contact(**fields)
-        result = add_contact_logic(contact_obj, user_id)
+        result = add_contact_logic(contact_obj, user_id, source="qr")
 
         return {
             "status": "success",
@@ -731,7 +739,7 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
             raise HTTPException(status_code=400, detail="No contact information found in image")
 
         contact_obj = Contact(**fields)
-        result = add_contact_logic(contact_obj, user_id)
+        result = add_contact_logic(contact_obj, user_id, source="scan")
 
         return {
             "status": "success",
@@ -904,6 +912,10 @@ async def list_contacts_route(
                 "phone": meta.get("phone", "N/A"),
                 "linkedin": meta.get("linkedin", "N/A"),
                 "company_name": meta.get("company_name", "N/A"),
+                "notes": meta.get("notes", ""),
+                "links": meta.get("links", []),
+                "source": meta.get("source", "manual"),
+                "created_at": meta.get("created_at", ""),
                 "qr_base64": None
             }
 
@@ -945,6 +957,10 @@ async def get_contact_route(
                     "phone": meta.get("phone", "N/A"),
                     "linkedin": meta.get("linkedin", "N/A"),
                     "company_name": meta.get("company_name", "N/A"),
+                    "notes": meta.get("notes", ""),
+                    "links": meta.get("links", []),
+                    "source": meta.get("source", "manual"),
+                    "created_at": meta.get("created_at", ""),
                     "qr_base64": get_qr_base64(contact_id)
                 }
                 return {"status": "success", "contact": contact_data}
@@ -1019,6 +1035,8 @@ async def update_contact_route(
                 current_meta[field] = value
 
         new_summary = f"{current_meta.get('name', 'N/A')}, {current_meta.get('email', 'N/A')}, {current_meta.get('phone', 'N/A')}, {current_meta.get('linkedin', 'N/A')}, {current_meta.get('company_name', 'N/A')}"
+        if current_meta.get("notes"):
+            new_summary += f", {current_meta['notes']}"
         current_meta["summary"] = new_summary
 
         updated_contact = Contact(
@@ -1026,7 +1044,9 @@ async def update_contact_route(
             email=current_meta.get("email", "N/A"),
             phone=current_meta.get("phone", "N/A"),
             linkedin=current_meta.get("linkedin", "N/A"),
-            company_name=current_meta.get("company_name", "N/A")
+            company_name=current_meta.get("company_name", "N/A"),
+            notes=current_meta.get("notes", ""),
+            links=current_meta.get("links", [])
         )
 
         old_qr_path = os.path.join(QR_DIR, f"qr_{contact_id}.png")
@@ -1049,6 +1069,8 @@ async def update_contact_route(
                     "phone": current_meta.get("phone", "N/A"),
                     "linkedin": current_meta.get("linkedin", "N/A"),
                     "company_name": current_meta.get("company_name", "N/A"),
+                    "notes": current_meta.get("notes", ""),
+                    "links": current_meta.get("links", []),
                     "qr_base64": qr_result["qr_base64"]
                 }
             }
@@ -1095,6 +1117,145 @@ async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Conversation error: {str(e)}")
+
+
+@app.get("/export_contacts/")
+async def export_contacts_route(
+    user_id: str = Query(..., description="User ID"),
+    format: str = Query("csv", description="Export format: csv or json"),
+    api_key: str = Depends(verify_api_key)
+):
+    """Export all contacts for a user as CSV or JSON."""
+    import csv
+    from io import StringIO
+    from fastapi.responses import StreamingResponse
+
+    try:
+        faiss_mgr = get_user_faiss_manager(user_id)
+
+        if format == "json":
+            contacts = []
+            for meta in faiss_mgr.doc_metadata:
+                contacts.append({
+                    "name": meta.get("name", "N/A"),
+                    "email": meta.get("email", "N/A"),
+                    "phone": meta.get("phone", "N/A"),
+                    "linkedin": meta.get("linkedin", "N/A"),
+                    "company_name": meta.get("company_name", "N/A"),
+                    "notes": meta.get("notes", ""),
+                    "links": meta.get("links", []),
+                    "source": meta.get("source", "manual"),
+                })
+            return {"status": "success", "total": len(contacts), "contacts": contacts}
+
+        # CSV export
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Name", "Email", "Phone", "LinkedIn", "Company", "Notes", "Source"])
+
+        for meta in faiss_mgr.doc_metadata:
+            writer.writerow([
+                meta.get("name", "N/A"),
+                meta.get("email", "N/A"),
+                meta.get("phone", "N/A"),
+                meta.get("linkedin", "N/A"),
+                meta.get("company_name", "N/A"),
+                meta.get("notes", ""),
+                meta.get("source", "manual"),
+            ])
+
+        output.seek(0)
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=event_scout_contacts.csv"}
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class EnrichRequest(BaseModel):
+    notes_append: Optional[str] = None
+    links: Optional[List[Dict[str, str]]] = None  # [{url, label}]
+
+
+@app.post("/contact/{contact_id}/enrich")
+async def enrich_contact_route(
+    contact_id: str,
+    enrich_data: EnrichRequest,
+    user_id: str = Query(None, description="User ID (optional, searches all users)"),
+    api_key: str = Depends(verify_api_key)
+):
+    """Enrich a contact with additional data (used by n8n webhooks).
+    Appends notes and links without overwriting existing data."""
+    try:
+        # Find the contact across all users if user_id not provided
+        target_user_id = user_id
+        target_faiss_mgr = None
+        target_idx = -1
+
+        if target_user_id:
+            target_faiss_mgr = get_user_faiss_manager(target_user_id)
+            target_idx = target_faiss_mgr.find_index_by_id(contact_id)
+        else:
+            # Search across all users
+            users = user_manager._load_users()
+            for uid in users:
+                try:
+                    mgr = get_user_faiss_manager(uid)
+                    idx = mgr.find_index_by_id(contact_id)
+                    if idx != -1:
+                        target_faiss_mgr = mgr
+                        target_idx = idx
+                        target_user_id = uid
+                        break
+                except Exception:
+                    continue
+
+        if target_idx == -1 or not target_faiss_mgr:
+            raise HTTPException(status_code=404, detail="Contact not found")
+
+        current_meta = target_faiss_mgr.doc_metadata[target_idx].copy()
+
+        # Append notes (don't overwrite)
+        if enrich_data.notes_append:
+            existing_notes = current_meta.get("notes", "")
+            if existing_notes:
+                current_meta["notes"] = f"{existing_notes}\n\n---\n{enrich_data.notes_append}"
+            else:
+                current_meta["notes"] = enrich_data.notes_append
+
+        # Append links
+        if enrich_data.links:
+            existing_links = current_meta.get("links", [])
+            for link in enrich_data.links:
+                link["added_by"] = link.get("added_by", "n8n")
+                existing_links.append(link)
+            current_meta["links"] = existing_links
+
+        # Update summary and FAISS
+        new_summary = f"{current_meta.get('name', 'N/A')}, {current_meta.get('email', 'N/A')}, {current_meta.get('phone', 'N/A')}, {current_meta.get('linkedin', 'N/A')}, {current_meta.get('company_name', 'N/A')}"
+        if current_meta.get("notes"):
+            new_summary += f", {current_meta['notes'][:200]}"
+        current_meta["summary"] = new_summary
+
+        target_faiss_mgr.update_document(contact_id, new_summary, current_meta)
+
+        return {
+            "status": "success",
+            "message": "Contact enriched successfully",
+            "contact_id": contact_id,
+            "notes": current_meta.get("notes", ""),
+            "links": current_meta.get("links", [])
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
