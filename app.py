@@ -27,14 +27,25 @@ from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import (
-    UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB,
+    UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB,
     get_engine, get_session_factory, init_db, ASYNC_DATABASE_URL
 )
+
+import httpx
 
 # --- CONFIG ---
 APP_API_KEY = os.environ.get("APP_API_KEY", "1234")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "")  # n8n webhook endpoint
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+ADMIN_EMAILS = [e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "deep@lakeb2b.com").split(",") if e.strip()]
+
+# Available AI models for chat (all via OpenRouter)
+AVAILABLE_MODELS = {
+    "claude-opus": {"id": "anthropic/claude-opus-4", "name": "Claude Opus 4.6", "provider": "Anthropic"},
+    "gpt-5": {"id": "openai/gpt-4.1", "name": "GPT-5.2", "provider": "OpenAI"},
+    "gemini-pro": {"id": "google/gemini-2.5-pro-preview-06-05", "name": "Gemini 2.5 Pro", "provider": "Google"},
+}
 
 BASE_DIR = os.getcwd()
 TEMP_DIR = os.path.join(BASE_DIR, "temp_images")
@@ -127,6 +138,7 @@ class UserProfileUpdate(BaseModel):
     current_event_name: Optional[str] = None
     current_event_description: Optional[str] = None
     event_goals: Optional[List[str]] = None
+    preferred_ai_model: Optional[str] = None  # claude-opus, gpt-5, gemini-pro
 
 
 class LeadScoreResult(BaseModel):
@@ -143,11 +155,30 @@ class EnrichRequest(BaseModel):
     links: Optional[List[Dict[str, str]]] = None
 
 
+class AudioNoteRequest(BaseModel):
+    contact_id: str
+    audio_base64: Optional[str] = None
+    transcript: Optional[str] = None
+
+
 # --- AUTH ---
 def verify_api_key(x_api_key: str = Header(None)):
     if x_api_key != APP_API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
     return x_api_key
+
+
+async def verify_admin(user_id: str = Query(...), api_key: str = Depends(verify_api_key)):
+    """Verify that the requesting user is an admin."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(select(UserDB).where(UserDB.id == uuid.UUID(user_id)))
+        user = result.scalar_one_or_none()
+        if not user or not user.is_admin:
+            raise HTTPException(status_code=403, detail="Admin access required")
+        return user_id
+    finally:
+        await session.close()
 
 
 # --- PASSWORD HASHING ---
@@ -292,28 +323,43 @@ class FAISSIndex:
 faiss_index = FAISSIndex()
 
 
-# --- GEMINI CONVERSATIONAL ENGINE ---
-class GeminiConversationEngine:
+# --- INTELLIGENCE ENGINE (Multi-Provider AI Chat) ---
+class IntelligenceEngine:
+    """Multi-provider AI engine. Routes chat through OpenRouter (Claude/GPT/Gemini).
+    Falls back to direct Gemini API if OpenRouter is not configured.
+    OCR and lead scoring always use Gemini directly (unchanged)."""
+
     def __init__(self):
-        self.model_name = "gemini-2.5-flash"
+        self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.gemini_model = "gemini-2.5-flash"
 
-    def _build_system_prompt(self, user_profile: dict = None) -> str:
-        base_prompt = """You are an intelligent Event Scout Assistant — an AI-powered partner for professionals at trade shows, conferences, and networking events. Your role is to help users find contacts, prioritize leads, suggest pitch angles, and provide strategic advice.
+    def _build_system_prompt(self, user_profile: dict = None, exhibitors: list = None) -> str:
+        base_prompt = """You are Event Scout AI — a strategic event intelligence partner. You don't just retrieve contacts, you help the user WIN at this event. You think like a sales strategist, relationship builder, and event tactician.
 
-When answering questions:
-1. Use the provided contact information from the database to answer queries
-2. Be helpful, strategic, and concise
-3. If no relevant contacts are found, politely inform the user
-4. If the query is ambiguous, ask clarifying questions
-5. Format contact details clearly when presenting them
-6. You can help with: finding contacts, prioritizing leads, suggesting pitch angles, recommending who to follow up with, summarizing contacts by industry/role, and answering questions about people the user has met
-7. When suggesting actions, be specific — reference actual contact data and user context
-8. If contacts have lead scores, use them to prioritize recommendations
+YOUR CAPABILITIES:
+1. CONTACT INTELLIGENCE: Analyze who the user has met and provide strategic context
+2. PITCH GENERATION: Create tailored pitch angles using the user's products/value props
+3. LEAD PRIORITIZATION: Rank contacts by strategic value, not just score numbers
+4. RELATIONSHIP MAPPING: Identify connections between contacts (same company, industry, role)
+5. ACTION PLANNING: Give specific next-step advice (e.g. "Visit booth X to meet Y because Z")
+6. BRIEFINGS: Prepare the user before meetings with key talking points
+7. EXHIBITOR INTELLIGENCE: Recommend which exhibitors to visit based on the user's goals
 
-Important: Only use information from the provided contact context. Do not make up contact details."""
+RESPONSE STYLE:
+- Be strategic and direct, like a trusted advisor at the event
+- Lead with the most important insight
+- Use the user's own language (their products, value props, pitch style)
+- Give SPECIFIC actions, not vague advice
+- Reference actual contacts and data, never make things up
+- When asked "who should I prioritize?", give a ranked list with clear reasoning tied to their goals
+- When asked about pitch angles, tailor to the specific contact's company/role/industry
+- Format responses with clear headers and bullet points for easy mobile reading
+- Keep responses concise but actionable — the user is at an event and needs quick answers
+
+Important: Only use information from the provided contact/exhibitor context. Do not make up contact details or exhibitor info."""
 
         if user_profile and any(user_profile.values()):
-            profile_context = "\n\nUSER CONTEXT (use this to personalize your advice):"
+            profile_context = "\n\nUSER CONTEXT (use this to deeply personalize ALL advice):"
             if user_profile.get("full_name"):
                 profile_context += f"\n- User: {user_profile['full_name']}"
             if user_profile.get("job_title"):
@@ -321,104 +367,212 @@ Important: Only use information from the provided contact context. Do not make u
             if user_profile.get("company_name"):
                 profile_context += f"\n- Company: {user_profile['company_name']}"
             if user_profile.get("products"):
-                products_str = ", ".join(p.get("name", "") for p in user_profile["products"] if p.get("name"))
-                if products_str:
-                    profile_context += f"\n- Products/Services: {products_str}"
+                for i, p in enumerate(user_profile["products"], 1):
+                    profile_context += f"\n- Product {i}: {p.get('name', '')} — {p.get('description', '')}"
+                    if p.get("ideal_customer"):
+                        profile_context += f" (Ideal customer: {p['ideal_customer']})"
             if user_profile.get("target_industries"):
                 profile_context += f"\n- Target Industries: {', '.join(user_profile['target_industries'])}"
             if user_profile.get("target_roles"):
                 profile_context += f"\n- Target Roles: {', '.join(user_profile['target_roles'])}"
+            if user_profile.get("target_company_sizes"):
+                profile_context += f"\n- Target Company Sizes: {', '.join(user_profile['target_company_sizes'])}"
             if user_profile.get("value_propositions"):
-                profile_context += f"\n- Value Propositions: {'; '.join(user_profile['value_propositions'])}"
+                profile_context += f"\n- Value Propositions:"
+                for vp in user_profile["value_propositions"]:
+                    profile_context += f"\n  * {vp}"
             if user_profile.get("pitch_style"):
-                profile_context += f"\n- Pitch Style: {user_profile['pitch_style']}"
+                styles = {
+                    "consultative": "Consultative (discover needs first, ask questions, position as partner)",
+                    "direct": "Direct (lead with solution and ROI, get to the point fast)",
+                    "challenger": "Challenger (reframe their thinking, share insights they haven't considered)",
+                    "relationship": "Relationship (build trust first, find common ground, long-term play)",
+                }
+                profile_context += f"\n- Pitch Style: {styles.get(user_profile['pitch_style'], user_profile['pitch_style'])}"
             if user_profile.get("current_event_name"):
                 profile_context += f"\n- Current Event: {user_profile['current_event_name']}"
             if user_profile.get("current_event_description"):
                 profile_context += f"\n- Event Details: {user_profile['current_event_description']}"
             if user_profile.get("event_goals"):
-                profile_context += f"\n- Event Goals: {', '.join(user_profile['event_goals'])}"
+                profile_context += f"\n- Event Goals:"
+                for goal in user_profile["event_goals"]:
+                    profile_context += f"\n  * {goal}"
 
-            profile_context += "\n\nUse this context to tailor your responses. When suggesting who to prioritize, consider alignment with the user's products, target market, and event goals. When suggesting pitch angles, reference the user's value propositions and pitch style."
+            profile_context += "\n\nCRITICAL: Use ALL of the above context when giving advice. Every pitch suggestion must reference the user's actual products and value props. Every prioritization must consider their target market. Every briefing must connect to their event goals."
             base_prompt += profile_context
+
+        if exhibitors:
+            exhibitor_context = f"\n\nEXHIBITOR DATA ({len(exhibitors)} exhibitors at the event):"
+            for ex in exhibitors[:30]:  # Limit to 30 to keep prompt manageable
+                ex_line = f"\n- {ex['name']}"
+                if ex.get('booth'):
+                    ex_line += f" (Booth: {ex['booth']}"
+                    if ex.get('hall'):
+                        ex_line += f", Hall: {ex['hall']}"
+                    ex_line += ")"
+                if ex.get('category'):
+                    ex_line += f" — {ex['category']}"
+                if ex.get('country'):
+                    ex_line += f" [{ex['country']}]"
+                if ex.get('description'):
+                    ex_line += f" | {ex['description'][:100]}"
+                exhibitor_context += ex_line
+            base_prompt += exhibitor_context
 
         return base_prompt
 
-    def _build_context_from_contacts(self, contacts: List[tuple]) -> str:
-        if not contacts:
+    def _build_context_from_contacts(self, contacts: List[tuple], all_contacts: list = None) -> str:
+        if not contacts and not all_contacts:
             return "No contacts found in the database matching your query."
 
-        context_parts = ["Here are the relevant contacts from your database:\n"]
-        for i, (text, meta) in enumerate(contacts, 1):
-            contact_info = f"""
-Contact {i}:
-- Name: {meta.get('name', 'N/A')}
-- Email: {meta.get('email', 'N/A')}
-- Phone: {meta.get('phone', 'N/A')}
-- LinkedIn: {meta.get('linkedin', 'N/A')}
-- Company: {meta.get('company_name', 'N/A')}"""
-            if meta.get('notes'):
-                contact_info += f"\n- Notes: {meta['notes']}"
-            if meta.get('lead_score') is not None:
-                contact_info += f"\n- Lead Score: {meta['lead_score']}/100 ({meta.get('lead_temperature', 'unscored')})"
-            if meta.get('lead_score_reasoning'):
-                contact_info += f"\n- Score Reasoning: {meta['lead_score_reasoning']}"
-            context_parts.append(contact_info)
+        context_parts = []
+
+        if contacts:
+            context_parts.append(f"RELEVANT CONTACTS (semantic match for your query, {len(contacts)} results):\n")
+            for i, (text, meta) in enumerate(contacts, 1):
+                contact_info = f"Contact {i}: {meta.get('name', 'N/A')}"
+                contact_info += f" | Company: {meta.get('company_name', 'N/A')}"
+                contact_info += f" | Email: {meta.get('email', 'N/A')}"
+                contact_info += f" | Phone: {meta.get('phone', 'N/A')}"
+                if meta.get('linkedin') and meta['linkedin'] != 'N/A':
+                    contact_info += f" | LinkedIn: {meta['linkedin']}"
+                if meta.get('notes'):
+                    contact_info += f" | Notes: {meta['notes'][:300]}"
+                if meta.get('lead_score') is not None:
+                    contact_info += f" | Score: {meta['lead_score']}/100 ({meta.get('lead_temperature', 'unscored')})"
+                if meta.get('lead_score_reasoning'):
+                    contact_info += f" | Reasoning: {meta['lead_score_reasoning']}"
+                if meta.get('lead_recommended_actions'):
+                    actions = meta['lead_recommended_actions']
+                    if isinstance(actions, list) and actions:
+                        contact_info += f" | Actions: {'; '.join(actions[:3])}"
+                context_parts.append(contact_info)
+
+        if all_contacts and len(all_contacts) > len(contacts or []):
+            context_parts.append(f"\nALL CONTACTS SUMMARY ({len(all_contacts)} total):")
+            for c in all_contacts:
+                summary = f"- {c.get('name', 'N/A')} at {c.get('company_name', 'N/A')}"
+                if c.get('lead_score') is not None:
+                    summary += f" (Score: {c['lead_score']}, {c.get('lead_temperature', '?')})"
+                context_parts.append(summary)
+
         return "\n".join(context_parts)
 
-    def _build_conversation_history(self, history: Optional[List[Dict[str, str]]]) -> List[Dict]:
-        if not history:
-            return []
-        gemini_history = []
-        for msg in history:
-            role = "user" if msg.get("role") == "user" else "model"
-            gemini_history.append({"role": role, "parts": [msg.get("content", "")]})
-        return gemini_history
+    async def _call_openrouter(self, system_prompt: str, contact_context: str,
+                                query: str, history: list = None, model_id: str = None) -> str:
+        """Call OpenRouter API with the specified model."""
+        if not model_id:
+            model_id = AVAILABLE_MODELS["claude-opus"]["id"]
+
+        messages = [{"role": "system", "content": system_prompt}]
+        if history:
+            for msg in history:
+                role = msg.get("role", "user")
+                if role not in ("user", "assistant"):
+                    role = "user"
+                messages.append({"role": role, "content": msg.get("content", "")})
+
+        user_message = query
+        if contact_context:
+            user_message = f"{contact_context}\n\n---\nUser Query: {query}"
+        messages.append({"role": "user", "content": user_message})
+
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.post(
+                    self.openrouter_url,
+                    headers={
+                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://event-scout-delta.vercel.app",
+                        "X-Title": "Event Scout",
+                    },
+                    json={
+                        "model": model_id,
+                        "messages": messages,
+                        "max_tokens": 2000,
+                        "temperature": 0.7,
+                    },
+                )
+                data = resp.json()
+                if "choices" in data and data["choices"]:
+                    return data["choices"][0]["message"]["content"]
+                elif "error" in data:
+                    error_msg = data["error"].get("message", str(data["error"]))
+                    print(f"[OPENROUTER] API error: {error_msg}")
+                    raise Exception(f"OpenRouter error: {error_msg}")
+                else:
+                    raise Exception(f"Unexpected OpenRouter response: {data}")
+        except httpx.TimeoutException:
+            print("[OPENROUTER] Request timed out")
+            raise Exception("AI response timed out. Please try again.")
+
+    def _call_gemini_direct(self, system_prompt: str, contact_context: str,
+                             query: str, history: list = None) -> str:
+        """Fallback: call Gemini directly when OpenRouter is not available."""
+        if not GEMINI_API_KEY or not gemini_configured:
+            return "AI not configured. Please set up OpenRouter API key in settings."
+
+        try:
+            model = genai.GenerativeModel(
+                model_name=self.gemini_model,
+                system_instruction=system_prompt
+            )
+            full_prompt = f"{contact_context}\n\nUser Query: {query}"
+
+            if history:
+                gemini_history = []
+                for msg in history:
+                    role = "user" if msg.get("role") == "user" else "model"
+                    gemini_history.append({"role": role, "parts": [msg.get("content", "")]})
+                chat = model.start_chat(history=gemini_history)
+                response = chat.send_message(full_prompt)
+            else:
+                response = model.generate_content(full_prompt)
+            return response.text
+        except Exception as e:
+            print(f"[GEMINI] Direct API error: {e}")
+            traceback.print_exc()
+            return f"AI temporarily unavailable. Error: {str(e)}"
 
     def _generate_fallback_response(self, query: str, retrieved_contacts: List[tuple]) -> str:
         if not retrieved_contacts:
             return f"No contacts found matching your query: '{query}'. Try adding some contacts first."
         response_parts = [f"Found {len(retrieved_contacts)} contact(s):\n"]
         for i, (text, meta) in enumerate(retrieved_contacts, 1):
-            response_parts.append(f"""
-**{i}. {meta.get('name', 'N/A')}**
-- Email: {meta.get('email', 'N/A')}
-- Phone: {meta.get('phone', 'N/A')}
-- LinkedIn: {meta.get('linkedin', 'N/A')}
-- Company: {meta.get('company_name', 'N/A')}
-""")
+            response_parts.append(f"**{i}. {meta.get('name', 'N/A')}** — {meta.get('company_name', 'N/A')}\n"
+                                  f"- Email: {meta.get('email', 'N/A')} | Phone: {meta.get('phone', 'N/A')}")
         return "\n".join(response_parts)
 
-    def generate_response(self, query, retrieved_contacts, conversation_history=None, user_profile=None):
-        if not GEMINI_API_KEY or not gemini_configured:
-            return self._generate_fallback_response(query, retrieved_contacts)
-        try:
-            model = genai.GenerativeModel(
-                model_name=self.model_name,
-                system_instruction=self._build_system_prompt(user_profile)
-            )
-            contact_context = self._build_context_from_contacts(retrieved_contacts)
-            full_prompt = f"""Based on the following contact information from the database:
+    async def generate_response(self, query: str, retrieved_contacts: List[tuple],
+                                 conversation_history: list = None, user_profile: dict = None,
+                                 all_contacts: list = None, exhibitors: list = None) -> str:
+        """Generate AI response using OpenRouter (primary) or Gemini (fallback)."""
+        system_prompt = self._build_system_prompt(user_profile, exhibitors)
+        contact_context = self._build_context_from_contacts(retrieved_contacts, all_contacts)
 
-{contact_context}
+        # Get user's preferred model
+        model_key = (user_profile or {}).get("preferred_ai_model", "claude-opus")
+        model_info = AVAILABLE_MODELS.get(model_key, AVAILABLE_MODELS["claude-opus"])
+        model_id = model_info["id"]
 
-User Query: {query}
+        if OPENROUTER_API_KEY:
+            try:
+                result = await self._call_openrouter(
+                    system_prompt, contact_context, query,
+                    conversation_history, model_id
+                )
+                return result
+            except Exception as e:
+                print(f"[AI] OpenRouter failed ({model_info['name']}): {e}")
+                # Try Gemini as fallback
+                print("[AI] Falling back to direct Gemini...")
+                return self._call_gemini_direct(system_prompt, contact_context, query, conversation_history)
+        else:
+            return self._call_gemini_direct(system_prompt, contact_context, query, conversation_history)
 
-Please provide a helpful, conversational response to the user's query using the contact information above."""
 
-            if conversation_history:
-                chat = model.start_chat(history=self._build_conversation_history(conversation_history))
-                response = chat.send_message(full_prompt)
-            else:
-                response = model.generate_content(full_prompt)
-            return response.text
-        except Exception as e:
-            print(f"[GEMINI] API error: {e}")
-            traceback.print_exc()
-            return self._generate_fallback_response(query, retrieved_contacts)
-
-
-gemini_engine = GeminiConversationEngine()
+intelligence_engine = IntelligenceEngine()
 
 
 # --- QR GENERATOR ---
@@ -606,8 +760,6 @@ async def fire_webhook(contact_data: dict, user_data: dict, contact_id: str):
     if not WEBHOOK_URL:
         return
 
-    import httpx
-
     payload = {
         "event": "contact_scanned",
         "contact_id": contact_id,
@@ -703,7 +855,7 @@ async def add_contact_logic(contact: Contact, user_id: str, source: str = "manua
 
         # Fire webhook in background (don't block)
         if WEBHOOK_URL:
-            import asyncio
+            import asyncio  # noqa: local import for task creation
             # Get user data for webhook
             user_result = await session.execute(select(UserDB).where(UserDB.id == uuid.UUID(user_id)))
             user_row = user_result.scalar_one_or_none()
@@ -875,9 +1027,11 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 @app.on_event("startup")
 async def startup_event():
     print("=" * 50)
-    print("[STARTUP] Contact Assistant API Starting...")
+    print("[STARTUP] Event Scout Intelligence API v3.1 Starting...")
     print(f"[STARTUP] Database URL configured: {bool(ASYNC_DATABASE_URL)}")
-    print(f"[STARTUP] Gemini configured: {gemini_configured}")
+    print(f"[STARTUP] Gemini configured: {gemini_configured} (OCR/scoring)")
+    print(f"[STARTUP] OpenRouter configured: {bool(OPENROUTER_API_KEY)} (AI chat)")
+    print(f"[STARTUP] Available models: {', '.join(m['name'] for m in AVAILABLE_MODELS.values())}")
     print(f"[STARTUP] Webhook URL: {WEBHOOK_URL or 'not set'}")
     print("=" * 50)
 
@@ -934,7 +1088,7 @@ async def startup_event():
 
 @app.get("/")
 async def root():
-    return {"message": "Contact Assistant API - Multi-User (PostgreSQL)", "version": "3.0.0"}
+    return {"message": "Event Scout Intelligence API", "version": "3.1.0"}
 
 
 @app.get("/health/")
@@ -948,7 +1102,9 @@ async def health_check():
             "database": "postgresql",
             "total_users": total_users,
             "gemini_configured": gemini_configured,
+            "openrouter_configured": bool(OPENROUTER_API_KEY),
             "webhook_configured": bool(WEBHOOK_URL),
+            "version": "3.1.0",
         }
     finally:
         await session.close()
@@ -965,11 +1121,13 @@ async def register_user(user: UserRegister):
             raise HTTPException(status_code=400, detail="Email already registered")
 
         user_id = uuid.uuid4()
+        is_admin = user.email.strip().lower() in ADMIN_EMAILS
         db_user = UserDB(
             id=user_id,
             name=user.name,
             email=user.email,
             password_hash=hash_password(user.password),
+            is_admin=is_admin,
         )
         session.add(db_user)
         await session.commit()
@@ -977,13 +1135,14 @@ async def register_user(user: UserRegister):
         # Initialize empty FAISS index for user
         faiss_index.build_for_user(str(user_id), [])
 
-        print(f"[USER] Created new user: {user.email} with ID: {user_id}")
+        print(f"[USER] Created new user: {user.email} with ID: {user_id} (admin={is_admin})")
         return {
             "status": "success",
             "message": "User registered successfully",
             "user_id": str(user_id),
             "name": user.name,
             "email": user.email,
+            "is_admin": is_admin,
         }
     except HTTPException:
         raise
@@ -1008,12 +1167,21 @@ async def login_user(credentials: UserLogin):
         if not verify_password(credentials.password, user.password_hash):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
+        # Auto-promote to admin if email is in ADMIN_EMAILS but not yet flagged
+        is_admin = user.is_admin
+        if not is_admin and user.email.strip().lower() in ADMIN_EMAILS:
+            user.is_admin = True
+            is_admin = True
+            await session.commit()
+            print(f"[ADMIN] Auto-promoted {user.email} to admin")
+
         return {
             "status": "success",
             "message": "Login successful",
             "user_id": str(user.id),
             "name": user.name,
             "email": user.email,
+            "is_admin": is_admin,
         }
     except HTTPException:
         raise
@@ -1295,27 +1463,63 @@ async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api
     try:
         retrieved_contacts = faiss_index.search(query.user_id, query.query, k=query.top_k or 4)
 
-        # Load user profile
         session = await get_db_session()
         try:
+            # Load user profile
             result = await session.execute(
                 select(UserProfileDB).where(UserProfileDB.user_id == uuid.UUID(query.user_id))
             )
             profile_row = result.scalar_one_or_none()
             user_profile = profile_row.profile_data if profile_row else {}
+
+            # Load all contacts summary for broader context
+            all_contacts_result = await session.execute(
+                select(ContactDB).where(ContactDB.user_id == uuid.UUID(query.user_id))
+            )
+            all_contacts_rows = all_contacts_result.scalars().all()
+            all_contacts = [
+                {
+                    "name": c.name, "company_name": c.company_name or "N/A",
+                    "lead_score": c.lead_score, "lead_temperature": c.lead_temperature,
+                }
+                for c in all_contacts_rows
+            ]
+
+            # Load exhibitors if query mentions event/exhibitor/booth/visit keywords
+            exhibitors = []
+            query_lower = query.query.lower()
+            exhibitor_keywords = ["exhibitor", "booth", "visit", "hall", "expo", "vendor", "stand", "floor"]
+            if any(kw in query_lower for kw in exhibitor_keywords):
+                ex_result = await session.execute(select(ExhibitorDB).limit(50))
+                ex_rows = ex_result.scalars().all()
+                exhibitors = [
+                    {
+                        "name": e.name, "booth": e.booth or "", "hall": e.hall or "",
+                        "category": e.category or "", "country": e.country or "",
+                        "description": e.description or "",
+                    }
+                    for e in ex_rows
+                ]
         finally:
             await session.close()
 
-        response_text = gemini_engine.generate_response(
+        # Get model info for response metadata
+        model_key = user_profile.get("preferred_ai_model", "claude-opus")
+        model_info = AVAILABLE_MODELS.get(model_key, AVAILABLE_MODELS["claude-opus"])
+
+        response_text = await intelligence_engine.generate_response(
             query=query.query,
             retrieved_contacts=retrieved_contacts,
             conversation_history=query.conversation_history,
             user_profile=user_profile,
+            all_contacts=all_contacts,
+            exhibitors=exhibitors,
         )
 
         return {
             "status": "success",
             "response": response_text,
+            "model": model_info["name"],
             "retrieved_contacts": [
                 {
                     "name": meta.get("name", "N/A"),
@@ -1754,6 +1958,389 @@ async def list_shared_contacts(
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         await session.close()
+
+
+# --- AI MODEL ENDPOINTS ---
+
+@app.get("/models/")
+async def list_models():
+    """Return available AI models for chat."""
+    return {
+        "status": "success",
+        "models": [
+            {"key": key, **info}
+            for key, info in AVAILABLE_MODELS.items()
+        ],
+        "openrouter_configured": bool(OPENROUTER_API_KEY),
+    }
+
+
+# --- EXHIBITOR ENDPOINTS ---
+
+class ExhibitorImport(BaseModel):
+    exhibitors: List[Dict[str, Any]]
+
+
+@app.post("/admin/import_exhibitors/")
+async def import_exhibitors_route(
+    data: ExhibitorImport,
+    api_key: str = Depends(verify_api_key),
+):
+    """Bulk import exhibitor data (admin endpoint)."""
+    session = await get_db_session()
+    try:
+        imported = 0
+        skipped = 0
+        for ex in data.exhibitors:
+            name = ex.get("name", "").strip()
+            if not name:
+                skipped += 1
+                continue
+
+            # Check if already exists
+            result = await session.execute(
+                select(ExhibitorDB).where(
+                    ExhibitorDB.name == name,
+                    ExhibitorDB.event_name == ex.get("event_name", "WHX Dubai 2026"),
+                )
+            )
+            if result.scalar_one_or_none():
+                skipped += 1
+                continue
+
+            db_ex = ExhibitorDB(
+                event_name=ex.get("event_name", "WHX Dubai 2026"),
+                name=name,
+                booth=ex.get("booth", ""),
+                hall=ex.get("hall", ""),
+                category=ex.get("category", ""),
+                subcategory=ex.get("subcategory", ""),
+                country=ex.get("country", ""),
+                website=ex.get("website", ""),
+                description=ex.get("description", ""),
+                products=ex.get("products", []),
+                tags=ex.get("tags", []),
+            )
+            session.add(db_ex)
+            imported += 1
+
+        await session.commit()
+        return {"status": "success", "imported": imported, "skipped": skipped}
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/exhibitors/")
+async def list_exhibitors_route(
+    event: str = Query("WHX Dubai 2026", description="Event name"),
+    category: str = Query("", description="Filter by category"),
+    search: str = Query("", description="Search exhibitor names"),
+    limit: int = Query(100, description="Max results"),
+    api_key: str = Depends(verify_api_key),
+):
+    """List exhibitors with optional filtering."""
+    session = await get_db_session()
+    try:
+        query = select(ExhibitorDB).where(ExhibitorDB.event_name == event)
+        if category:
+            query = query.where(ExhibitorDB.category.ilike(f"%{category}%"))
+        if search:
+            query = query.where(ExhibitorDB.name.ilike(f"%{search}%"))
+        query = query.order_by(ExhibitorDB.name).limit(limit)
+
+        result = await session.execute(query)
+        exhibitors = result.scalars().all()
+
+        return {
+            "status": "success",
+            "total": len(exhibitors),
+            "exhibitors": [
+                {
+                    "id": str(e.id),
+                    "name": e.name,
+                    "booth": e.booth or "",
+                    "hall": e.hall or "",
+                    "category": e.category or "",
+                    "subcategory": e.subcategory or "",
+                    "country": e.country or "",
+                    "website": e.website or "",
+                    "description": e.description or "",
+                    "products": e.products or [],
+                    "tags": e.tags or [],
+                }
+                for e in exhibitors
+            ],
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/exhibitors/categories/")
+async def list_exhibitor_categories(
+    event: str = Query("WHX Dubai 2026", description="Event name"),
+    api_key: str = Depends(verify_api_key),
+):
+    """List unique exhibitor categories for filtering."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ExhibitorDB.category).where(
+                ExhibitorDB.event_name == event,
+                ExhibitorDB.category != "",
+            ).distinct()
+        )
+        categories = sorted([row[0] for row in result.all()])
+        return {"status": "success", "categories": categories}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+# --- ADMIN ENDPOINTS ---
+
+@app.get("/admin/users")
+async def admin_list_users(admin_id: str = Depends(verify_admin)):
+    """List all users with their contact counts."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(select(UserDB))
+        users = result.scalars().all()
+
+        user_list = []
+        for u in users:
+            count_result = await session.execute(
+                select(func.count(ContactDB.id)).where(ContactDB.user_id == u.id)
+            )
+            contact_count = count_result.scalar() or 0
+            user_list.append({
+                "user_id": str(u.id),
+                "name": u.name,
+                "email": u.email,
+                "is_admin": u.is_admin,
+                "contact_count": contact_count,
+                "created_at": u.created_at.isoformat() if u.created_at else "",
+            })
+
+        return {"status": "success", "users": user_list, "total": len(user_list)}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/admin/contacts")
+async def admin_list_contacts(
+    admin_id: str = Depends(verify_admin),
+    filter_user: Optional[str] = Query(None, description="Filter by user_id"),
+    limit: int = Query(200, description="Max contacts"),
+):
+    """List all contacts across all users, optionally filtered."""
+    session = await get_db_session()
+    try:
+        query = select(ContactDB).order_by(ContactDB.created_at.desc()).limit(limit)
+        if filter_user:
+            query = query.where(ContactDB.user_id == uuid.UUID(filter_user))
+
+        result = await session.execute(query)
+        contacts = result.scalars().all()
+
+        # Get user names for display
+        user_ids = list(set(str(c.user_id) for c in contacts))
+        user_map = {}
+        if user_ids:
+            users_result = await session.execute(select(UserDB).where(UserDB.id.in_([uuid.UUID(uid) for uid in user_ids])))
+            for u in users_result.scalars().all():
+                user_map[str(u.id)] = u.name
+
+        return {
+            "status": "success",
+            "total": len(contacts),
+            "contacts": [
+                {
+                    "id": str(c.id),
+                    "user_id": str(c.user_id),
+                    "user_name": user_map.get(str(c.user_id), "Unknown"),
+                    "name": c.name, "email": c.email or "N/A",
+                    "phone": c.phone or "N/A", "company_name": c.company_name or "N/A",
+                    "lead_score": c.lead_score, "lead_temperature": c.lead_temperature,
+                    "source": c.source or "manual",
+                    "notes": (c.notes or "")[:100],
+                    "created_at": c.created_at.isoformat() if c.created_at else "",
+                }
+                for c in contacts
+            ],
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/admin/dashboard")
+async def admin_dashboard(admin_id: str = Depends(verify_admin)):
+    """Global admin dashboard with stats across all users."""
+    session = await get_db_session()
+    try:
+        # Total users
+        user_count = (await session.execute(select(func.count(UserDB.id)))).scalar() or 0
+
+        # Total contacts
+        contact_count = (await session.execute(select(func.count(ContactDB.id)))).scalar() or 0
+
+        # Temperature breakdown
+        hot = (await session.execute(
+            select(func.count(ContactDB.id)).where(ContactDB.lead_temperature == "hot")
+        )).scalar() or 0
+        warm = (await session.execute(
+            select(func.count(ContactDB.id)).where(ContactDB.lead_temperature == "warm")
+        )).scalar() or 0
+        cold = (await session.execute(
+            select(func.count(ContactDB.id)).where(ContactDB.lead_temperature == "cold")
+        )).scalar() or 0
+
+        # Per-user summary
+        users_result = await session.execute(select(UserDB))
+        users = users_result.scalars().all()
+        per_user = []
+        for u in users:
+            cnt = (await session.execute(
+                select(func.count(ContactDB.id)).where(ContactDB.user_id == u.id)
+            )).scalar() or 0
+            per_user.append({
+                "user_id": str(u.id), "name": u.name, "email": u.email,
+                "contact_count": cnt, "is_admin": u.is_admin,
+            })
+
+        # Recent 10 contacts
+        recent_result = await session.execute(
+            select(ContactDB).order_by(ContactDB.created_at.desc()).limit(10)
+        )
+        recent = recent_result.scalars().all()
+
+        # Map user names
+        user_map = {str(u.id): u.name for u in users}
+
+        return {
+            "status": "success",
+            "total_users": user_count,
+            "total_contacts": contact_count,
+            "by_temperature": {"hot": hot, "warm": warm, "cold": cold},
+            "per_user": per_user,
+            "recent_contacts": [
+                {
+                    "id": str(c.id),
+                    "name": c.name, "company_name": c.company_name or "N/A",
+                    "user_name": user_map.get(str(c.user_id), "Unknown"),
+                    "lead_score": c.lead_score, "lead_temperature": c.lead_temperature,
+                    "source": c.source or "manual",
+                    "created_at": c.created_at.isoformat() if c.created_at else "",
+                }
+                for c in recent
+            ],
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+# --- VOICE NOTE ENDPOINTS ---
+
+@app.post("/contact/{contact_id}/audio_note")
+async def add_audio_note(
+    contact_id: str,
+    request: AudioNoteRequest,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Save an audio note (transcript + optional audio) to a contact."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactDB).where(
+                ContactDB.id == uuid.UUID(contact_id),
+                ContactDB.user_id == uuid.UUID(user_id),
+            )
+        )
+        contact = result.scalar_one_or_none()
+        if not contact:
+            raise HTTPException(status_code=404, detail="Contact not found")
+
+        now = datetime.now(timezone.utc).strftime("%m/%d %H:%M")
+
+        # Append to audio_notes JSON array
+        audio_notes = contact.audio_notes or []
+        audio_notes.append({
+            "transcript": request.transcript or "",
+            "audio_base64": request.audio_base64 or "",
+            "timestamp": now,
+        })
+        contact.audio_notes = audio_notes
+
+        # Also append transcript to text notes
+        if request.transcript:
+            prefix = f"\n[Voice Note {now}] "
+            contact.notes = (contact.notes or "") + prefix + request.transcript
+
+        await session.commit()
+
+        # Update FAISS index
+        try:
+            summary = f"{contact.name}, {contact.email}, {contact.phone}, {contact.linkedin}, {contact.company_name}"
+            if contact.notes:
+                summary += f", {contact.notes[:200]}"
+            faiss_index.update_contact(user_id, contact_id, summary)
+        except Exception:
+            pass
+
+        return {"status": "success", "message": "Audio note saved", "total_audio_notes": len(audio_notes)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.post("/transcribe_audio/")
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Fallback: transcribe audio using Gemini when Web Speech API is unavailable."""
+    if not gemini_configured:
+        raise HTTPException(status_code=503, detail="Gemini not configured")
+
+    try:
+        audio_data = await file.read()
+        audio_b64 = base64.b64encode(audio_data).decode("utf-8")
+
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content([
+            "Transcribe this audio recording accurately. Return ONLY the transcribed text, nothing else.",
+            {"mime_type": file.content_type or "audio/webm", "data": audio_b64},
+        ])
+
+        transcript = response.text.strip() if response.text else ""
+        return {"status": "success", "transcript": transcript}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
 
 if __name__ == "__main__":

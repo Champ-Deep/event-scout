@@ -49,6 +49,7 @@ class UserDB(Base):
     name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
+    is_admin = Column(Boolean, default=False, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Relationships
@@ -75,6 +76,7 @@ class ContactDB(Base):
     lead_score_reasoning = Column(Text, default="")
     lead_score_breakdown = Column(JSON, default=dict)
     lead_recommended_actions = Column(JSON, default=list)
+    audio_notes = Column(JSON, default=list)  # [{audio_base64, transcript, timestamp}]
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -121,6 +123,31 @@ class UserProfileDB(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     user = relationship("UserDB", back_populates="profile")
+
+
+class ExhibitorDB(Base):
+    """WHX exhibitor data for event intelligence."""
+    __tablename__ = "exhibitors"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_name = Column(String(255), default="WHX Dubai 2026")
+    name = Column(String(500), nullable=False)
+    booth = Column(String(100), default="")
+    hall = Column(String(100), default="")
+    category = Column(String(500), default="")
+    subcategory = Column(String(500), default="")
+    country = Column(String(100), default="")
+    website = Column(String(500), default="")
+    description = Column(Text, default="")
+    products = Column(JSON, default=list)
+    tags = Column(JSON, default=list)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_exhibitors_event_name", "event_name"),
+        Index("idx_exhibitors_name", "name"),
+        Index("idx_exhibitors_category", "category"),
+    )
 
 
 class ConversationDB(Base):
@@ -176,6 +203,18 @@ async def init_db():
     try:
         async with eng.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+            # Migrations: add columns that may not exist on older databases
+            migrations = [
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE NOT NULL",
+                "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS audio_notes JSONB DEFAULT '[]'::jsonb",
+            ]
+            for sql in migrations:
+                try:
+                    await conn.execute(text(sql))
+                except Exception as mig_err:
+                    print(f"[DB] Migration note: {mig_err}")
+
         print("[DB] Database tables created/verified successfully")
         return True
     except Exception as e:

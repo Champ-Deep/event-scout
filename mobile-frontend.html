@@ -92,6 +92,40 @@
             opacity: 0.9;
         }
 
+        /* Voice recording pulse */
+        @keyframes recordingPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+        }
+        .recording-pulse {
+            animation: recordingPulse 1.5s ease-in-out infinite;
+        }
+
+        /* Swipe voice indicator */
+        .swipe-voice-indicator {
+            position: absolute;
+            right: -60px;
+            top: 0;
+            bottom: 0;
+            width: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(90deg, transparent, #7c3aed);
+            border-radius: 0 8px 8px 0;
+            color: white;
+            font-size: 20px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .contact-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .contact-card-inner {
+            transition: transform 0.2s ease;
+        }
+
         /* Swipe gesture indicator */
         .swipeable {
             position: relative;
@@ -183,7 +217,36 @@
         <div class="w-full max-w-md">
             <!-- Logo/Header -->
             <div class="text-center mb-8">
-                <div class="text-6xl mb-4">📇</div>
+                <div class="mb-4 flex justify-center">
+                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#a78bfa"/>
+                                <stop offset="100%" stop-color="#60a5fa"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- Outer ring -->
+                        <circle cx="40" cy="40" r="38" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.3"/>
+                        <!-- Middle ring -->
+                        <circle cx="40" cy="40" r="28" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.5"/>
+                        <!-- Inner ring -->
+                        <circle cx="40" cy="40" r="18" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.7"/>
+                        <!-- Center dot -->
+                        <circle cx="40" cy="40" r="4" fill="url(#logoGrad)"/>
+                        <!-- Radar sweep -->
+                        <path d="M40 40 L40 2 A38 38 0 0 1 72 22 Z" fill="url(#logoGrad)" opacity="0.15"/>
+                        <!-- Contact nodes -->
+                        <circle cx="58" cy="18" r="4" fill="#a78bfa" opacity="0.9"/>
+                        <circle cx="65" cy="38" r="3" fill="#818cf8" opacity="0.7"/>
+                        <circle cx="22" cy="56" r="3.5" fill="#60a5fa" opacity="0.8"/>
+                        <circle cx="50" cy="60" r="3" fill="#93c5fd" opacity="0.6"/>
+                        <!-- Crosshair lines -->
+                        <line x1="40" y1="8" x2="40" y2="16" stroke="white" stroke-width="1" opacity="0.4"/>
+                        <line x1="40" y1="64" x2="40" y2="72" stroke="white" stroke-width="1" opacity="0.4"/>
+                        <line x1="8" y1="40" x2="16" y2="40" stroke="white" stroke-width="1" opacity="0.4"/>
+                        <line x1="64" y1="40" x2="72" y2="40" stroke="white" stroke-width="1" opacity="0.4"/>
+                    </svg>
+                </div>
                 <h1 class="text-3xl font-bold text-white">Event Scout</h1>
                 <p class="text-purple-100 mt-2">Smart Contact Management</p>
             </div>
@@ -295,9 +358,21 @@
                 <div class="sticky top-0 bg-white border-b border-gray-200 safe-area-inset-top z-30">
                     <div class="p-4 pb-3">
                         <div class="flex items-center justify-between mb-3">
-                            <div>
-                                <h2 class="text-xl font-bold text-gray-900">Contacts</h2>
-                                <p class="text-sm text-gray-500">Hi, <span id="userName"></span>!</p>
+                            <div class="flex items-center gap-2">
+                                <svg width="28" height="28" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <defs><linearGradient id="logoGradSm" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#2563eb"/></linearGradient></defs>
+                                    <circle cx="40" cy="40" r="38" stroke="url(#logoGradSm)" stroke-width="3" fill="none" opacity="0.3"/>
+                                    <circle cx="40" cy="40" r="28" stroke="url(#logoGradSm)" stroke-width="3" fill="none" opacity="0.5"/>
+                                    <circle cx="40" cy="40" r="18" stroke="url(#logoGradSm)" stroke-width="3" fill="none" opacity="0.7"/>
+                                    <circle cx="40" cy="40" r="5" fill="url(#logoGradSm)"/>
+                                    <path d="M40 40 L40 2 A38 38 0 0 1 72 22 Z" fill="url(#logoGradSm)" opacity="0.15"/>
+                                    <circle cx="58" cy="18" r="5" fill="#7c3aed" opacity="0.9"/>
+                                    <circle cx="22" cy="56" r="4" fill="#2563eb" opacity="0.8"/>
+                                </svg>
+                                <div>
+                                    <h2 class="text-xl font-bold text-gray-900">Contacts</h2>
+                                    <p class="text-sm text-gray-500">Hi, <span id="userName"></span>!</p>
+                                </div>
                             </div>
                         </div>
                         <div class="relative">
@@ -307,6 +382,18 @@
                                    class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                                    oninput="handleSearch()">
                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hot Leads Spotlight -->
+                <div id="hotLeadsBanner" class="hidden px-4 pt-3">
+                    <div class="bg-gradient-to-r from-red-500 to-orange-500 rounded-xl p-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-white font-bold text-sm"><i class="fas fa-fire mr-1"></i>Your Hottest Leads</h3>
+                        </div>
+                        <div id="hotLeadsScroll" class="flex gap-3 overflow-x-auto pb-1">
+                            <!-- Hot leads cards injected here -->
                         </div>
                     </div>
                 </div>
@@ -426,7 +513,7 @@
                 <div class="bg-gradient-to-r from-purple-600 to-blue-500 text-white p-4 flex items-center justify-between safe-area-inset-top">
                     <div>
                         <h2 class="font-semibold text-lg">AI Assistant</h2>
-                        <p class="text-xs text-purple-100">Powered by Gemini</p>
+                        <p class="text-xs text-purple-100" id="chatModelLabel">Powered by Claude Opus 4.6</p>
                     </div>
                     <button onclick="clearChatHistory()" class="p-2 text-white/80 active:bg-white/20 rounded-lg">
                         <i class="fas fa-trash-alt"></i>
@@ -436,17 +523,17 @@
                 <!-- Suggested Queries (shown when empty) -->
                 <div id="chatSuggestions" class="p-4 space-y-2">
                     <p class="text-sm text-gray-600 mb-3">Try asking:</p>
-                    <button onclick="askAI('Who are my hottest leads to prioritize?')" class="block w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm text-gray-700 active:bg-blue-200">
-                        "Who are my hottest leads to prioritize?"
+                    <button onclick="askAI('Who are my hottest leads right now?')" class="block w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm text-gray-700 active:bg-blue-200">
+                        "Who are my hottest leads right now?"
                     </button>
-                    <button onclick="askAI('Suggest a pitch angle for my top contacts')" class="block w-full text-left px-4 py-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm text-gray-700 active:bg-purple-200">
-                        "Suggest a pitch angle for my top contacts"
+                    <button onclick="askAI('Which exhibitors should I visit today?')" class="block w-full text-left px-4 py-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm text-gray-700 active:bg-purple-200">
+                        "Which exhibitors should I visit today?"
                     </button>
-                    <button onclick="askAI('Which contacts haven\\'t been followed up with?')" class="block w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg text-sm text-gray-700 active:bg-green-200">
-                        "Which contacts haven't been followed up?"
+                    <button onclick="askAI('Brief me on my top 3 contacts')" class="block w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg text-sm text-gray-700 active:bg-green-200">
+                        "Brief me on my top 3 contacts"
                     </button>
-                    <button onclick="askAI('Summarize my best leads from this event')" class="block w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-sm text-gray-700 active:bg-orange-200">
-                        "Summarize my best leads from this event"
+                    <button onclick="askAI('Suggest pitch angles for my warm leads')" class="block w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-sm text-gray-700 active:bg-orange-200">
+                        "Suggest pitch angles for my warm leads"
                     </button>
                 </div>
 
@@ -463,11 +550,44 @@
                                placeholder="Ask about your contacts..."
                                class="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 outline-none"
                                required>
+                        <button type="button" onclick="toggleChatVoice()" id="chatMicBtn"
+                                class="w-12 h-12 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center active:bg-purple-100 flex-shrink-0 transition">
+                            <i class="fas fa-microphone"></i>
+                        </button>
                         <button type="submit"
                                 class="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center active:bg-blue-700 flex-shrink-0">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </form>
+                </div>
+            </div>
+
+            <!-- EXPO SCREEN -->
+            <div id="expoScreen" class="content-screen hidden">
+                <div class="safe-area-inset-top">
+                    <!-- Expo Header -->
+                    <div class="bg-gradient-to-r from-emerald-600 to-teal-500 text-white p-4">
+                        <h2 class="font-semibold text-lg">WHX Dubai 2026</h2>
+                        <p class="text-xs text-emerald-100">Feb 9-13 | Dubai Exhibition Centre</p>
+                    </div>
+
+                    <!-- Search & Filter -->
+                    <div class="p-4 bg-white border-b border-gray-200">
+                        <input type="search" id="expoSearchInput" placeholder="Search exhibitors..."
+                               class="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-emerald-500 outline-none mb-2"
+                               oninput="filterExhibitors()">
+                        <div id="categoryFilter" class="flex gap-2 overflow-x-auto pb-1 text-sm">
+                            <button onclick="filterByCategory('')" class="category-btn px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full whitespace-nowrap text-xs font-medium">All</button>
+                        </div>
+                    </div>
+
+                    <!-- Exhibitor List -->
+                    <div id="exhibitorList" class="p-4 space-y-3">
+                        <div class="text-center text-gray-500 py-8">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-3 block"></i>
+                            <p>Loading exhibitors...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -527,6 +647,18 @@
                             </div>
                             <i class="fas fa-chevron-right text-gray-400"></i>
                         </button>
+
+                        <!-- AI Model Selection -->
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">AI Assistant Model</h4>
+                            <select id="aiModelSelect" onchange="saveAIModel()"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-700">
+                                <option value="claude-opus">Claude Opus 4.6 (Recommended)</option>
+                                <option value="gpt-5">GPT-5.2</option>
+                                <option value="gemini-pro">Gemini 2.5 Pro</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">Controls the AI chat. OCR scanning uses Gemini.</p>
+                        </div>
                     </div>
 
                     <!-- Lead Intelligence -->
@@ -579,6 +711,52 @@
             </div>
         </div>
 
+            <!-- ADMIN SCREEN (hidden by default, shown only for admins) -->
+            <div id="adminScreen" class="content-screen hidden">
+                <div class="p-4 space-y-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-shield-alt text-purple-600 text-xl"></i>
+                        <h2 class="text-xl font-bold text-gray-900">Admin Dashboard</h2>
+                    </div>
+
+                    <!-- Global Stats -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-gradient-to-br from-purple-500 to-blue-500 text-white rounded-xl p-4">
+                            <p class="text-3xl font-bold" id="adminStatUsers">-</p>
+                            <p class="text-sm opacity-80">Total Users</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl p-4">
+                            <p class="text-3xl font-bold" id="adminStatContacts">-</p>
+                            <p class="text-sm opacity-80">Total Contacts</p>
+                        </div>
+                        <div class="bg-red-50 rounded-xl p-4">
+                            <p class="text-2xl font-bold text-red-600" id="adminStatHot">-</p>
+                            <p class="text-xs text-gray-500">Hot Leads</p>
+                        </div>
+                        <div class="bg-orange-50 rounded-xl p-4">
+                            <p class="text-2xl font-bold text-orange-500" id="adminStatWarm">-</p>
+                            <p class="text-xs text-gray-500">Warm Leads</p>
+                        </div>
+                    </div>
+
+                    <!-- Team Members -->
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Team Members</h3>
+                        <div id="adminTeamList" class="space-y-3">
+                            <p class="text-sm text-gray-400 text-center py-4">Loading...</p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Contacts Feed -->
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Recent Contacts (All Users)</h3>
+                        <div id="adminRecentContacts" class="space-y-2">
+                            <p class="text-sm text-gray-400 text-center py-4">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         <!-- Bottom Navigation -->
         <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-inset-bottom z-40">
             <div class="flex justify-around items-center h-16">
@@ -594,12 +772,45 @@
                     <i class="fas fa-comments text-2xl mb-1"></i>
                     <span class="text-xs">AI Chat</span>
                 </button>
+                <button onclick="switchScreen('expo')" class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                    <i class="fas fa-building text-2xl mb-1"></i>
+                    <span class="text-xs">Expo</span>
+                </button>
+                <button id="adminNavBtn" onclick="switchScreen('admin')" class="nav-btn hidden flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                    <i class="fas fa-shield-alt text-2xl mb-1"></i>
+                    <span class="text-xs">Admin</span>
+                </button>
                 <button onclick="switchScreen('profile')" class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-user text-2xl mb-1"></i>
                     <span class="text-xs">Profile</span>
                 </button>
             </div>
         </nav>
+    </div>
+
+    <!-- ========================================
+         VOICE RECORDING OVERLAY
+    ======================================== -->
+    <div id="voiceRecordingOverlay" class="fixed inset-0 z-60 hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);">
+        <div class="flex flex-col items-center justify-center h-full px-6">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
+                <div id="voiceContactName" class="text-sm text-gray-500 mb-2">Recording for...</div>
+                <div class="mb-4">
+                    <button id="voiceRecordBtn" onclick="toggleVoiceRecording()" class="w-20 h-20 rounded-full bg-red-500 text-white text-3xl flex items-center justify-center mx-auto recording-pulse">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+                <div id="voiceTimer" class="text-2xl font-mono text-gray-700 mb-2">0:00</div>
+                <div id="voiceStatus" class="text-sm text-gray-500 mb-3">Tap to start recording</div>
+                <div id="voiceTranscript" class="text-sm text-gray-800 bg-gray-50 rounded-lg p-3 min-h-[60px] max-h-[120px] overflow-y-auto text-left mb-4 hidden">
+                    <span class="text-gray-400 italic">Listening...</span>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="cancelVoiceRecording()" class="flex-1 py-3 rounded-lg bg-gray-100 text-gray-600 font-medium active:bg-gray-200">Cancel</button>
+                    <button id="voiceSaveBtn" onclick="saveVoiceNote()" class="flex-1 py-3 rounded-lg bg-purple-600 text-white font-medium active:bg-purple-700 hidden">Save Note</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ========================================
@@ -735,7 +946,10 @@
             contacts: [],
             activeScreen: 'contacts',
             editingContactId: null,
-            userProfile: {}
+            userProfile: {},
+            _voiceContactId: null,
+            _voiceTranscript: '',
+            _voiceAudioBlob: null,
         };
 
         // ==================== INITIALIZATION ====================
@@ -797,7 +1011,8 @@
                     AppState.currentUser = {
                         user_id: data.user_id,
                         name: data.name,
-                        email: data.email
+                        email: data.email,
+                        is_admin: data.is_admin || false
                     };
                     localStorage.setItem('eventScoutUser', JSON.stringify(AppState.currentUser));
                     showAlert('authAlert', '✓ Login successful!', 'success');
@@ -832,7 +1047,8 @@
                     AppState.currentUser = {
                         user_id: data.user_id,
                         name: data.name,
-                        email: data.email
+                        email: data.email,
+                        is_admin: data.is_admin || false
                     };
                     localStorage.setItem('eventScoutUser', JSON.stringify(AppState.currentUser));
                     setTimeout(() => showDashboard(), 1000);
@@ -876,6 +1092,15 @@
             document.getElementById('profileName').textContent = AppState.currentUser.name;
             document.getElementById('profileEmail').textContent = AppState.currentUser.email;
             document.getElementById('profileInitial').textContent = AppState.currentUser.name.charAt(0).toUpperCase();
+
+            // Show admin nav button if user is admin
+            const adminBtn = document.getElementById('adminNavBtn');
+            if (AppState.currentUser.is_admin) {
+                adminBtn.classList.remove('hidden');
+            } else {
+                adminBtn.classList.add('hidden');
+            }
+
             loadContacts();
             loadUserProfile();
         }
@@ -900,7 +1125,7 @@
             });
 
             // Highlight the correct nav button
-            const navMap = { contacts: 0, scan: 1, chat: 2, profile: 3 };
+            const navMap = { contacts: 0, scan: 1, chat: 2, expo: 3, admin: 4, profile: 5 };
             const navBtns = document.querySelectorAll('.nav-btn');
             const idx = navMap[screenName];
             if (idx !== undefined && navBtns[idx]) {
@@ -927,6 +1152,10 @@
             } else if (screenName === 'chat') {
                 // Load chat history when entering chat screen
                 loadChatHistory();
+            } else if (screenName === 'expo') {
+                loadExhibitors();
+            } else if (screenName === 'admin') {
+                loadAdminDashboard();
             }
         }
 
@@ -948,6 +1177,7 @@
                 if (response.ok && data.status === 'success') {
                     AppState.contacts = data.contacts;
                     renderContacts(AppState.contacts);
+                    renderHotLeads();
                 } else {
                     contactsList.innerHTML = `<div class="p-6 text-center text-red-500">Failed to load contacts</div>`;
                 }
@@ -1025,6 +1255,35 @@
                 </div>
                 `;
             }).join('');
+        }
+
+        function renderHotLeads() {
+            const hotContacts = AppState.contacts
+                .filter(c => c.lead_temperature === 'hot')
+                .sort((a, b) => (b.lead_score || 0) - (a.lead_score || 0))
+                .slice(0, 5);
+
+            const banner = document.getElementById('hotLeadsBanner');
+            if (hotContacts.length === 0) {
+                banner.classList.add('hidden');
+                return;
+            }
+
+            banner.classList.remove('hidden');
+            const container = document.getElementById('hotLeadsScroll');
+            container.innerHTML = hotContacts.map(c => `
+                <div onclick="openContactDetail('${c.id}')"
+                     class="flex-shrink-0 bg-white/20 backdrop-blur-sm rounded-lg p-3 min-w-[140px] cursor-pointer active:bg-white/30">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white text-sm font-bold">
+                            ${c.name.charAt(0)}
+                        </div>
+                        <span class="text-white font-bold text-lg">${c.lead_score || '?'}</span>
+                    </div>
+                    <p class="text-white text-sm font-medium truncate">${c.name}</p>
+                    <p class="text-white/70 text-xs truncate">${c.company_name || 'N/A'}</p>
+                </div>
+            `).join('');
         }
 
         function viewContactQR(contactId) {
@@ -1554,7 +1813,11 @@
                     },
                     body: JSON.stringify({
                         user_id: AppState.currentUser.user_id,
-                        query: query
+                        query: query,
+                        conversation_history: chatHistory.slice(-10).map(m => ({
+                            role: m.role,
+                            content: m.content
+                        }))
                     })
                 });
 
@@ -1567,6 +1830,10 @@
                     // Add AI response to history
                     const aiMessage = data.response || data.message || 'I found some information for you.';
                     chatHistory.push({ role: 'assistant', content: aiMessage });
+
+                    if (data.model) {
+                        document.getElementById('chatModelLabel').textContent = `Powered by ${data.model}`;
+                    }
 
                     saveChatHistory();
                     renderChatHistory();
@@ -1724,6 +1991,18 @@
                         </div>
                     </div>` : ''}
 
+                    <!-- Intelligence Actions -->
+                    <div class="flex gap-2 mb-3">
+                        <button onclick="getPitchAngle('${contact.id}', '${escapedName}', '${(company || '').replace(/'/g, "\\'")}')"
+                                class="flex-1 py-3 bg-purple-600 text-white rounded-lg font-semibold text-sm active:bg-purple-700">
+                            <i class="fas fa-lightbulb mr-1"></i>Pitch Angle
+                        </button>
+                        <button onclick="getBriefing('${contact.id}', '${escapedName}', '${(company || '').replace(/'/g, "\\'")}')"
+                                class="flex-1 py-3 bg-indigo-600 text-white rounded-lg font-semibold text-sm active:bg-indigo-700">
+                            <i class="fas fa-file-alt mr-1"></i>Brief Me
+                        </button>
+                    </div>
+
                     <!-- Actions -->
                     <div class="flex gap-3 pt-2 pb-24">
                         <button onclick="editContact('${contact.id}')" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold active:bg-blue-700 transition">
@@ -1749,6 +2028,22 @@
             setTimeout(() => {
                 detailView.classList.add('hidden');
             }, 250);
+        }
+
+        function getPitchAngle(contactId, name, company) {
+            closeContactDetail();
+            switchScreen('chat');
+            const query = `Generate a specific pitch angle for ${name} at ${company}. Consider their role, my products/services, and how my value propositions align with their potential needs. Give me 2-3 talking points I can use.`;
+            document.getElementById('chatInput').value = query;
+            sendChatMessage(new Event('submit'));
+        }
+
+        function getBriefing(contactId, name, company) {
+            closeContactDetail();
+            switchScreen('chat');
+            const query = `Quick briefing on ${name} at ${company} before my meeting: Who are they? Why do they matter to me? Suggested talking points? What should I pitch? Keep it concise and actionable.`;
+            document.getElementById('chatInput').value = query;
+            sendChatMessage(new Event('submit'));
         }
 
         // ==================== EXPORT FUNCTIONS ====================
@@ -1835,10 +2130,46 @@
                 const data = await response.json();
                 if (response.ok && data.status === 'success') {
                     AppState.userProfile = data.profile || {};
+                    // Set AI model selector
+                    const aiModelSelect = document.getElementById('aiModelSelect');
+                    if (aiModelSelect && AppState.userProfile.preferred_ai_model) {
+                        aiModelSelect.value = AppState.userProfile.preferred_ai_model;
+                    }
+                    updateChatModelLabel();
                 }
             } catch (error) {
                 console.error('Load profile error:', error);
             }
+        }
+
+        async function saveAIModel() {
+            const model = document.getElementById('aiModelSelect').value;
+            try {
+                await fetch(`${CONFIG.API_BASE_URL}/user/profile/?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': CONFIG.API_KEY
+                    },
+                    body: JSON.stringify({ preferred_ai_model: model })
+                });
+                AppState.userProfile.preferred_ai_model = model;
+                updateChatModelLabel();
+                showToast('AI model updated', 'success');
+            } catch (error) {
+                showToast('Failed to save model preference', 'error');
+            }
+        }
+
+        function updateChatModelLabel() {
+            const modelNames = {
+                'claude-opus': 'Claude Opus 4.6',
+                'gpt-5': 'GPT-5.2',
+                'gemini-pro': 'Gemini 2.5 Pro'
+            };
+            const model = (AppState.userProfile || {}).preferred_ai_model || 'claude-opus';
+            const label = modelNames[model] || 'Claude Opus 4.6';
+            document.getElementById('chatModelLabel').textContent = `Powered by ${label}`;
         }
 
         async function saveUserProfile(updates) {
@@ -2046,6 +2377,122 @@
             if (saved) closeSettingsSheet();
         }
 
+        // ==================== EXPO / EXHIBITOR FUNCTIONS ====================
+        let exhibitorCache = [];
+        let exhibitorCategories = [];
+
+        async function loadExhibitors() {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/?limit=200`, {
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    exhibitorCache = data.exhibitors || [];
+                    renderExhibitors(exhibitorCache);
+                    loadExhibitorCategories();
+                }
+            } catch (error) {
+                console.error('Failed to load exhibitors:', error);
+                document.getElementById('exhibitorList').innerHTML = '<p class="text-center text-gray-500 py-8">No exhibitor data available yet.</p>';
+            }
+        }
+
+        async function loadExhibitorCategories() {
+            try {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/categories/`, {
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    exhibitorCategories = data.categories || [];
+                    renderCategoryFilters();
+                }
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        }
+
+        function renderCategoryFilters() {
+            const container = document.getElementById('categoryFilter');
+            let html = '<button onclick="filterByCategory(\'\')" class="category-btn active px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full whitespace-nowrap text-xs font-medium">All</button>';
+            exhibitorCategories.forEach(cat => {
+                html += `<button onclick="filterByCategory('${cat.replace(/'/g, "\\'")}')" class="category-btn px-3 py-1 bg-gray-100 text-gray-600 rounded-full whitespace-nowrap text-xs font-medium">${cat}</button>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function filterByCategory(category) {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-100', 'text-emerald-700', 'active');
+                btn.classList.add('bg-gray-100', 'text-gray-600');
+            });
+            event.target.classList.add('bg-emerald-100', 'text-emerald-700', 'active');
+            event.target.classList.remove('bg-gray-100', 'text-gray-600');
+
+            const filtered = category ? exhibitorCache.filter(e => e.category.includes(category)) : exhibitorCache;
+            renderExhibitors(filtered);
+        }
+
+        function filterExhibitors() {
+            const search = document.getElementById('expoSearchInput').value.toLowerCase();
+            const filtered = exhibitorCache.filter(e =>
+                e.name.toLowerCase().includes(search) ||
+                (e.category || '').toLowerCase().includes(search) ||
+                (e.country || '').toLowerCase().includes(search)
+            );
+            renderExhibitors(filtered);
+        }
+
+        function renderExhibitors(exhibitors) {
+            const container = document.getElementById('exhibitorList');
+            if (!exhibitors || exhibitors.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-8">No exhibitors found. Check back after data is imported.</p>';
+                return;
+            }
+
+            let html = `<p class="text-sm text-gray-500 mb-2">${exhibitors.length} exhibitors</p>`;
+            exhibitors.forEach(ex => {
+                html += `
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100" onclick="showExhibitorDetail('${ex.name.replace(/'/g, "\\'")}')">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-semibold text-gray-900 truncate">${ex.name}</h4>
+                            ${ex.category ? `<p class="text-xs text-emerald-600 mt-0.5">${ex.category}</p>` : ''}
+                            <div class="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                                ${ex.booth ? `<span><i class="fas fa-map-pin mr-1"></i>${ex.booth}${ex.hall ? `, ${ex.hall}` : ''}</span>` : ''}
+                                ${ex.country ? `<span><i class="fas fa-globe mr-1"></i>${ex.country}</span>` : ''}
+                            </div>
+                        </div>
+                        <button onclick="event.stopPropagation(); askAIAboutExhibitor('${ex.name.replace(/'/g, "\\'")}')"
+                                class="ml-2 px-3 py-1.5 bg-purple-50 text-purple-600 rounded-lg text-xs font-medium active:bg-purple-100">
+                            <i class="fas fa-robot mr-1"></i>Ask AI
+                        </button>
+                    </div>
+                    ${ex.description ? `<p class="text-xs text-gray-500 mt-2 line-clamp-2">${ex.description}</p>` : ''}
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function showExhibitorDetail(name) {
+            const ex = exhibitorCache.find(e => e.name === name);
+            if (!ex) return;
+
+            // Use the AI chat to get info
+            switchScreen('chat');
+            const query = `Tell me about the exhibitor "${ex.name}"${ex.booth ? ` at booth ${ex.booth}` : ''}. What do they do and why might they be relevant to my goals?`;
+            document.getElementById('chatInput').value = query;
+            document.getElementById('chatInput').focus();
+        }
+
+        function askAIAboutExhibitor(name) {
+            switchScreen('chat');
+            const query = `Should I visit "${name}" at the expo? What's their relevance to my business and what should I pitch?`;
+            document.getElementById('chatInput').value = query;
+            document.getElementById('chatInput').focus();
+        }
+
         // ==================== LEAD SCORING FUNCTIONS ====================
         async function scoreContact(contactId) {
             showToast('Scoring contact...', 'info');
@@ -2180,10 +2627,109 @@
 
         async function scoreContactAndRefresh(contactId) {
             const result = await scoreContact(contactId);
-            if (result) {
-                // Re-open the detail to show updated score
-                openContactDetail(contactId);
-            }
+            if (result) { openContactDetail(contactId); }
+        }
+
+        // ==================== ADMIN DASHBOARD ====================
+        async function loadAdminDashboard() {
+            try {
+                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/dashboard?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const data = await resp.json();
+                if (!resp.ok || data.status !== 'success') { showToast(data.detail || 'Admin access denied', 'error'); return; }
+                document.getElementById('adminStatUsers').textContent = data.total_users;
+                document.getElementById('adminStatContacts').textContent = data.total_contacts;
+                document.getElementById('adminStatHot').textContent = data.by_temperature.hot;
+                document.getElementById('adminStatWarm').textContent = data.by_temperature.warm;
+                document.getElementById('adminTeamList').innerHTML = data.per_user.map(u => '<div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-white font-bold text-sm">' + u.name.charAt(0).toUpperCase() + '</div><div><p class="text-sm font-medium text-gray-900">' + escapeHtml(u.name) + (u.is_admin ? ' <span class="text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded ml-1">Admin</span>' : '') + '</p><p class="text-xs text-gray-400">' + escapeHtml(u.email) + '</p></div></div><span class="text-sm font-semibold text-gray-600">' + u.contact_count + ' <span class="text-xs text-gray-400">contacts</span></span></div>').join('');
+                const rl = document.getElementById('adminRecentContacts');
+                if (data.recent_contacts.length === 0) { rl.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No contacts yet</p>'; }
+                else { rl.innerHTML = data.recent_contacts.map(c => { const sc = c.lead_temperature === 'hot' ? 'text-red-600' : c.lead_temperature === 'warm' ? 'text-orange-500' : 'text-gray-400'; return '<div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div><p class="text-sm font-medium text-gray-900">' + escapeHtml(c.name) + '</p><p class="text-xs text-gray-400">' + escapeHtml(c.company_name) + ' &middot; by ' + escapeHtml(c.user_name) + '</p></div><div class="text-right">' + (c.lead_score != null ? '<span class="text-sm font-bold ' + sc + '">' + c.lead_score + '</span>' : '<span class="text-xs text-gray-300">--</span>') + '<p class="text-[10px] text-gray-400">' + c.source + '</p></div></div>'; }).join(''); }
+            } catch (err) { console.error('Admin dashboard error:', err); showToast('Failed to load admin data', 'error'); }
+        }
+
+        // ==================== VOICE RECORDING (Swipe Right) ====================
+        let voiceRecognition = null, voiceMediaRecorder = null, voiceAudioChunks = [], voiceTimerInterval = null, voiceSeconds = 0, voiceIsRecording = false;
+
+        function initSwipeHandlers() {
+            const cl = document.getElementById('contactsList');
+            let sx = 0, sy = 0, sc = null;
+            cl.addEventListener('touchstart', e => { const c = e.target.closest('.contact-card'); if (!c) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; sc = c; }, { passive: true });
+            cl.addEventListener('touchmove', e => { if (!sc) return; const dx = e.touches[0].clientX - sx, dy = Math.abs(e.touches[0].clientY - sy); if (dy > 30) { sc.style.transform = ''; sc.style.background = ''; sc = null; return; } if (dx > 20 && dx < 120) { sc.style.transform = 'translateX(' + Math.min(dx * 0.3, 30) + 'px)'; sc.style.background = 'linear-gradient(90deg, rgba(124,58,237,' + (dx/300) + ') 0%, transparent 40%)'; } }, { passive: true });
+            cl.addEventListener('touchend', e => { if (!sc) return; const dx = e.changedTouches[0].clientX - sx, dy = Math.abs(e.changedTouches[0].clientY - sy); sc.style.transform = ''; sc.style.background = ''; if (dx > 80 && dy < 40) { const cid = sc.dataset.id; const ct = AppState.contacts.find(c => c.id === cid); if (ct) openVoiceRecordingOverlay(cid, ct.name); } sc = null; }, { passive: true });
+        }
+
+        const _origRender = renderContacts;
+        renderContacts = function(contacts) { _origRender(contacts); setTimeout(initSwipeHandlers, 100); };
+
+        function openVoiceRecordingOverlay(contactId, contactName) {
+            AppState._voiceContactId = contactId; AppState._voiceTranscript = ''; AppState._voiceAudioBlob = null;
+            document.getElementById('voiceContactName').textContent = 'Voice note for ' + contactName;
+            document.getElementById('voiceTimer').textContent = '0:00';
+            document.getElementById('voiceStatus').textContent = 'Starting...';
+            document.getElementById('voiceTranscript').classList.add('hidden');
+            document.getElementById('voiceSaveBtn').classList.add('hidden');
+            var btn = document.getElementById('voiceRecordBtn'); btn.innerHTML = '<i class="fas fa-microphone"></i>'; btn.classList.remove('bg-gray-500'); btn.classList.add('bg-red-500', 'recording-pulse');
+            document.getElementById('voiceRecordingOverlay').classList.remove('hidden');
+            setTimeout(function() { toggleVoiceRecording(); }, 300);
+        }
+
+        function toggleVoiceRecording() { voiceIsRecording ? stopVoiceRecording() : startVoiceRecording(); }
+
+        async function startVoiceRecording() {
+            voiceIsRecording = true; voiceSeconds = 0; voiceAudioChunks = []; AppState._voiceTranscript = '';
+            var btn = document.getElementById('voiceRecordBtn'); btn.innerHTML = '<i class="fas fa-stop"></i>'; btn.classList.remove('bg-red-500'); btn.classList.add('bg-gray-500');
+            document.getElementById('voiceStatus').textContent = 'Recording...';
+            document.getElementById('voiceTranscript').classList.remove('hidden');
+            document.getElementById('voiceTranscript').innerHTML = '<span class="text-gray-400 italic">Listening...</span>';
+            voiceTimerInterval = setInterval(function() { voiceSeconds++; var m = Math.floor(voiceSeconds/60), s = voiceSeconds%60; document.getElementById('voiceTimer').textContent = m + ':' + s.toString().padStart(2,'0'); if (voiceSeconds >= 60) stopVoiceRecording(); }, 1000);
+            try { var stream = await navigator.mediaDevices.getUserMedia({audio:true}); voiceMediaRecorder = new MediaRecorder(stream, {mimeType:'audio/webm;codecs=opus'}); voiceMediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) voiceAudioChunks.push(e.data); }; voiceMediaRecorder.onstop = function() { stream.getTracks().forEach(function(t){t.stop();}); if (voiceAudioChunks.length > 0) AppState._voiceAudioBlob = new Blob(voiceAudioChunks, {type:'audio/webm'}); }; voiceMediaRecorder.start(1000); } catch(err) { console.warn('[Voice] MediaRecorder unavailable:', err); }
+            var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SR) { voiceRecognition = new SR(); voiceRecognition.continuous = true; voiceRecognition.interimResults = true; voiceRecognition.lang = 'en-US'; var finalT = ''; voiceRecognition.onresult = function(evt) { var interim = ''; for (var i = evt.resultIndex; i < evt.results.length; i++) { if (evt.results[i].isFinal) finalT += evt.results[i][0].transcript + ' '; else interim += evt.results[i][0].transcript; } AppState._voiceTranscript = finalT.trim(); document.getElementById('voiceTranscript').innerHTML = finalT + '<span class="text-gray-400">' + interim + '</span>'; }; voiceRecognition.onerror = function(e) { console.warn('[Voice] Recognition error:', e.error); }; voiceRecognition.onend = function() { if (voiceIsRecording) try { voiceRecognition.start(); } catch(e) {} }; voiceRecognition.start(); }
+            else { document.getElementById('voiceTranscript').innerHTML = '<span class="text-gray-400 italic">Live transcription unavailable. Audio sent for AI transcription on save.</span>'; }
+        }
+
+        function stopVoiceRecording() {
+            voiceIsRecording = false; clearInterval(voiceTimerInterval);
+            if (voiceRecognition) { voiceRecognition.onend = null; try { voiceRecognition.stop(); } catch(e) {} voiceRecognition = null; }
+            if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') voiceMediaRecorder.stop();
+            var btn = document.getElementById('voiceRecordBtn'); btn.innerHTML = '<i class="fas fa-microphone"></i>'; btn.classList.remove('bg-gray-500'); btn.classList.add('bg-red-500');
+            document.getElementById('voiceStatus').textContent = 'Recording complete';
+            document.getElementById('voiceSaveBtn').classList.remove('hidden');
+            if (!AppState._voiceTranscript) document.getElementById('voiceTranscript').innerHTML = '<span class="text-gray-400 italic">No live transcript. Audio will be transcribed by AI on save.</span>';
+        }
+
+        function cancelVoiceRecording() { stopVoiceRecording(); AppState._voiceContactId = null; AppState._voiceTranscript = ''; AppState._voiceAudioBlob = null; document.getElementById('voiceRecordingOverlay').classList.add('hidden'); }
+
+        async function saveVoiceNote() {
+            var contactId = AppState._voiceContactId, transcript = AppState._voiceTranscript, audioBlob = AppState._voiceAudioBlob;
+            if (!contactId) return;
+            document.getElementById('voiceStatus').textContent = 'Saving...'; document.getElementById('voiceSaveBtn').disabled = true;
+            if (!transcript && audioBlob) { try { var fd = new FormData(); fd.append('file', audioBlob, 'voice_note.webm'); var r = await fetch(CONFIG.API_BASE_URL + '/transcribe_audio/?user_id=' + AppState.currentUser.user_id, {method:'POST', headers:{'X-API-Key':CONFIG.API_KEY}, body:fd}); var d = await r.json(); if (r.ok && d.transcript) transcript = d.transcript; } catch(err) { console.error('[Voice] Gemini transcription failed:', err); } }
+            var audioBase64 = '';
+            if (audioBlob) { try { var buf = await audioBlob.arrayBuffer(); var bytes = new Uint8Array(buf); var bin = ''; bytes.forEach(function(b){ bin += String.fromCharCode(b); }); audioBase64 = btoa(bin); } catch(err) { console.warn('[Voice] Audio encode failed:', err); } }
+            try { var response = await fetch(CONFIG.API_BASE_URL + '/contact/' + contactId + '/audio_note?user_id=' + AppState.currentUser.user_id, { method:'POST', headers:{'Content-Type':'application/json','X-API-Key':CONFIG.API_KEY}, body:JSON.stringify({contact_id:contactId, transcript:transcript||'(no transcription)', audio_base64:audioBase64}) }); if (response.ok) { showToast('Voice note saved!', 'success'); loadContacts(); } else showToast('Failed to save voice note', 'error'); } catch(err) { showToast('Network error saving voice note', 'error'); }
+            AppState._voiceContactId = null; AppState._voiceTranscript = ''; AppState._voiceAudioBlob = null;
+            document.getElementById('voiceRecordingOverlay').classList.add('hidden'); document.getElementById('voiceSaveBtn').disabled = false;
+        }
+
+        // ==================== CHAT VOICE INPUT ====================
+        let chatVoiceRecognition = null, chatVoiceActive = false;
+        function toggleChatVoice() { chatVoiceActive ? stopChatVoice() : startChatVoice(); }
+        function startChatVoice() {
+            var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) { showToast('Voice input not supported in this browser', 'error'); return; }
+            chatVoiceActive = true; var btn = document.getElementById('chatMicBtn'); btn.classList.remove('bg-gray-100','text-gray-500'); btn.classList.add('bg-red-500','text-white','recording-pulse');
+            chatVoiceRecognition = new SR(); chatVoiceRecognition.continuous = true; chatVoiceRecognition.interimResults = true; chatVoiceRecognition.lang = 'en-US';
+            var chatInput = document.getElementById('chatInput'), finalText = '';
+            chatVoiceRecognition.onresult = function(evt) { var interim = ''; for (var i = evt.resultIndex; i < evt.results.length; i++) { if (evt.results[i].isFinal) finalText += evt.results[i][0].transcript + ' '; else interim = evt.results[i][0].transcript; } chatInput.value = (finalText + interim).trim(); };
+            chatVoiceRecognition.onerror = function(e) { console.warn('[Chat Voice] Error:', e.error); stopChatVoice(); };
+            chatVoiceRecognition.onend = function() { if (chatVoiceActive) try { chatVoiceRecognition.start(); } catch(e) { stopChatVoice(); } };
+            chatVoiceRecognition.start(); chatInput.placeholder = 'Listening... speak now';
+        }
+        function stopChatVoice() {
+            chatVoiceActive = false; var btn = document.getElementById('chatMicBtn'); btn.classList.remove('bg-red-500','text-white','recording-pulse'); btn.classList.add('bg-gray-100','text-gray-500');
+            if (chatVoiceRecognition) { chatVoiceRecognition.onend = null; try { chatVoiceRecognition.stop(); } catch(e) {} chatVoiceRecognition = null; }
+            document.getElementById('chatInput').placeholder = 'Ask about your contacts...';
         }
     </script>
 </body>
