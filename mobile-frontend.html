@@ -691,8 +691,15 @@
                 btn.classList.remove('active', 'text-blue-600');
                 btn.classList.add('text-gray-600');
             });
-            event.currentTarget.classList.add('active', 'text-blue-600');
-            event.currentTarget.classList.remove('text-gray-600');
+
+            // Highlight the correct nav button
+            const navMap = { contacts: 0, scan: 1, chat: 2, profile: 3 };
+            const navBtns = document.querySelectorAll('.nav-btn');
+            const idx = navMap[screenName];
+            if (idx !== undefined && navBtns[idx]) {
+                navBtns[idx].classList.add('active', 'text-blue-600');
+                navBtns[idx].classList.remove('text-gray-600');
+            }
 
             // Update app state
             AppState.activeScreen = screenName;
@@ -1080,30 +1087,34 @@
                     document.getElementById('processingOverlay').classList.remove('flex');
 
                     if (response.ok && data.status === 'success') {
-                        // Pre-fill the contact form with extracted data
-                        const contact = data.contact;
+                        // Backend already saved the contact - show details and refresh list
+                        const fields = data.extracted_fields || {};
+                        const name = fields.name || 'Unknown';
 
-                        AppState.editingContactId = null;
-                        document.getElementById('sheetTitle').textContent = 'Review Scanned Contact';
-                        document.getElementById('contactId').value = '';
-                        document.getElementById('contactName').value = contact.name || '';
-                        document.getElementById('contactEmail').value = contact.email || '';
-                        document.getElementById('contactPhone').value = contact.phone || '';
-                        document.getElementById('contactLinkedin').value = contact.linkedin !== 'N/A' ? contact.linkedin : '';
-                        document.getElementById('contactCompany').value = contact.company_name !== 'N/A' ? contact.company_name : '';
+                        // Switch to contacts screen and refresh
+                        document.querySelectorAll('.nav-btn').forEach(btn => {
+                            btn.classList.remove('active', 'text-blue-600');
+                            btn.classList.add('text-gray-600');
+                        });
+                        document.querySelectorAll('.content-screen').forEach(s => s.classList.add('hidden'));
+                        document.getElementById('contactsScreen').classList.remove('hidden');
+                        AppState.activeScreen = 'contacts';
 
-                        // Switch to contacts screen and open form
-                        switchScreen('contacts');
-                        openContactSheet();
+                        // Stop camera
+                        if (cameraStream) {
+                            cameraStream.getTracks().forEach(track => track.stop());
+                            cameraStream = null;
+                        }
 
-                        showToast('✓ Business card scanned! Review and save.', 'success');
+                        loadContacts();
+                        showToast(`✓ ${name} added from business card!`, 'success');
                     } else {
-                        showToast(data.message || 'Failed to extract contact info', 'error');
+                        showToast(data.detail || data.message || 'Failed to extract contact info', 'error');
                     }
                 } catch (error) {
                     document.getElementById('processingOverlay').classList.add('hidden');
                     document.getElementById('processingOverlay').classList.remove('flex');
-                    showToast('Network error', 'error');
+                    showToast('Network error. Check console for details.', 'error');
                     console.error('Capture error:', error);
                 }
             }, 'image/jpeg', 0.95);
@@ -1139,23 +1150,29 @@
                 document.getElementById('processingOverlay').classList.remove('flex');
 
                 if (response.ok && data.status === 'success') {
-                    const contact = data.contact;
+                    // Backend already saved the contact - show details and refresh list
+                    const fields = data.extracted_fields || {};
+                    const name = fields.name || 'Unknown';
 
-                    AppState.editingContactId = null;
-                    document.getElementById('sheetTitle').textContent = 'Review Scanned Contact';
-                    document.getElementById('contactId').value = '';
-                    document.getElementById('contactName').value = contact.name || '';
-                    document.getElementById('contactEmail').value = contact.email || '';
-                    document.getElementById('contactPhone').value = contact.phone || '';
-                    document.getElementById('contactLinkedin').value = contact.linkedin !== 'N/A' ? contact.linkedin : '';
-                    document.getElementById('contactCompany').value = contact.company_name !== 'N/A' ? contact.company_name : '';
+                    // Switch to contacts screen and refresh
+                    document.querySelectorAll('.nav-btn').forEach(btn => {
+                        btn.classList.remove('active', 'text-blue-600');
+                        btn.classList.add('text-gray-600');
+                    });
+                    document.querySelectorAll('.content-screen').forEach(s => s.classList.add('hidden'));
+                    document.getElementById('contactsScreen').classList.remove('hidden');
+                    AppState.activeScreen = 'contacts';
 
-                    switchScreen('contacts');
-                    openContactSheet();
+                    // Stop camera
+                    if (cameraStream) {
+                        cameraStream.getTracks().forEach(track => track.stop());
+                        cameraStream = null;
+                    }
 
-                    showToast('✓ Image processed! Review and save.', 'success');
+                    loadContacts();
+                    showToast(`✓ ${name} added from business card!`, 'success');
                 } else {
-                    showToast(data.message || 'Failed to extract contact info', 'error');
+                    showToast(data.detail || data.message || 'Failed to extract contact info', 'error');
                 }
             } catch (error) {
                 document.getElementById('processingOverlay').classList.add('hidden');
