@@ -33,7 +33,7 @@ TEMP_DIR = os.path.join(BASE_DIR, "temp_images")
 QR_DIR = os.path.join(BASE_DIR, "saved_qr")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 USERS_DIR = os.path.join(BASE_DIR, "users")
-USERS_FILE = os.path.join(BASE_DIR, "users.json")
+USERS_FILE = os.path.join(BASE_DIR, "users", "users.json")  # Inside /app/users/ volume for persistence
 METADATA_PATH = os.path.join(DATA_DIR, "metadata.pickle")
 FAISS_INDEX_PATH = os.path.join(DATA_DIR, "faiss.index")
 
