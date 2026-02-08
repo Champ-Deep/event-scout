@@ -331,6 +331,12 @@ class FAISSIndex:
                 return True
         return False
 
+    def delete_user(self, user_id: str):
+        """Remove all FAISS data for a user."""
+        self.indices.pop(user_id, None)
+        self.texts.pop(user_id, None)
+        self.metadata.pop(user_id, None)
+
     def search(self, user_id: str, query: str, k: int = 4) -> List[tuple]:
         """Search user's contacts semantically."""
         index = self.indices.get(user_id)
@@ -2384,6 +2390,68 @@ async def admin_list_users(admin_id: str = Depends(verify_admin)):
 
         return {"status": "success", "users": user_list, "total": len(user_list)}
     except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.delete("/admin/user/{target_user_id}")
+async def admin_delete_user(
+    target_user_id: str,
+    admin_id: str = Depends(verify_admin),
+):
+    """Delete a user and all their data. Admin only. Cannot delete yourself."""
+    if target_user_id == admin_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own admin account")
+
+    session = await get_db_session()
+    try:
+        # Find user
+        result = await session.execute(
+            select(UserDB).where(UserDB.id == uuid.UUID(target_user_id))
+        )
+        user = result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user_name = user.name
+
+        # Delete user's contacts from FAISS
+        try:
+            faiss_index.delete_user(target_user_id)
+        except Exception as faiss_err:
+            print(f"[FAISS] Error deleting user index: {faiss_err}")
+
+        # Delete user's contacts
+        await session.execute(
+            delete(ContactDB).where(ContactDB.user_id == uuid.UUID(target_user_id))
+        )
+        # Delete user's conversations
+        await session.execute(
+            delete(ConversationDB).where(ConversationDB.user_id == uuid.UUID(target_user_id))
+        )
+        # Delete user's profile
+        await session.execute(
+            delete(UserProfileDB).where(UserProfileDB.user_id == uuid.UUID(target_user_id))
+        )
+        # Delete user's card
+        await session.execute(
+            delete(UserCardDB).where(UserCardDB.user_id == uuid.UUID(target_user_id))
+        )
+        # Delete user
+        await session.delete(user)
+        await session.commit()
+
+        return {
+            "status": "success",
+            "message": f"User '{user_name}' and all their data deleted",
+            "user_id": target_user_id,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     finally:

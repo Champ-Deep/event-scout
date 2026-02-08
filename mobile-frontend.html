@@ -3531,6 +3531,7 @@
                             </div>
                         </div>
                         ${total > 0 ? `<div class="flex h-1.5 rounded-full overflow-hidden mt-2 bg-gray-100"><div class="bg-red-500" style="width:${hotPct}%"></div><div class="bg-orange-400" style="width:${warmPct}%"></div><div class="bg-gray-300" style="width:${coldPct}%"></div></div>` : ''}
+                        ${!u.is_admin ? `<button onclick="event.stopPropagation(); adminDeleteUser('${u.user_id}', '${escapeHtml(u.name)}')" class="mt-2 text-xs text-red-400 hover:text-red-600"><i class="fas fa-trash mr-1"></i>Remove user</button>` : ''}
                     </div>`;
                 }).join('');
 
@@ -3984,6 +3985,23 @@
                     showToast('Contacts exported!', 'success');
                 })
                 .catch(err => { console.error('Export error:', err); showToast('Export failed', 'error'); });
+        }
+
+        // --- Admin Delete User ---
+        async function adminDeleteUser(userId, userName) {
+            if (!confirm(`DELETE user "${userName}" and ALL their contacts? This cannot be undone!`)) return;
+            if (!confirm(`Are you absolutely sure? This will permanently delete ${userName} and all their data.`)) return;
+            try {
+                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/user/${userId}?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+                const data = await resp.json();
+                if (resp.ok && data.status === 'success') {
+                    showToast(`User ${userName} deleted`, 'success');
+                    loadAdminDashboard();
+                    loadAdminActivity();
+                } else { showToast(data.detail || 'Failed to delete user', 'error'); }
+            } catch (err) { console.error('Delete user error:', err); showToast('Failed to delete user', 'error'); }
         }
 
         // ==================== EVENT FILES (Admin Upload + User Download) ====================
