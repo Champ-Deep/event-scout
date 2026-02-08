@@ -686,7 +686,7 @@ def extract_contact_from_image_with_gemini(image_path: str) -> dict:
         print("[GEMINI] API key not configured")
         return fields
 
-    model_names = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite']
+    model_names = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite']
     img = Image.open(image_path)
     print(f"[GEMINI] Image opened: {img.size}, mode={img.mode}")
 
@@ -718,6 +718,7 @@ Return ONLY a valid JSON object with exactly these keys. Use "N/A" for any field
 CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explanation."""
 
     last_error = None
+    model_errors = []
     for model_name in model_names:
         try:
             print(f"[GEMINI] Trying model: {model_name}")
@@ -728,7 +729,9 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
             request_options = genai_types.RequestOptions(timeout=45)
             response = model.generate_content([prompt, img], request_options=request_options)
             if not response or not response.text:
-                print(f"[GEMINI] Empty response from {model_name}")
+                err_msg = f"{model_name}: empty response"
+                print(f"[GEMINI] {err_msg}")
+                model_errors.append(err_msg)
                 continue
 
             response_text = response.text.strip()
@@ -755,20 +758,122 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
                 if key in extracted and extracted[key] and str(extracted[key]).strip() and extracted[key] != "N/A":
                     fields[key] = str(extracted[key]).strip()
 
-            print(f"[GEMINI] Extracted: {fields}")
+            print(f"[GEMINI] Extracted with {model_name}: {fields}")
+            fields["_source"] = f"gemini:{model_name}"
             return fields
 
         except json.JSONDecodeError as e:
-            print(f"[GEMINI] JSON parse error with {model_name}: {e}")
+            err_msg = f"{model_name}: JSON parse error - {str(e)[:80]}"
+            print(f"[GEMINI] {err_msg}")
+            model_errors.append(err_msg)
             last_error = e
             continue
         except Exception as e:
-            print(f"[GEMINI] Error with {model_name}: {e}")
+            err_msg = f"{model_name}: {str(e)[:100]}"
+            print(f"[GEMINI] {err_msg}")
             traceback.print_exc()
+            model_errors.append(err_msg)
             last_error = e
             continue
 
-    print(f"[GEMINI] All models failed. Last error: {last_error}")
+    print(f"[GEMINI] All models failed. Errors: {model_errors}")
+    fields["_errors"] = model_errors
+    return fields
+
+
+# --- OPENROUTER VISION FALLBACK FOR OCR ---
+async def extract_contact_with_openrouter(image_path: str) -> dict:
+    """Fallback OCR using OpenRouter vision model when Gemini fails entirely."""
+    fields = {"name": "N/A", "email": "N/A", "phone": "N/A", "linkedin": "N/A", "company_name": "N/A"}
+    if not OPENROUTER_API_KEY:
+        print("[OPENROUTER-OCR] No API key configured")
+        return fields
+
+    import base64
+    with open(image_path, "rb") as f:
+        img_b64 = base64.b64encode(f.read()).decode()
+
+    prompt = """You are an expert at reading business cards. Extract ALL contact information from this image.
+
+Return ONLY a valid JSON object with exactly these keys. Use "N/A" for any field you cannot find:
+{"name": "...", "email": "...", "phone": "...", "linkedin": "...", "company_name": "..."}
+
+CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explanation."""
+
+    # Try multiple models via OpenRouter
+    or_models = [
+        "google/gemini-2.5-flash",      # Gemini via OpenRouter (different quota pool)
+        "anthropic/claude-sonnet-4-5",   # Claude Sonnet as fallback
+    ]
+
+    for or_model in or_models:
+        try:
+            print(f"[OPENROUTER-OCR] Trying model: {or_model}")
+            async with httpx.AsyncClient(timeout=45.0) as client:
+                resp = await client.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://event-scout-delta.vercel.app",
+                        "X-Title": "Event Scout OCR",
+                    },
+                    json={
+                        "model": or_model,
+                        "messages": [{
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
+                            ]
+                        }],
+                        "max_tokens": 500,
+                        "temperature": 0.1,
+                    },
+                )
+
+            data = resp.json()
+            if "error" in data:
+                err_msg = data["error"].get("message", str(data["error"]))
+                print(f"[OPENROUTER-OCR] API error with {or_model}: {err_msg}")
+                continue
+
+            if "choices" not in data or not data["choices"]:
+                print(f"[OPENROUTER-OCR] No choices in response from {or_model}")
+                continue
+
+            response_text = data["choices"][0]["message"]["content"].strip()
+            print(f"[OPENROUTER-OCR] Raw response from {or_model}: {response_text[:500]}")
+
+            # Parse JSON from response (handle markdown wrapping)
+            if response_text.startswith("```"):
+                parts = response_text.split("```")
+                response_text = parts[1] if len(parts) > 1 else response_text
+                if response_text.startswith("json"):
+                    response_text = response_text[4:]
+                response_text = response_text.strip()
+
+            if not response_text.startswith("{"):
+                json_start = response_text.find("{")
+                json_end = response_text.rfind("}") + 1
+                if json_start != -1 and json_end > json_start:
+                    response_text = response_text[json_start:json_end]
+
+            extracted = json.loads(response_text)
+            for key in fields:
+                if key in extracted and extracted[key] and str(extracted[key]).strip() and extracted[key] != "N/A":
+                    fields[key] = str(extracted[key]).strip()
+
+            print(f"[OPENROUTER-OCR] Extracted with {or_model}: {fields}")
+            fields["_source"] = f"openrouter:{or_model}"
+            return fields
+
+        except Exception as e:
+            print(f"[OPENROUTER-OCR] Error with {or_model}: {e}")
+            traceback.print_exc()
+            continue
+
+    print("[OPENROUTER-OCR] All models failed")
     return fields
 
 
@@ -955,12 +1060,27 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
     with open(temp_filename, "wb") as f:
         f.write(content)
     try:
-        # Run blocking Gemini OCR in thread pool to avoid blocking the event loop
-        fields = await asyncio.to_thread(extract_contact_from_image_with_gemini, temp_filename)
-        has_info = any(v != "N/A" for k, v in fields.items() if k != "linkedin")
+        # Direct synchronous call — blocking but proven reliable
+        fields = extract_contact_from_image_with_gemini(temp_filename)
+        has_info = any(v != "N/A" for k, v in fields.items() if k not in ("linkedin", "_errors", "_source"))
+        gemini_errors = fields.pop("_errors", [])
+        gemini_source = fields.pop("_source", None)
+
+        # If Gemini failed, try OpenRouter as fallback
         if not has_info:
-            print(f"[SCAN] No info extracted. Fields: {fields}")
-            raise HTTPException(status_code=400, detail="No contact information found in image. Please ensure the business card is clearly visible and well-lit.")
+            print(f"[SCAN] Gemini returned no info. Errors: {gemini_errors}. Trying OpenRouter fallback...")
+            fields = await extract_contact_with_openrouter(temp_filename)
+            has_info = any(v != "N/A" for k, v in fields.items() if k not in ("linkedin", "_errors", "_source"))
+            or_source = fields.pop("_source", None)
+            if has_info:
+                print(f"[SCAN] OpenRouter fallback succeeded via {or_source}")
+            else:
+                # Both Gemini and OpenRouter failed — report all errors
+                all_errors = gemini_errors.copy()
+                all_errors.append("OpenRouter fallback also returned no contact info")
+                error_detail = f"No contact information found in image. Models tried: {', '.join(all_errors)}"
+                print(f"[SCAN] All OCR models failed. {error_detail}")
+                raise HTTPException(status_code=400, detail=error_detail)
 
         # DISABLED: LinkedIn auto-lookup generates hallucinated/fake URLs
         # Only use LinkedIn if actually found on the business card via OCR

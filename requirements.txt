@@ -10,7 +10,7 @@ qrcode
 Pillow
 pyzbar  # For QR code decoding
 python-multipart # For file uploads in FastAPI
-google-generativeai # For Gemini API integration (also used for image OCR)
+google-generativeai>=0.8.3 # Pin minimum for gemini-2.5-flash support + image OCR
 passlib[bcrypt]  # For password hashing
 email-validator  # For email validation
 sqlalchemy[asyncio]  # Async ORM for PostgreSQL
