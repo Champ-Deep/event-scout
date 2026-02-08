@@ -1726,6 +1726,14 @@ async def update_user_profile_route(
 ):
     session = await get_db_session()
     try:
+        # Validate user exists first
+        user_result = await session.execute(
+            select(UserDB).where(UserDB.id == uuid.UUID(user_id))
+        )
+        user = user_result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail=f"User not found. Please log in again.")
+
         result = await session.execute(
             select(UserProfileDB).where(UserProfileDB.user_id == uuid.UUID(user_id))
         )
@@ -2593,6 +2601,14 @@ async def update_user_card(
     """Update user's digital business card."""
     session = await get_db_session()
     try:
+        # Validate user exists first
+        user_result = await session.execute(
+            select(UserDB).where(UserDB.id == uuid.UUID(user_id))
+        )
+        user = user_result.scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail=f"User not found. Please log in again.")
+
         result = await session.execute(
             select(UserCardDB).where(UserCardDB.user_id == uuid.UUID(user_id))
         )

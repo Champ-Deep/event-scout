@@ -1733,7 +1733,13 @@
 
                 // Step 3: Saving
                 updateProcessStep(3);
-                const data = await response.json();
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    throw new Error('Server returned invalid response. Please check your connection.');
+                }
 
                 if (response.ok && data.status === 'success') {
                     // Step 4: Done
@@ -1757,45 +1763,92 @@
                     return true;
                 } else {
                     hideProcessing();
-                    let errMsg = 'Failed to extract contact info';
-                    if (data.detail) {
+
+                    // Detailed error messages based on HTTP status
+                    let errMsg = 'Failed to process card';
+                    if (response.status === 401) {
+                        errMsg = 'Session expired. Please log in again.';
+                        setTimeout(() => handleLogout(), 2000);
+                    } else if (response.status === 404) {
+                        errMsg = 'User not found. Please log in again.';
+                    } else if (response.status === 500) {
+                        errMsg = data.detail || 'Server error. Please try again.';
+                    } else if (data.detail) {
                         errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
                     } else if (data.message) {
                         errMsg = data.message;
                     }
+
                     showToast(errMsg, 'error');
+                    console.error('Scan error:', { status: response.status, data });
                     return false;
                 }
             } catch (error) {
                 hideProcessing();
-                showToast('Network error', 'error');
+
+                // Better error messages
+                let errorMessage = 'Network error';
+                if (error.message) {
+                    errorMessage = error.message;
+                } else if (error.message && error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Cannot connect to server. Check your internet connection.';
+                }
+
+                showToast(errorMessage, 'error');
                 console.error('Upload error:', error);
                 return false;
             }
         }
 
         async function captureBusinessCard() {
-            if (scanProcessing) return;
+            if (scanProcessing) {
+                console.log('Scan already in progress, ignoring...');
+                return;
+            }
+
             scanProcessing = true;
 
             const videoElement = document.getElementById('cameraStream');
             if (!videoElement.srcObject) {
-                showToast('Camera not initialized', 'error');
+                showToast('Camera not initialized. Please refresh the page.', 'error');
                 scanProcessing = false;
                 return;
             }
 
-            const canvas = document.createElement('canvas');
-            canvas.width = videoElement.videoWidth;
-            canvas.height = videoElement.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(videoElement, 0, 0);
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
 
-            canvas.toBlob(async (blob) => {
-                await processImageUpload(blob, 'business-card.jpg');
+                if (canvas.width === 0 || canvas.height === 0) {
+                    throw new Error('Invalid video dimensions. Camera may not be ready.');
+                }
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoElement, 0, 0);
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        showToast('Failed to capture image. Please try again.', 'error');
+                        scanProcessing = false;
+                        return;
+                    }
+
+                    try {
+                        await processImageUpload(blob, 'business-card.jpg');
+                    } catch (error) {
+                        console.error('Process upload error:', error);
+                        showToast('Failed to process card. Please try again.', 'error');
+                    } finally {
+                        scanProcessing = false;
+                        // Camera stays open for next scan
+                    }
+                }, 'image/jpeg', 0.95);
+            } catch (error) {
+                console.error('Capture error:', error);
+                showToast(error.message || 'Failed to capture photo', 'error');
                 scanProcessing = false;
-                // Camera stays open for next scan
-            }, 'image/jpeg', 0.95);
+            }
         }
 
         function finishBulkScan() {
@@ -2650,16 +2703,22 @@
             } else if (section === 'event') {
                 title.textContent = 'Current Event';
                 body.innerHTML = `
-                    <p class="text-sm text-gray-500 mb-4">Tell AI about the event you're attending.</p>
+                    <p class="text-sm text-gray-500 mb-4">
+                        <i class="fas fa-calendar-check text-orange-500 mr-1"></i>
+                        Tell AI about the event you're attending.
+                    </p>
                     <div class="space-y-4">
-                        <div>
+                        <div class="relative">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
-                            <input type="text" id="settEventName" value="${escapeHtml(p.current_event_name || '')}" placeholder="e.g., CES 2026, GITEX Dubai"
+                            <input type="text" id="settEventName" value="${escapeHtml(p.current_event_name || '')}" placeholder="Start typing: WHX, CES, GITEX..."
+                                oninput="handleEventNameInput()"
+                                onfocus="handleEventNameInput()"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+                            <div id="eventSuggestionsDropdown" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Event Description</label>
-                            <textarea id="settEventDesc" rows="3" placeholder="What is this event about? Who attends?"
+                            <textarea id="settEventDesc" rows="3" placeholder="Auto-filled when you select an event above"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none resize-none">${escapeHtml(p.current_event_description || '')}</textarea>
                         </div>
                         <div>
@@ -2781,6 +2840,101 @@
                 closeSettingsSheet();
             }
         }
+
+        // Event autocomplete suggestions
+        const EVENT_TEMPLATES = [
+            {
+                names: ['WHX', 'WHX Dubai', 'World Health Expo', 'Arab Health'],
+                fullName: 'WHX Dubai 2026',
+                description: 'Largest healthcare exhibition in Middle East. Medical devices, pharma, health IT, diagnostics. 4,300+ exhibitors from 180+ countries.',
+                icon: 'fa-heartbeat'
+            },
+            {
+                names: ['CES', 'CES 2026', 'Consumer Electronics Show'],
+                fullName: 'CES 2026',
+                description: 'Consumer Electronics Show. Technology, innovation, gadgets, AI, automotive tech, smart home, and emerging technologies.',
+                icon: 'fa-microchip'
+            },
+            {
+                names: ['GITEX', 'GITEX Dubai', 'GITEX Global'],
+                fullName: 'GITEX Dubai 2026',
+                description: 'Gulf Information Technology Exhibition. Tech, AI, cybersecurity, cloud, startups, fintech, and digital transformation.',
+                icon: 'fa-globe'
+            },
+            {
+                names: ['MEDICA', 'MEDICA Düsseldorf'],
+                fullName: 'MEDICA 2026',
+                description: 'International trade fair for medical technology. Laboratory equipment, diagnostics, physiotherapy, IT systems.',
+                icon: 'fa-hospital'
+            },
+            {
+                names: ['HIMSS', 'HIMSS Global'],
+                fullName: 'HIMSS 2026',
+                description: 'Healthcare Information and Management Systems Society. Health IT, interoperability, digital health innovation.',
+                icon: 'fa-laptop-medical'
+            },
+            {
+                names: ['DMEXCO', 'DMEXCO Cologne'],
+                fullName: 'DMEXCO 2026',
+                description: 'Digital Marketing Expo & Conference. MarTech, AdTech, digital advertising, e-commerce.',
+                icon: 'fa-chart-line'
+            }
+        ];
+
+        function handleEventNameInput() {
+            const input = document.getElementById('settEventName');
+            const dropdown = document.getElementById('eventSuggestionsDropdown');
+            if (!input || !dropdown) return;
+
+            const query = input.value.trim().toLowerCase();
+
+            if (query.length === 0) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            // Filter matching events
+            const matches = EVENT_TEMPLATES.filter(event =>
+                event.names.some(name => name.toLowerCase().includes(query))
+            );
+
+            if (matches.length === 0) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            // Render suggestions
+            dropdown.innerHTML = matches.map(event => `
+                <div onclick="selectEventSuggestion('${event.fullName.replace(/'/g, "\\'")}', '${event.description.replace(/'/g, "\\'")}')"
+                     class="px-4 py-3 hover:bg-orange-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                    <div class="flex items-start gap-3">
+                        <i class="fas ${event.icon} text-orange-500 text-lg mt-0.5"></i>
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-900 text-sm">${event.fullName}</div>
+                            <div class="text-xs text-gray-600 mt-0.5">${event.description.substring(0, 80)}...</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            dropdown.classList.remove('hidden');
+        }
+
+        function selectEventSuggestion(fullName, description) {
+            document.getElementById('settEventName').value = fullName;
+            document.getElementById('settEventDesc').value = description;
+            document.getElementById('eventSuggestionsDropdown').classList.add('hidden');
+            showToast('Event auto-filled! Review and click Save.', 'success');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('eventSuggestionsDropdown');
+            const input = document.getElementById('settEventName');
+            if (dropdown && input && !dropdown.contains(e.target) && !input.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
 
         // ==================== EXPO / EXHIBITOR FUNCTIONS ====================
         let exhibitorCache = [];
