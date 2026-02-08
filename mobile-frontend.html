@@ -399,7 +399,7 @@
                 </div>
 
                 <!-- Contact List -->
-                <div id="contactsList" class="divide-y divide-gray-200">
+                <div id="contactsList" class="divide-y divide-gray-200 pt-1">
                     <!-- Contacts will be rendered here -->
                 </div>
 
@@ -669,7 +669,7 @@
                         </button>
                         <button onclick="openSettingsSheet('event')" class="w-full flex items-center justify-between py-3 px-4 bg-orange-50 rounded-lg active:bg-orange-100 transition">
                             <div class="flex items-center gap-3">
-                                <i class="fas fa-calendar-star text-orange-600 text-lg w-6 text-center"></i>
+                                <i class="fas fa-calendar-check text-orange-600 text-lg w-6 text-center"></i>
                                 <span class="text-gray-700">Current Event</span>
                             </div>
                             <i class="fas fa-chevron-right text-gray-400"></i>
@@ -1298,7 +1298,7 @@
         }
 
         // ==================== DASHBOARD FUNCTIONS ====================
-        function showDashboard() {
+        async function showDashboard() {
             document.getElementById('authScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
             document.getElementById('userName').textContent = AppState.currentUser.name;
@@ -1315,7 +1315,7 @@
             }
 
             loadContacts();
-            loadUserProfile();
+            await loadUserProfile();  // Must complete before expo can read event name
             loadDigitalCard();
         }
 
@@ -1846,6 +1846,12 @@
 
         async function processImageUpload(blob, filename) {
             /** Core upload function - runs in background, non-blocking. */
+            console.log('[SCAN] Blob size:', blob.size, 'bytes, type:', blob.type);
+            if (!blob || blob.size < 1000) {
+                showToast('Image capture failed - please try again', 'error');
+                console.error('[SCAN] Blob too small:', blob.size);
+                return false;
+            }
             pendingScans++;
             updatePendingScanBadge();
 
@@ -1949,20 +1955,25 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(videoElement, 0, 0);
 
-                canvas.toBlob((blob) => {
-                    if (!blob) {
+                canvas.toBlob(async (blob) => {
+                    if (!blob || blob.size < 1000) {
                         showToast('Failed to capture image. Please try again.', 'error');
                         scanProcessing = false;
                         return;
                     }
 
+                    // Create a safe copy of the blob data (immune to GC of original)
+                    const arrayBuffer = await blob.arrayBuffer();
+                    const safeBlob = new Blob([arrayBuffer], { type: 'image/jpeg' });
+                    console.log('[SCAN] Captured image:', safeBlob.size, 'bytes');
+
                     // Fire-and-forget: process in background, allow next capture immediately
-                    processImageUpload(blob, 'business-card.jpg').catch(error => {
+                    processImageUpload(safeBlob, 'business-card.jpg').catch(error => {
                         console.error('Background scan error:', error);
                     });
                     scanProcessing = false;
                     showToast('Photo captured! Processing...', 'info');
-                }, 'image/jpeg', 0.95);
+                }, 'image/jpeg', 0.92);
             } catch (error) {
                 console.error('Capture error:', error);
                 showToast(error.message || 'Failed to capture photo', 'error');
@@ -3115,12 +3126,18 @@
 
         async function loadExhibitors() {
             // Use user's event or default to WHX Dubai 2026
-            const eventName = AppState.userProfile?.current_event_name || 'WHX Dubai 2026';
-            const eventDesc = AppState.userProfile?.current_event_description || 'World Health Expo - Dubai 2026';
+            const eventName = (AppState.userProfile && AppState.userProfile.current_event_name) || 'WHX Dubai 2026';
+            const eventDesc = (AppState.userProfile && AppState.userProfile.current_event_description) || 'World Health Expo - Dubai 2026';
 
             // Update header with event name and description
             document.getElementById('expoEventName').textContent = eventName;
             document.getElementById('expoEventDetails').textContent = eventDesc || 'Loading exhibitors...';
+
+            // Show loading state
+            const exhibitorList = document.getElementById('exhibitorList');
+            if (exhibitorList) {
+                exhibitorList.innerHTML = '<div class="p-8 text-center text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-3"></i><p>Loading exhibitors...</p></div>';
+            }
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/?event=${encodeURIComponent(eventName)}&limit=200`, {
@@ -3801,17 +3818,43 @@
         function toggleChatVoice() { chatVoiceActive ? stopChatVoice() : startChatVoice(); }
         function startChatVoice() {
             var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SR) { showToast('Voice input not supported in this browser', 'error'); return; }
-            chatVoiceActive = true; var btn = document.getElementById('chatMicBtn'); btn.classList.remove('bg-gray-100','text-gray-500'); btn.classList.add('bg-red-500','text-white','recording-pulse');
-            chatVoiceRecognition = new SR(); chatVoiceRecognition.continuous = true; chatVoiceRecognition.interimResults = true; chatVoiceRecognition.lang = 'en-US';
-            var chatInput = document.getElementById('chatInput'), finalText = '';
-            chatVoiceRecognition.onresult = function(evt) { var interim = ''; for (var i = evt.resultIndex; i < evt.results.length; i++) { if (evt.results[i].isFinal) finalText += evt.results[i][0].transcript + ' '; else interim = evt.results[i][0].transcript; } chatInput.value = (finalText + interim).trim(); };
-            chatVoiceRecognition.onerror = function(e) { console.warn('[Chat Voice] Error:', e.error); stopChatVoice(); };
-            chatVoiceRecognition.onend = function() { if (chatVoiceActive) try { chatVoiceRecognition.start(); } catch(e) { stopChatVoice(); } };
-            chatVoiceRecognition.start(); chatInput.placeholder = 'Listening... speak now';
+            if (!SR) { showToast('Voice input not supported', 'error'); return; }
+            chatVoiceActive = true;
+            var btn = document.getElementById('chatMicBtn');
+            btn.classList.remove('bg-gray-100','text-gray-500');
+            btn.classList.add('bg-red-500','text-white','recording-pulse');
+            var chatInput = document.getElementById('chatInput');
+            chatInput.placeholder = 'Listening... speak now';
+            chatVoiceRecognition = new SR();
+            chatVoiceRecognition.continuous = false;
+            chatVoiceRecognition.interimResults = true;
+            chatVoiceRecognition.lang = 'en-US';
+            var finalText = chatInput.value ? chatInput.value + ' ' : '';
+            chatVoiceRecognition.onresult = function(evt) {
+                var interim = '';
+                for (var i = evt.resultIndex; i < evt.results.length; i++) {
+                    if (evt.results[i].isFinal) finalText += evt.results[i][0].transcript + ' ';
+                    else interim = evt.results[i][0].transcript;
+                }
+                chatInput.value = (finalText + interim).trim();
+            };
+            chatVoiceRecognition.onerror = function(e) {
+                console.warn('[Chat Voice] Error:', e.error);
+                if (e.error !== 'no-speech') stopChatVoice();
+            };
+            chatVoiceRecognition.onend = function() {
+                if (chatVoiceActive) {
+                    try { finalText = chatInput.value ? chatInput.value + ' ' : ''; chatVoiceRecognition.start(); }
+                    catch(e) { stopChatVoice(); }
+                }
+            };
+            chatVoiceRecognition.start();
         }
         function stopChatVoice() {
-            chatVoiceActive = false; var btn = document.getElementById('chatMicBtn'); btn.classList.remove('bg-red-500','text-white','recording-pulse'); btn.classList.add('bg-gray-100','text-gray-500');
+            chatVoiceActive = false;
+            var btn = document.getElementById('chatMicBtn');
+            btn.classList.remove('bg-red-500','text-white','recording-pulse');
+            btn.classList.add('bg-gray-100','text-gray-500');
             if (chatVoiceRecognition) { chatVoiceRecognition.onend = null; try { chatVoiceRecognition.stop(); } catch(e) {} chatVoiceRecognition = null; }
             document.getElementById('chatInput').placeholder = 'Ask about your contacts...';
         }

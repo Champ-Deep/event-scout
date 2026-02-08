@@ -2,6 +2,7 @@ import os
 import re
 import json
 import uuid
+import asyncio
 import qrcode
 from pyzbar.pyzbar import decode as decode_qr
 from PIL import Image
@@ -172,6 +173,7 @@ class UserCardUpdate(BaseModel):
     zoom_number: Optional[str] = None
     website: Optional[str] = None
     photo_url: Optional[str] = None
+    photo_base64: Optional[str] = None  # Base64 data URI for profile photo
     bio: Optional[str] = None
     custom_fields: Optional[Dict[str, str]] = None  # For any additional fields
 
@@ -380,6 +382,11 @@ RESPONSE STYLE:
 - When asked about pitch angles, tailor to the specific contact's company/role/industry
 - Format responses with clear headers and bullet points for easy mobile reading
 - Keep responses concise but actionable — the user is at an event and needs quick answers
+- MIRROR the user's communication style. If they're direct, be direct. If they're casual, be casual.
+- Be a PARTNER, not just an assistant — anticipate needs, connect dots between contacts, think ahead
+- Write like you're texting a trusted colleague at the event, not writing a formal report
+- When the user has a LinkedIn profile or company website, weave those insights naturally into advice
+- Always frame advice in terms of the user's specific products, value props, and goals — make it feel like you truly understand their business
 
 Important: Only use information from the provided contact/exhibitor context. Do not make up contact details or exhibitor info."""
 
@@ -422,8 +429,14 @@ Important: Only use information from the provided contact/exhibitor context. Do 
                 profile_context += f"\n- Event Goals:"
                 for goal in user_profile["event_goals"]:
                     profile_context += f"\n  * {goal}"
+            if user_profile.get("linkedin_url"):
+                profile_context += f"\n- LinkedIn: {user_profile['linkedin_url']}"
+            if user_profile.get("company_website"):
+                profile_context += f"\n- Company Website: {user_profile['company_website']}"
+            if user_profile.get("target_geographies"):
+                profile_context += f"\n- Target Geographies: {', '.join(user_profile['target_geographies'])}"
 
-            profile_context += "\n\nCRITICAL: Use ALL of the above context when giving advice. Every pitch suggestion must reference the user's actual products and value props. Every prioritization must consider their target market. Every briefing must connect to their event goals."
+            profile_context += "\n\nCRITICAL: Use ALL of the above context when giving advice. Every pitch suggestion must reference the user's actual products and value props. Every prioritization must consider their target market. Every briefing must connect to their event goals. Speak as if you truly know and understand this person — their business, their style, their goals."
             base_prompt += profile_context
 
         if exhibitors:
@@ -673,7 +686,7 @@ def extract_contact_from_image_with_gemini(image_path: str) -> dict:
         print("[GEMINI] API key not configured")
         return fields
 
-    model_names = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite']
+    model_names = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.0-flash-lite']
     img = Image.open(image_path)
     print(f"[GEMINI] Image opened: {img.size}, mode={img.mode}")
 
@@ -683,6 +696,12 @@ def extract_contact_from_image_with_gemini(image_path: str) -> dict:
         img = bg
     elif img.mode != 'RGB':
         img = img.convert('RGB')
+
+    # Compress large images for faster OCR (business cards don't need 4K)
+    max_dim = 1600
+    if max(img.size) > max_dim:
+        img.thumbnail((max_dim, max_dim), Image.LANCZOS)
+        print(f"[GEMINI] Image resized to: {img.size}")
 
     prompt = """You are an expert at reading business cards. Look at this image carefully and extract ALL contact information you can find.
 
@@ -930,13 +949,18 @@ async def add_contact_from_qr(file: UploadFile, user_id: str):
 async def add_contact_from_image(file: UploadFile, user_id: str):
     temp_filename = os.path.join(TEMP_DIR, file.filename or f"{uuid.uuid4()}.png")
     content = await file.read()
+    print(f"[SCAN] Received image: {len(content)} bytes, filename: {file.filename}, content_type: {file.content_type}")
+    if len(content) < 1000:
+        raise HTTPException(status_code=400, detail="Image file is empty or corrupted. Please try again.")
     with open(temp_filename, "wb") as f:
         f.write(content)
     try:
-        fields = extract_contact_from_image_with_gemini(temp_filename)
+        # Run blocking Gemini OCR in thread pool to avoid blocking the event loop
+        fields = await asyncio.to_thread(extract_contact_from_image_with_gemini, temp_filename)
         has_info = any(v != "N/A" for k, v in fields.items() if k != "linkedin")
         if not has_info:
-            raise HTTPException(status_code=400, detail="No contact information found in image")
+            print(f"[SCAN] No info extracted. Fields: {fields}")
+            raise HTTPException(status_code=400, detail="No contact information found in image. Please ensure the business card is clearly visible and well-lit.")
 
         # DISABLED: LinkedIn auto-lookup generates hallucinated/fake URLs
         # Only use LinkedIn if actually found on the business card via OCR
@@ -1579,12 +1603,13 @@ async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api
                 for c in all_contacts_rows
             ]
 
-            # Load exhibitors if query mentions event/exhibitor/booth/visit keywords
+            # Always include exhibitor context for event intelligence
             exhibitors = []
-            query_lower = query.query.lower()
-            exhibitor_keywords = ["exhibitor", "booth", "visit", "hall", "expo", "vendor", "stand", "floor"]
-            if any(kw in query_lower for kw in exhibitor_keywords):
-                ex_result = await session.execute(select(ExhibitorDB).limit(50))
+            try:
+                event_name = user_profile.get("current_event_name", "WHX Dubai 2026")
+                ex_result = await session.execute(
+                    select(ExhibitorDB).where(ExhibitorDB.event_name == event_name).limit(50)
+                )
                 ex_rows = ex_result.scalars().all()
                 exhibitors = [
                     {
@@ -1594,6 +1619,8 @@ async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api
                     }
                     for e in ex_rows
                 ]
+            except Exception as ex_err:
+                print(f"[CHAT] Error loading exhibitors: {ex_err}")
         finally:
             await session.close()
 
