@@ -6,7 +6,8 @@
     "buildCommand": "",
     "outputDirectory": ".",
     "rewrites": [
-        { "source": "/", "destination": "/mobile-frontend.html" }
+        { "source": "/", "destination": "/mobile-frontend.html" },
+        { "source": "/card/:token", "destination": "/card-viewer.html" }
     ],
     "headers": [
         {

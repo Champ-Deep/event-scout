@@ -2273,12 +2273,69 @@ async def admin_dashboard(admin_id: str = Depends(verify_admin)):
                 }
                 for c in recent
             ],
+            "webhook_configured": bool(WEBHOOK_URL),
+            "webhook_url_preview": WEBHOOK_URL[:50] + "..." if len(WEBHOOK_URL) > 50 else WEBHOOK_URL if WEBHOOK_URL else None,
         }
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         await session.close()
+
+
+@app.post("/admin/test_webhook")
+async def admin_test_webhook(admin_id: str = Depends(verify_admin)):
+    """Send a test greeting message to the configured webhook endpoint."""
+    if not WEBHOOK_URL:
+        return {
+            "status": "error",
+            "webhook_sent": False,
+            "webhook_message": "WEBHOOK_URL not configured. Set it in Railway environment variables.",
+        }
+
+    try:
+        test_payload = {
+            "type": "test",
+            "message": "Hello! This is a test message from Event Scout Admin Dashboard.",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "admin_id": admin_id,
+        }
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                WEBHOOK_URL,
+                json=test_payload,
+                headers={"Content-Type": "application/json"}
+            )
+
+            if response.status_code < 400:
+                return {
+                    "status": "success",
+                    "webhook_sent": True,
+                    "webhook_message": f"Test webhook sent successfully! Response status: {response.status_code}",
+                    "response_status": response.status_code,
+                }
+            else:
+                return {
+                    "status": "error",
+                    "webhook_sent": False,
+                    "webhook_message": f"Webhook endpoint returned error: {response.status_code}",
+                    "response_status": response.status_code,
+                }
+    except httpx.TimeoutException:
+        return {
+            "status": "error",
+            "webhook_sent": False,
+            "webhook_message": "Webhook request timed out (10s). Check n8n endpoint availability.",
+        }
+    except Exception as e:
+        print(f"[WEBHOOK TEST ERROR] {str(e)}")
+        traceback.print_exc()
+        return {
+            "status": "error",
+            "webhook_sent": False,
+            "webhook_message": f"Webhook test failed: {str(e)}",
+        }
 
 
 # --- VOICE NOTE ENDPOINTS ---
@@ -2389,7 +2446,7 @@ async def get_user_card(
         shareable_url = None
         if card.shareable_token and card.is_active:
             # Generate full URL (use env var or request base URL in production)
-            shareable_url = f"https://event-scout-card.vercel.app/card/{card.shareable_token}"
+            shareable_url = f"https://event-scout-delta.vercel.app/card/{card.shareable_token}"
 
         return {
             "status": "success",
@@ -2444,7 +2501,7 @@ async def update_user_card(
 
         shareable_url = None
         if card.shareable_token and card.is_active:
-            shareable_url = f"https://event-scout-card.vercel.app/card/{card.shareable_token}"
+            shareable_url = f"https://event-scout-delta.vercel.app/card/{card.shareable_token}"
 
         return {
             "status": "success",
@@ -2491,7 +2548,7 @@ async def generate_card_token(
         await session.commit()
 
         # Generate QR code
-        shareable_url = f"https://event-scout-card.vercel.app/card/{card.shareable_token}"
+        shareable_url = f"https://event-scout-delta.vercel.app/card/{card.shareable_token}"
 
         qr = qrcode.QRCode(version=1, box_size=10, border=4)
         qr.add_data(shareable_url)
