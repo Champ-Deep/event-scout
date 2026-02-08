@@ -23,9 +23,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Pre-download the SentenceTransformer model during build
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
-# Copy application code
-COPY app.py .
+# Copy application code (bust cache: v2)
 COPY database.py .
+COPY app.py .
 
 # Create directories for data persistence
 RUN mkdir -p /app/temp_images /app/saved_qr /app/data /app/users
