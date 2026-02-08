@@ -453,7 +453,7 @@ Important: Only use information from the provided contact/exhibitor context. Do 
                 if ex.get('country'):
                     ex_line += f" [{ex['country']}]"
                 if ex.get('description'):
-                    ex_line += f" | {ex['description'][:100]}"
+                    ex_line += f" | {ex['description'][:200]}"
                 exhibitor_context += ex_line
             base_prompt += exhibitor_context
 
