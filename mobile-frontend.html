@@ -2787,29 +2787,13 @@
         let exhibitorCategories = [];
 
         async function loadExhibitors() {
-            // Check if user has set their current event
-            const eventName = AppState.userProfile?.current_event_name || '';
-            const eventDesc = AppState.userProfile?.current_event_description || '';
+            // Use user's event or default to WHX Dubai 2026
+            const eventName = AppState.userProfile?.current_event_name || 'WHX Dubai 2026';
+            const eventDesc = AppState.userProfile?.current_event_description || 'World Health Expo - Dubai 2026';
 
             // Update header with event name and description
-            if (eventName) {
-                document.getElementById('expoEventName').textContent = eventName;
-                document.getElementById('expoEventDetails').textContent = eventDesc || 'Loading exhibitors...';
-            } else {
-                document.getElementById('expoEventName').textContent = 'Select Event in Profile';
-                document.getElementById('expoEventDetails').textContent = 'Set your current event to see exhibitors';
-                document.getElementById('exhibitorList').innerHTML = `
-                    <div class="text-center py-8">
-                        <i class="fas fa-calendar-alt text-4xl text-gray-300 mb-3"></i>
-                        <p class="text-gray-600 font-medium mb-2">No Event Selected</p>
-                        <p class="text-sm text-gray-500 mb-4">Please set your current event in Profile settings first</p>
-                        <button onclick="switchScreen('profile'); setTimeout(() => openSettingsSheet('event'), 300);"
-                                class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium">
-                            Set Event Now
-                        </button>
-                    </div>`;
-                return;
-            }
+            document.getElementById('expoEventName').textContent = eventName;
+            document.getElementById('expoEventDetails').textContent = eventDesc || 'Loading exhibitors...';
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/?event=${encodeURIComponent(eventName)}&limit=200`, {
@@ -2830,8 +2814,7 @@
         }
 
         async function loadExhibitorCategories() {
-            const eventName = AppState.userProfile?.current_event_name || '';
-            if (!eventName) return; // No event set, no categories to load
+            const eventName = AppState.userProfile?.current_event_name || 'WHX Dubai 2026';
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/categories/?event=${encodeURIComponent(eventName)}`, {
