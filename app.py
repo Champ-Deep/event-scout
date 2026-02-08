@@ -24,11 +24,12 @@ import bcrypt
 
 import google.generativeai as genai
 
-from sqlalchemy import select, update, delete, func
+from sqlalchemy import select, update, delete, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import (
     UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB, UserCardDB, EventFileDB,
+    AdminBroadcastDB,
     get_engine, get_session_factory, init_db, ASYNC_DATABASE_URL
 )
 
@@ -1513,6 +1514,7 @@ async def list_contacts_route(
                 "lead_score": c.lead_score,
                 "lead_temperature": c.lead_temperature,
                 "lead_score_reasoning": c.lead_score_reasoning or "",
+                "admin_notes": getattr(c, 'admin_notes', '') or "",
                 "qr_base64": get_qr_base64(str(c.id)),
             }
             contact_list.append(contact_data)
@@ -1560,6 +1562,7 @@ async def get_contact_route(
             "lead_score_reasoning": c.lead_score_reasoning or "",
             "lead_score_breakdown": c.lead_score_breakdown or {},
             "lead_recommended_actions": c.lead_recommended_actions or [],
+            "admin_notes": getattr(c, 'admin_notes', '') or "",
             "qr_base64": get_qr_base64(contact_id),
         }
         return {"status": "success", "contact": contact_data}
@@ -2421,10 +2424,17 @@ async def admin_list_contacts(
                     "user_name": user_map.get(str(c.user_id), "Unknown"),
                     "name": c.name, "email": c.email or "N/A",
                     "phone": c.phone or "N/A", "company_name": c.company_name or "N/A",
+                    "linkedin": c.linkedin or "N/A",
                     "lead_score": c.lead_score, "lead_temperature": c.lead_temperature,
+                    "lead_score_reasoning": c.lead_score_reasoning or "",
+                    "lead_recommended_actions": c.lead_recommended_actions or [],
                     "source": c.source or "manual",
-                    "notes": (c.notes or "")[:100],
+                    "notes": c.notes or "",
+                    "admin_notes": getattr(c, 'admin_notes', '') or "",
+                    "links": c.links or [],
+                    "audio_notes_count": len(c.audio_notes) if c.audio_notes else 0,
                     "created_at": c.created_at.isoformat() if c.created_at else "",
+                    "updated_at": c.updated_at.isoformat() if c.updated_at else "",
                 }
                 for c in contacts
             ],
@@ -2582,13 +2592,36 @@ async def admin_dashboard(admin_id: str = Depends(verify_admin)):
         users_result = await session.execute(select(UserDB))
         users = users_result.scalars().all()
         per_user = []
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         for u in users:
             cnt = (await session.execute(
                 select(func.count(ContactDB.id)).where(ContactDB.user_id == u.id)
             )).scalar() or 0
+            # Per-user temperature breakdown
+            u_hot = (await session.execute(
+                select(func.count(ContactDB.id)).where(ContactDB.user_id == u.id, ContactDB.lead_temperature == "hot")
+            )).scalar() or 0
+            u_warm = (await session.execute(
+                select(func.count(ContactDB.id)).where(ContactDB.user_id == u.id, ContactDB.lead_temperature == "warm")
+            )).scalar() or 0
+            u_cold = (await session.execute(
+                select(func.count(ContactDB.id)).where(ContactDB.user_id == u.id, ContactDB.lead_temperature == "cold")
+            )).scalar() or 0
+            # Today's contacts
+            today_cnt = (await session.execute(
+                select(func.count(ContactDB.id)).where(ContactDB.user_id == u.id, ContactDB.created_at >= today_start)
+            )).scalar() or 0
+            # Last scan time
+            last_scan_result = await session.execute(
+                select(ContactDB.created_at).where(ContactDB.user_id == u.id).order_by(ContactDB.created_at.desc()).limit(1)
+            )
+            last_scan_row = last_scan_result.scalar_one_or_none()
             per_user.append({
                 "user_id": str(u.id), "name": u.name, "email": u.email,
                 "contact_count": cnt, "is_admin": u.is_admin,
+                "hot_count": u_hot, "warm_count": u_warm, "cold_count": u_cold,
+                "today_count": today_cnt,
+                "last_scan_at": last_scan_row.isoformat() if last_scan_row else None,
             })
 
         # Recent 10 contacts
@@ -3228,6 +3261,252 @@ async def contact_accepted_webhook(
         }
     except HTTPException:
         raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+# --- ADMIN COMMAND CENTER ENDPOINTS ---
+
+@app.get("/admin/search")
+async def admin_search_contacts(
+    q: str = Query(..., min_length=1, description="Search term"),
+    admin_id: str = Depends(verify_admin),
+    limit: int = Query(50, description="Max results"),
+):
+    """Search all contacts across all users by name, email, or company."""
+    session = await get_db_session()
+    try:
+        search_term = f"%{q}%"
+        query = (
+            select(ContactDB)
+            .where(
+                or_(
+                    ContactDB.name.ilike(search_term),
+                    ContactDB.email.ilike(search_term),
+                    ContactDB.company_name.ilike(search_term),
+                    ContactDB.notes.ilike(search_term),
+                )
+            )
+            .order_by(ContactDB.created_at.desc())
+            .limit(limit)
+        )
+        result = await session.execute(query)
+        contacts = result.scalars().all()
+
+        # Get user names
+        user_ids = list(set(str(c.user_id) for c in contacts))
+        user_map = {}
+        if user_ids:
+            users_result = await session.execute(
+                select(UserDB).where(UserDB.id.in_([uuid.UUID(uid) for uid in user_ids]))
+            )
+            for u in users_result.scalars().all():
+                user_map[str(u.id)] = u.name
+
+        return {
+            "status": "success",
+            "query": q,
+            "total": len(contacts),
+            "contacts": [
+                {
+                    "id": str(c.id),
+                    "user_id": str(c.user_id),
+                    "user_name": user_map.get(str(c.user_id), "Unknown"),
+                    "name": c.name, "email": c.email or "N/A",
+                    "phone": c.phone or "N/A", "company_name": c.company_name or "N/A",
+                    "linkedin": c.linkedin or "N/A",
+                    "lead_score": c.lead_score, "lead_temperature": c.lead_temperature,
+                    "source": c.source or "manual",
+                    "notes": c.notes or "",
+                    "admin_notes": getattr(c, 'admin_notes', '') or "",
+                    "created_at": c.created_at.isoformat() if c.created_at else "",
+                }
+                for c in contacts
+            ],
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.post("/admin/broadcast")
+async def admin_send_broadcast(
+    admin_id: str = Depends(verify_admin),
+    message: str = Query(..., min_length=1),
+    priority: str = Query("normal"),
+):
+    """Send a broadcast message to the entire team."""
+    session = await get_db_session()
+    try:
+        broadcast = AdminBroadcastDB(
+            admin_id=uuid.UUID(admin_id),
+            message=message,
+            priority=priority if priority in ("normal", "urgent") else "normal",
+        )
+        session.add(broadcast)
+        await session.commit()
+
+        return {
+            "status": "success",
+            "broadcast_id": str(broadcast.id),
+            "message": "Broadcast sent to team",
+        }
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/broadcasts/active")
+async def get_active_broadcasts(
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Get active broadcast messages for team members."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(AdminBroadcastDB, UserDB.name.label('admin_name'))
+            .join(UserDB, AdminBroadcastDB.admin_id == UserDB.id)
+            .where(AdminBroadcastDB.is_active == True)
+            .order_by(AdminBroadcastDB.created_at.desc())
+            .limit(10)
+        )
+
+        broadcasts = []
+        for broadcast, admin_name in result:
+            broadcasts.append({
+                "id": str(broadcast.id),
+                "message": broadcast.message,
+                "priority": broadcast.priority,
+                "admin_name": admin_name,
+                "created_at": broadcast.created_at.isoformat() if broadcast.created_at else "",
+            })
+
+        return {"status": "success", "broadcasts": broadcasts}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.post("/broadcasts/{broadcast_id}/dismiss")
+async def dismiss_broadcast(
+    broadcast_id: str,
+    admin_id: str = Depends(verify_admin),
+):
+    """Dismiss/deactivate a broadcast (admin only)."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(AdminBroadcastDB).where(AdminBroadcastDB.id == uuid.UUID(broadcast_id))
+        )
+        broadcast = result.scalar_one_or_none()
+        if not broadcast:
+            raise HTTPException(status_code=404, detail="Broadcast not found")
+
+        broadcast.is_active = False
+        await session.commit()
+
+        return {"status": "success", "message": "Broadcast dismissed"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.put("/admin/contact/{contact_id}/note")
+async def admin_update_contact_note(
+    contact_id: str,
+    admin_id: str = Depends(verify_admin),
+    note: str = Query("", description="Admin note/intel"),
+):
+    """Add or update admin notes on any contact."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactDB).where(ContactDB.id == uuid.UUID(contact_id))
+        )
+        contact = result.scalar_one_or_none()
+        if not contact:
+            raise HTTPException(status_code=404, detail="Contact not found")
+
+        contact.admin_notes = note
+        await session.commit()
+
+        return {
+            "status": "success",
+            "contact_id": contact_id,
+            "admin_notes": note,
+            "message": "Admin note updated",
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/admin/export")
+async def admin_export_all_contacts(
+    admin_id: str = Depends(verify_admin),
+    format: str = Query("csv"),
+):
+    """Export all contacts across all users as CSV."""
+    from fastapi.responses import StreamingResponse
+    import csv
+    import io
+
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactDB).order_by(ContactDB.created_at.desc())
+        )
+        contacts = result.scalars().all()
+
+        # Get user names
+        users_result = await session.execute(select(UserDB))
+        user_map = {str(u.id): u.name for u in users_result.scalars().all()}
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Name", "Email", "Phone", "LinkedIn", "Company", "Notes", "Admin Notes",
+            "Lead Score", "Lead Temperature", "Source", "Scanned By", "Created At"
+        ])
+
+        for c in contacts:
+            writer.writerow([
+                c.name or "", c.email or "", c.phone or "", c.linkedin or "",
+                c.company_name or "", (c.notes or "").replace("\n", " "),
+                (getattr(c, 'admin_notes', '') or "").replace("\n", " "),
+                c.lead_score or "", c.lead_temperature or "",
+                c.source or "manual",
+                user_map.get(str(c.user_id), "Unknown"),
+                c.created_at.isoformat() if c.created_at else "",
+            ])
+
+        output.seek(0)
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=event_scout_all_contacts_{datetime.now().strftime('%Y%m%d')}.csv"}
+        )
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

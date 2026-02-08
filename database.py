@@ -77,6 +77,7 @@ class ContactDB(Base):
     lead_score_breakdown = Column(JSON, default=dict)
     lead_recommended_actions = Column(JSON, default=list)
     audio_notes = Column(JSON, default=list)  # [{audio_base64, transcript, timestamp}]
+    admin_notes = Column(Text, default="")  # Admin-only annotations/intel
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -209,6 +210,18 @@ class EventFileDB(Base):
     )
 
 
+class AdminBroadcastDB(Base):
+    """Admin broadcast messages to sales team."""
+    __tablename__ = "admin_broadcasts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    admin_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    message = Column(Text, nullable=False)
+    priority = Column(String(20), default="normal")  # "normal", "urgent"
+    is_active = Column(Boolean, default=True, nullable=False, server_default="true")
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 # --- Engine & Session ---
 engine = None
 async_session_factory = None
@@ -251,6 +264,7 @@ async def init_db():
             migrations = [
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE NOT NULL",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS audio_notes JSONB DEFAULT '[]'::jsonb",
+                "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS admin_notes TEXT DEFAULT ''",
             ]
             for sql in migrations:
                 try:
