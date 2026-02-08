@@ -1031,10 +1031,52 @@
         };
 
         // ==================== INITIALIZATION ====================
-        window.addEventListener('DOMContentLoaded', () => {
+        async function validateUserSession() {
+            /** Validate that the current user_id exists in database. Prevents foreign key errors. */
+            if (!AppState.currentUser || !AppState.currentUser.user_id) {
+                return false;
+            }
+
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_BASE_URL}/user/validate?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+                );
+
+                if (!response.ok) {
+                    console.error('[VALIDATE] User validation failed:', response.status);
+                    return false;
+                }
+
+                const data = await response.json();
+                if (data.valid === true) {
+                    console.log('[VALIDATE] User session valid:', data.user_id);
+                    return true;
+                } else {
+                    console.error('[VALIDATE] User not found in database:', data.message);
+                    return false;
+                }
+            } catch (error) {
+                console.error('[VALIDATE] Validation error:', error);
+                // If validation fails due to network, assume valid to avoid blocking user
+                return true;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
             const savedUser = localStorage.getItem('eventScoutUser');
             if (savedUser) {
                 AppState.currentUser = JSON.parse(savedUser);
+
+                // CRITICAL FIX: Validate user_id exists in database
+                const isValid = await validateUserSession();
+                if (!isValid) {
+                    console.log('[INIT] User session invalid, forcing re-login');
+                    handleLogout();
+                    showAlert('authAlert', 'Your session has expired. Please log in again.', 'error');
+                    return;
+                }
+
                 showDashboard();
             }
 

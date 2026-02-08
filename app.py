@@ -703,7 +703,11 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
         try:
             print(f"[GEMINI] Trying model: {model_name}")
             model = genai.GenerativeModel(model_name)
-            response = model.generate_content([prompt, img])
+
+            # CRITICAL FIX: Add 45-second timeout to prevent hanging
+            import google.generativeai.types as genai_types
+            request_options = genai_types.RequestOptions(timeout=45)
+            response = model.generate_content([prompt, img], request_options=request_options)
             if not response or not response.text:
                 print(f"[GEMINI] Empty response from {model_name}")
                 continue
@@ -769,7 +773,9 @@ Rules:
 
     try:
         model = genai.GenerativeModel('gemini-2.5-flash')
-        response = model.generate_content(prompt)
+        import google.generativeai.types as genai_types
+        request_options = genai_types.RequestOptions(timeout=20)
+        response = model.generate_content(prompt, request_options=request_options)
         if response and response.text:
             url = response.text.strip()
             if "linkedin.com" in url.lower() and url.startswith("http"):
@@ -1013,7 +1019,9 @@ Rules: hot >= 70, warm = 40-69, cold < 40. Return ONLY raw JSON."""
     for model_name in model_names:
         try:
             model = genai.GenerativeModel(model_name)
-            response = model.generate_content(prompt)
+            import google.generativeai.types as genai_types
+            request_options = genai_types.RequestOptions(timeout=30)
+            response = model.generate_content(prompt, request_options=request_options)
             if not response or not response.text:
                 continue
             response_text = response.text.strip()
@@ -1135,6 +1143,48 @@ async def health_check():
         await session.close()
 
 
+@app.get("/user/validate")
+async def validate_user(user_id: str = Query(..., description="User ID to validate")):
+    """Validate that a user_id exists in the database. Used to detect expired sessions."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserDB).where(UserDB.id == uuid.UUID(user_id))
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            return {
+                "status": "invalid",
+                "message": "User not found. Please log in again.",
+                "valid": False,
+            }
+
+        return {
+            "status": "valid",
+            "valid": True,
+            "user_id": str(user.id),
+            "name": user.name,
+            "email": user.email,
+            "is_admin": user.is_admin,
+        }
+    except ValueError:
+        return {
+            "status": "invalid",
+            "message": "Invalid user ID format",
+            "valid": False,
+        }
+    except Exception as e:
+        print(f"[VALIDATE] Error: {e}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "valid": False,
+        }
+    finally:
+        await session.close()
+
+
 @app.post("/register/")
 async def register_user(user: UserRegister):
     session = await get_db_session()
@@ -1240,7 +1290,25 @@ async def add_contact_image_route(
     user_id: str = Query(..., description="User ID"),
     api_key: str = Depends(verify_api_key),
 ):
-    return await add_contact_from_image(file, user_id)
+    try:
+        return await add_contact_from_image(file, user_id)
+    except HTTPException:
+        raise
+    except TimeoutError as e:
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=504,
+            detail="AI processing timed out. The image might be too complex or the AI service is slow. Please try again."
+        )
+    except Exception as e:
+        traceback.print_exc()
+        error_msg = str(e)
+        if "timeout" in error_msg.lower():
+            raise HTTPException(
+                status_code=504,
+                detail="AI processing timed out. Please try again."
+            )
+        raise HTTPException(status_code=500, detail=f"Failed to process card: {error_msg}")
 
 
 @app.post("/scan_qr/")
