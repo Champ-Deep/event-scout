@@ -64,8 +64,8 @@
 
             <!-- Card Content -->
             <div class="px-8 pb-8 -mt-16">
-                <!-- Profile Photo (placeholder) -->
-                <div class="w-24 h-24 mx-auto mb-4 bg-white rounded-full shadow-lg flex items-center justify-center text-4xl font-bold text-blue-600" id="cardInitials">
+                <!-- Profile Photo -->
+                <div class="w-24 h-24 mx-auto mb-4 bg-white rounded-full shadow-lg flex items-center justify-center text-4xl font-bold text-blue-600 overflow-hidden" id="cardInitials">
                     AB
                 </div>
 
@@ -236,9 +236,13 @@
             document.getElementById('loadingCard').classList.add('hidden');
             document.getElementById('cardDisplay').classList.remove('hidden');
 
-            // Set initials
-            const initials = getInitials(card.full_name || 'User');
-            document.getElementById('cardInitials').textContent = initials;
+            // Set photo or initials
+            if (card.photo_base64) {
+                document.getElementById('cardInitials').innerHTML = `<img src="${card.photo_base64}" class="w-full h-full object-cover">`;
+            } else {
+                const initials = getInitials(card.full_name || 'User');
+                document.getElementById('cardInitials').textContent = initials;
+            }
 
             // Set name, title, company
             document.getElementById('cardName').textContent = card.full_name || 'No Name';

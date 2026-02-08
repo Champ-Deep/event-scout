@@ -938,13 +938,14 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         if not has_info:
             raise HTTPException(status_code=400, detail="No contact information found in image")
 
-        # LinkedIn auto-lookup if not found on card
-        if fields.get("linkedin", "N/A") == "N/A":
-            linkedin_url = lookup_linkedin_with_gemini(fields["name"], fields.get("company_name", "N/A"))
-            if linkedin_url:
-                fields["linkedin"] = linkedin_url
-                fields["linkedin_source"] = "ai_detected"
-                print(f"[LINKEDIN] Auto-detected: {linkedin_url}")
+        # DISABLED: LinkedIn auto-lookup generates hallucinated/fake URLs
+        # Only use LinkedIn if actually found on the business card via OCR
+        # if fields.get("linkedin", "N/A") == "N/A":
+        #     linkedin_url = lookup_linkedin_with_gemini(fields["name"], fields.get("company_name", "N/A"))
+        #     if linkedin_url:
+        #         fields["linkedin"] = linkedin_url
+        #         fields["linkedin_source"] = "ai_detected"
+        #         print(f"[LINKEDIN] Auto-detected: {linkedin_url}")
 
         contact_obj = Contact(**{k: v for k, v in fields.items() if k in Contact.model_fields})
         result = await add_contact_logic(contact_obj, user_id, source="scan")

@@ -356,10 +356,10 @@
             <div id="contactsScreen" class="content-screen">
                 <!-- Sticky Header with Search -->
                 <div class="sticky top-0 bg-white border-b border-gray-200 safe-area-inset-top z-30">
-                    <div class="p-4 pb-3">
-                        <div class="flex items-center justify-between mb-3">
+                    <div class="px-4 pt-3 pb-2">
+                        <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center gap-2">
-                                <svg width="28" height="28" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <svg width="24" height="24" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <defs><linearGradient id="logoGradSm" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#2563eb"/></linearGradient></defs>
                                     <circle cx="40" cy="40" r="38" stroke="url(#logoGradSm)" stroke-width="3" fill="none" opacity="0.3"/>
                                     <circle cx="40" cy="40" r="28" stroke="url(#logoGradSm)" stroke-width="3" fill="none" opacity="0.5"/>
@@ -370,18 +370,18 @@
                                     <circle cx="22" cy="56" r="4" fill="#2563eb" opacity="0.8"/>
                                 </svg>
                                 <div>
-                                    <h2 class="text-xl font-bold text-gray-900">Contacts</h2>
-                                    <p class="text-sm text-gray-500">Hi, <span id="userName"></span>!</p>
+                                    <h2 class="text-lg font-bold text-gray-900">Contacts</h2>
                                 </div>
                             </div>
+                            <p class="text-xs text-gray-500">Hi, <span id="userName"></span>!</p>
                         </div>
                         <div class="relative">
                             <input type="search"
                                    id="searchInput"
                                    placeholder="Search contacts..."
-                                   class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
                                    oninput="handleSearch()">
-                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                         </div>
                     </div>
                 </div>
@@ -432,6 +432,11 @@
                         <!-- Bulk scan counter toast -->
                         <div id="scanCounter" class="hidden absolute top-4 right-4 bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg z-10">
                             <i class="fas fa-check mr-1"></i><span id="scanCountText">0 scanned</span>
+                        </div>
+
+                        <!-- Pending scans badge (non-blocking) -->
+                        <div id="pendingScanBadge" class="hidden absolute top-4 left-4 bg-blue-500 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg z-10 animate-pulse">
+                            <i class="fas fa-spinner fa-spin mr-1"></i><span id="pendingScanText">Processing...</span>
                         </div>
 
                         <!-- Camera Error State -->
@@ -716,12 +721,25 @@
 
                         <!-- Card Form -->
                         <div class="space-y-2">
+                            <!-- Profile Photo Upload -->
+                            <div class="flex items-center gap-3 py-2">
+                                <div id="cardPhotoPreview" class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-2xl overflow-hidden flex-shrink-0 border-2 border-dashed border-gray-300">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <label class="block text-xs text-gray-500 mb-1">Profile Photo</label>
+                                    <input type="file" id="cardPhotoInput" accept="image/*" class="hidden" onchange="handleCardPhotoUpload(event)">
+                                    <button onclick="document.getElementById('cardPhotoInput').click()" class="text-sm text-blue-600 font-medium">
+                                        <i class="fas fa-upload mr-1"></i>Upload Photo
+                                    </button>
+                                </div>
+                            </div>
                             <input type="text" id="cardFullName" placeholder="Full Name" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                             <input type="text" id="cardJobTitle" placeholder="Job Title" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                             <input type="text" id="cardCompanyName" placeholder="Company" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                             <input type="email" id="cardEmail" placeholder="Email" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                             <input type="tel" id="cardPhone" placeholder="Phone Number" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="url" id="cardLinkedIn" placeholder="LinkedIn URL" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="url" id="cardLinkedIn" placeholder="LinkedIn URL (encouraged)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                             <input type="tel" id="cardZoom" placeholder="Zoom Number (optional)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                             <input type="url" id="cardWebsite" placeholder="Website (optional)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
@@ -910,7 +928,7 @@
                     <span class="text-xs">AI Chat</span>
                 </button>
                 <button onclick="switchScreen('expo')" class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
-                    <i class="fas fa-building text-2xl mb-1"></i>
+                    <i class="fas fa-calendar-check text-2xl mb-1"></i>
                     <span class="text-xs">Expo</span>
                 </button>
                 <button id="adminNavBtn" onclick="switchScreen('admin')" class="nav-btn hidden flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
@@ -1302,6 +1320,9 @@
         }
 
         function switchScreen(screenName) {
+            // Close any open contact detail overlay
+            closeContactDetail();
+
             // Stop camera if leaving scan screen
             if (AppState.activeScreen === 'scan' && cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
@@ -1355,13 +1376,10 @@
                 // Load chat history when entering chat screen
                 loadChatHistory();
             } else if (screenName === 'expo') {
-                // Check if user has set their current event
-                if (!AppState.userProfile || !AppState.userProfile.current_event_name) {
-                    showToast('Please set your current event first', 'warning');
-                    // Switch back to profile and open event settings
-                    switchScreen('profile');
-                    setTimeout(() => openSettingsSheet('event'), 500);
-                    return;
+                // Load exhibitors even if no event set (uses default "WHX Dubai 2026")
+                // If profile is loaded and has event, it will use that; otherwise defaults
+                if (AppState.userProfile && !AppState.userProfile.current_event_name) {
+                    showToast('Tip: Set your event in Profile for best results', 'info');
                 }
                 loadExhibitors();
                 refreshEventFiles();
@@ -1814,60 +1832,59 @@
             }
         }
 
+        let pendingScans = 0;
+        function updatePendingScanBadge() {
+            const badge = document.getElementById('pendingScanBadge');
+            const text = document.getElementById('pendingScanText');
+            if (pendingScans > 0) {
+                badge.classList.remove('hidden');
+                text.textContent = `${pendingScans} processing...`;
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
         async function processImageUpload(blob, filename) {
-            /** Core upload function used by both camera capture and gallery. */
-            showProcessing();
+            /** Core upload function - runs in background, non-blocking. */
+            pendingScans++;
+            updatePendingScanBadge();
 
             try {
                 const formData = new FormData();
                 formData.append('file', blob, filename);
 
-                // Step 1: Uploading
-                updateProcessStep(1);
                 const url = `${CONFIG.API_BASE_URL}/add_contact_from_image/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`;
 
-                // Step 2: AI analyzing
-                setTimeout(() => updateProcessStep(2), 500);
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY },
                     body: formData
                 });
 
-                // Step 3: Saving
-                updateProcessStep(3);
-
                 let data;
                 try {
                     data = await response.json();
                 } catch (parseError) {
-                    throw new Error('Server returned invalid response. Please check your connection.');
+                    throw new Error('Server returned invalid response.');
                 }
 
                 if (response.ok && data.status === 'success') {
-                    // Step 4: Done
-                    updateProcessStep(4);
                     const fields = data.extracted_fields || {};
                     const name = fields.name || 'Unknown';
                     const contactId = data.contact_id;
                     scanSessionCount++;
                     updateScanCounter();
 
-                    await new Promise(r => setTimeout(r, 600));
-                    hideProcessing();
-
                     // Trigger webhook for card acceptance (sends CookieMail)
                     if (contactId) {
                         triggerCardAcceptedWebhook(contactId, name);
                     }
 
-                    // Show toast but DON'T leave camera - bulk scan mode
                     showToast(`${name} saved!`, 'success');
+                    // Auto-refresh contact list in background
+                    loadContacts();
                     return true;
                 } else {
-                    hideProcessing();
-
-                    // Detailed error messages based on HTTP status
                     let errMsg = 'Failed to process card';
                     if (response.status === 401) {
                         errMsg = 'Session expired. Please log in again.';
@@ -1876,6 +1893,8 @@
                         errMsg = 'User not found. Please log in again.';
                     } else if (response.status === 500) {
                         errMsg = data.detail || 'Server error. Please try again.';
+                    } else if (response.status === 504) {
+                        errMsg = 'AI processing timed out. Please try again.';
                     } else if (data.detail) {
                         errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
                     } else if (data.message) {
@@ -1887,19 +1906,19 @@
                     return false;
                 }
             } catch (error) {
-                hideProcessing();
-
-                // Better error messages
                 let errorMessage = 'Network error';
-                if (error.message) {
-                    errorMessage = error.message;
-                } else if (error.message && error.message.includes('Failed to fetch')) {
+                if (error.message && error.message.includes('Failed to fetch')) {
                     errorMessage = 'Cannot connect to server. Check your internet connection.';
+                } else if (error.message) {
+                    errorMessage = error.message;
                 }
 
                 showToast(errorMessage, 'error');
                 console.error('Upload error:', error);
                 return false;
+            } finally {
+                pendingScans--;
+                updatePendingScanBadge();
             }
         }
 
@@ -1930,22 +1949,19 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(videoElement, 0, 0);
 
-                canvas.toBlob(async (blob) => {
+                canvas.toBlob((blob) => {
                     if (!blob) {
                         showToast('Failed to capture image. Please try again.', 'error');
                         scanProcessing = false;
                         return;
                     }
 
-                    try {
-                        await processImageUpload(blob, 'business-card.jpg');
-                    } catch (error) {
-                        console.error('Process upload error:', error);
-                        showToast('Failed to process card. Please try again.', 'error');
-                    } finally {
-                        scanProcessing = false;
-                        // Camera stays open for next scan
-                    }
+                    // Fire-and-forget: process in background, allow next capture immediately
+                    processImageUpload(blob, 'business-card.jpg').catch(error => {
+                        console.error('Background scan error:', error);
+                    });
+                    scanProcessing = false;
+                    showToast('Photo captured! Processing...', 'info');
                 }, 'image/jpeg', 0.95);
             } catch (error) {
                 console.error('Capture error:', error);
@@ -2048,12 +2064,12 @@
             } else {
                 return `
                     <div class="flex justify-start">
-                        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%]">
+                        <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]">
                             <div class="flex items-center gap-2 mb-2">
                                 <i class="fas fa-robot text-purple-600"></i>
                                 <span class="text-xs font-medium text-gray-500">AI Assistant</span>
                             </div>
-                            <p class="text-sm text-gray-800">${escapeHtml(message.content)}</p>
+                            <div class="text-sm text-gray-800 leading-relaxed">${formatAIResponse(message.content)}</div>
                         </div>
                     </div>
                 `;
@@ -2162,6 +2178,20 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function formatAIResponse(text) {
+            /** Convert markdown-like AI output to readable HTML. Escape first for safety. */
+            let safe = escapeHtml(text);
+            return safe
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/^### (.*$)/gm, '<h4 class="font-bold text-sm mt-3 mb-1 text-gray-900">$1</h4>')
+                .replace(/^## (.*$)/gm, '<h3 class="font-bold text-base mt-3 mb-1 text-gray-900">$1</h3>')
+                .replace(/^# (.*$)/gm, '<h3 class="font-bold text-lg mt-3 mb-1 text-gray-900">$1</h3>')
+                .replace(/^- (.*$)/gm, '<div class="flex gap-2 ml-2"><span class="text-gray-400">&#8226;</span><span>$1</span></div>')
+                .replace(/^(\d+)\. (.*$)/gm, '<div class="flex gap-2 ml-2"><span class="text-gray-500 font-medium">$1.</span><span>$2</span></div>')
+                .replace(/\n{2,}/g, '<div class="mt-2"></div>')
+                .replace(/\n/g, '<br>');
         }
 
         // ==================== CONTACT DETAIL VIEW ====================
@@ -2387,6 +2417,39 @@
         }
 
         // ==================== DIGITAL BUSINESS CARD FUNCTIONS ====================
+        let cardPhotoBase64 = '';
+
+        function handleCardPhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Photo must be under 2MB', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Resize to 200x200 max
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const size = Math.min(img.width, img.height, 400);
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    // Center crop
+                    const sx = (img.width - size) / 2;
+                    const sy = (img.height - size) / 2;
+                    ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+                    cardPhotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    // Update preview
+                    document.getElementById('cardPhotoPreview').innerHTML = `<img src="${cardPhotoBase64}" class="w-full h-full object-cover">`;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
         async function loadDigitalCard() {
             if (!AppState.currentUser) return;
 
@@ -2409,6 +2472,12 @@
                 document.getElementById('cardLinkedIn').value = card.linkedin_url || '';
                 document.getElementById('cardZoom').value = card.zoom_number || '';
                 document.getElementById('cardWebsite').value = card.website || '';
+
+                // Load photo if exists
+                if (card.photo_base64) {
+                    cardPhotoBase64 = card.photo_base64;
+                    document.getElementById('cardPhotoPreview').innerHTML = `<img src="${cardPhotoBase64}" class="w-full h-full object-cover">`;
+                }
 
                 // Show QR if exists
                 if (data.shareable_url) {
@@ -2435,6 +2504,7 @@
                 linkedin_url: document.getElementById('cardLinkedIn').value.trim() || null,
                 zoom_number: document.getElementById('cardZoom').value.trim() || null,
                 website: document.getElementById('cardWebsite').value.trim() || null,
+                photo_base64: cardPhotoBase64 || null,
             };
 
             // Validation - mandatory fields
@@ -3661,7 +3731,7 @@
             let sx = 0, sy = 0, sc = null;
             cl.addEventListener('touchstart', e => { const c = e.target.closest('.contact-card'); if (!c) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; sc = c; }, { passive: true });
             cl.addEventListener('touchmove', e => { if (!sc) return; const dx = e.touches[0].clientX - sx, dy = Math.abs(e.touches[0].clientY - sy); if (dy > 30) { sc.style.transform = ''; sc.style.background = ''; sc = null; return; } if (dx > 20 && dx < 120) { sc.style.transform = 'translateX(' + Math.min(dx * 0.3, 30) + 'px)'; sc.style.background = 'linear-gradient(90deg, rgba(124,58,237,' + (dx/300) + ') 0%, transparent 40%)'; } }, { passive: true });
-            cl.addEventListener('touchend', e => { if (!sc) return; const dx = e.changedTouches[0].clientX - sx, dy = Math.abs(e.changedTouches[0].clientY - sy); sc.style.transform = ''; sc.style.background = ''; if (dx > 80 && dy < 40) { _swipeVoiceTriggered = Date.now(); const cid = sc.dataset.id; const ct = AppState.contacts.find(c => c.id === cid); if (ct) openVoiceRecordingOverlay(cid, ct.name); } sc = null; }, { passive: true });
+            cl.addEventListener('touchend', e => { if (!sc) return; const dx = e.changedTouches[0].clientX - sx, dy = Math.abs(e.changedTouches[0].clientY - sy); sc.style.transform = ''; sc.style.background = ''; if (dx > 50 && dy < 40) { _swipeVoiceTriggered = Date.now(); const cid = sc.dataset.id; const ct = AppState.contacts.find(c => c.id === cid); if (ct) openVoiceRecordingOverlay(cid, ct.name); } sc = null; }, { passive: true });
         }
 
         const _origRender = renderContacts;
@@ -3696,6 +3766,14 @@
 
         function stopVoiceRecording() {
             voiceIsRecording = false; clearInterval(voiceTimerInterval);
+            // Capture displayed transcript (includes interim text) before stopping recognition
+            var transcriptEl = document.getElementById('voiceTranscript');
+            var displayedText = transcriptEl ? transcriptEl.textContent.trim() : '';
+            if (displayedText && displayedText !== 'Listening...' && displayedText !== 'Live transcription unavailable. Audio sent for AI transcription on save.') {
+                if (!AppState._voiceTranscript || AppState._voiceTranscript.length < displayedText.length) {
+                    AppState._voiceTranscript = displayedText;
+                }
+            }
             if (voiceRecognition) { voiceRecognition.onend = null; try { voiceRecognition.stop(); } catch(e) {} voiceRecognition = null; }
             if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') voiceMediaRecorder.stop();
             var btn = document.getElementById('voiceRecordBtn'); btn.innerHTML = '<i class="fas fa-microphone"></i>'; btn.classList.remove('bg-gray-500'); btn.classList.add('bg-red-500');
