@@ -705,7 +705,7 @@
                         </div>
 
                         <!-- Save Card Button -->
-                        <button onclick="saveDigitalCard()" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg font-semibold active:opacity-90 transition">
+                        <button onclick="saveDigitalCard()" id="saveCardBtn" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg font-semibold active:opacity-90 transition">
                             <i class="fas fa-save"></i>
                             <span>Save Card</span>
                         </button>
@@ -820,10 +820,15 @@
                         </div>
                     </div>
 
-                    <!-- Recent Contacts Feed -->
+                    <!-- Real-Time Activity Feed -->
                     <div class="bg-white rounded-xl p-4 shadow-sm">
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Recent Contacts (All Users)</h3>
-                        <div id="adminRecentContacts" class="space-y-2">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Real-Time Activity Feed</h3>
+                            <button onclick="loadAdminActivity()" class="text-xs text-blue-600 hover:text-blue-700">
+                                <i class="fas fa-sync-alt mr-1"></i>Refresh
+                            </button>
+                        </div>
+                        <div id="adminActivityFeed" class="space-y-2 max-h-96 overflow-y-auto">
                             <p class="text-sm text-gray-400 text-center py-4">Loading...</p>
                         </div>
                     </div>
@@ -1068,6 +1073,11 @@
         async function handleLogin(event) {
             event.preventDefault();
 
+            const btn = event.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing in...';
+
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
 
@@ -1096,11 +1106,19 @@
             } catch (error) {
                 showAlert('authAlert', 'Network error. Please check your API configuration.', 'error');
                 console.error('Login error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
         async function handleRegister(event) {
             event.preventDefault();
+
+            const btn = event.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating account...';
 
             const name = document.getElementById('registerName').value;
             const email = document.getElementById('registerEmail').value;
@@ -1131,6 +1149,9 @@
             } catch (error) {
                 showAlert('authAlert', 'Network error. Please check your API configuration.', 'error');
                 console.error('Register error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
@@ -1186,6 +1207,11 @@
                 cameraStream = null;
             }
 
+            // Stop admin auto-refresh if leaving admin screen
+            if (AppState.activeScreen === 'admin') {
+                stopAdminAutoRefresh();
+            }
+
             // Hide all content screens
             document.querySelectorAll('.content-screen').forEach(s => s.classList.add('hidden'));
 
@@ -1239,6 +1265,7 @@
                 loadExhibitors();
             } else if (screenName === 'admin') {
                 loadAdminDashboard();
+                startAdminAutoRefresh();
             }
         }
 
@@ -1496,6 +1523,11 @@
         async function handleContactSubmit(event) {
             event.preventDefault();
 
+            const btn = event.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+
             const contactData = {
                 name: document.getElementById('contactName').value,
                 email: document.getElementById('contactEmail').value,
@@ -1550,6 +1582,9 @@
             } catch (error) {
                 showAlert('modalAlert', 'Network error', 'error');
                 console.error('Save contact error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
@@ -1606,9 +1641,17 @@
                 videoElement.classList.remove('hidden');
             } catch (error) {
                 console.error('Camera initialization error:', error);
+
+                // CRITICAL: Force clear video stream to prevent stale frames
+                const videoElement = document.getElementById('cameraStream');
+                if (videoElement.srcObject) {
+                    videoElement.srcObject.getTracks().forEach(track => track.stop());
+                    videoElement.srcObject = null;
+                }
+
                 const errorDiv = document.getElementById('cameraError');
                 errorDiv.classList.remove('hidden');
-                document.getElementById('cameraStream').classList.add('hidden');
+                videoElement.classList.add('hidden');
                 errorDiv.innerHTML = `
                     <div class="text-center text-white">
                         <i class="fas fa-camera-slash text-6xl mb-4 text-gray-400"></i>
@@ -1864,10 +1907,13 @@
         async function sendChatMessage(event) {
             event.preventDefault();
 
+            const btn = event.target.querySelector('button[type="submit"]');
             const input = document.getElementById('chatInput');
             const query = input.value.trim();
 
             if (!query) return;
+
+            btn.disabled = true;
 
             // Add user message to history
             chatHistory.push({ role: 'user', content: query });
@@ -1937,6 +1983,8 @@
                 console.error('Chat error:', error);
                 chatHistory.pop();
                 renderChatHistory();
+            } finally {
+                btn.disabled = false;
             }
         }
 
@@ -2218,6 +2266,9 @@
         async function saveDigitalCard() {
             if (!AppState.currentUser) return;
 
+            const btn = document.getElementById('saveCardBtn');
+            const originalText = btn.innerHTML;
+
             // Convert empty strings to null for optional fields
             const cardData = {
                 full_name: document.getElementById('cardFullName').value.trim(),
@@ -2242,6 +2293,9 @@
                 showToast('Please enter a valid email address', 'error');
                 return;
             }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Saving...</span>';
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}/user/card/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
@@ -2269,11 +2323,19 @@
             } catch (error) {
                 console.error('Save card error:', error);
                 showToast('Failed to save card. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
         async function generateCardQR() {
             if (!AppState.currentUser) return;
+
+            const btn = document.getElementById('generateQRBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Generating...</span>';
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE_URL}/user/card/generate_token/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
@@ -2298,6 +2360,9 @@
             } catch (error) {
                 console.error('Generate QR error:', error);
                 showToast('Failed to generate QR code. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
@@ -2358,6 +2423,71 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
+
+        /**
+         * Centralized API request handler with better error categorization.
+         * Usage: const data = await apiRequest('/endpoint/', { method: 'POST', body: {...} });
+         */
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                // Build full URL
+                const url = endpoint.startsWith('http') ? endpoint : `${CONFIG.API_BASE_URL}${endpoint}`;
+
+                // Add default headers
+                const headers = {
+                    'X-API-Key': CONFIG.API_KEY,
+                    ...options.headers
+                };
+
+                const response = await fetch(url, { ...options, headers });
+
+                // Try to parse JSON response
+                let data;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    data = {};
+                }
+
+                // Handle HTTP errors with specific messages
+                if (!response.ok) {
+                    let errorMessage;
+
+                    switch (response.status) {
+                        case 401:
+                            errorMessage = 'Session expired. Please log in again.';
+                            // Auto-logout on 401
+                            setTimeout(() => handleLogout(), 2000);
+                            break;
+                        case 403:
+                            errorMessage = 'Permission denied. You do not have access to this resource.';
+                            break;
+                        case 404:
+                            errorMessage = data.detail || 'Item not found. It may have been deleted.';
+                            break;
+                        case 500:
+                            errorMessage = `Server error: ${data.detail || 'Please try again in a moment.'}`;
+                            break;
+                        case 503:
+                            errorMessage = 'Service temporarily unavailable. Please try again.';
+                            break;
+                        default:
+                            errorMessage = data.detail || `Request failed (${response.status})`;
+                    }
+
+                    throw new Error(errorMessage);
+                }
+
+                return data;
+            } catch (error) {
+                // Distinguish network errors from HTTP errors
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    throw new Error('Network error. Check your internet connection and try again.');
+                }
+                throw error;
+            }
+        }
+
         // ==================== USER PROFILE FUNCTIONS ====================
         async function loadUserProfile() {
             try {
@@ -2972,17 +3102,25 @@
                     webhookIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
                 }
 
-                const rl = document.getElementById('adminRecentContacts');
-                if (data.recent_contacts.length === 0) { rl.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No contacts yet</p>'; }
-                else { rl.innerHTML = data.recent_contacts.map(c => { const sc = c.lead_temperature === 'hot' ? 'text-red-600' : c.lead_temperature === 'warm' ? 'text-orange-500' : 'text-gray-400'; return '<div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"><div><p class="text-sm font-medium text-gray-900">' + escapeHtml(c.name) + '</p><p class="text-xs text-gray-400">' + escapeHtml(c.company_name) + ' &middot; by ' + escapeHtml(c.user_name) + '</p></div><div class="text-right">' + (c.lead_score != null ? '<span class="text-sm font-bold ' + sc + '">' + c.lead_score + '</span>' : '<span class="text-xs text-gray-300">--</span>') + '<p class="text-[10px] text-gray-400">' + c.source + '</p></div></div>'; }).join(''); }
+                // Load activity feed
+                loadAdminActivity();
             } catch (err) { console.error('Admin dashboard error:', err); showToast('Failed to load admin data', 'error'); }
         }
 
         async function testWebhook() {
+            const btn = event?.target || document.querySelector('[onclick="testWebhook()"]');
+            const originalHTML = btn?.innerHTML || '';
+
             try {
-                showToast('Sending test webhook...', 'info');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
+                }
+
+                showToast('Testing webhook connection...', 'info');
+
                 const response = await fetch(
-                    `${CONFIG.API_BASE_URL}/admin/test_webhook?user_id=${AppState.currentUser.user_id}`,
+                    `${CONFIG.API_BASE_URL}/admin/webhook/test?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'POST',
                         headers: { 'X-API-Key': CONFIG.API_KEY }
@@ -2990,14 +3128,142 @@
                 );
                 const data = await response.json();
 
-                if (data.webhook_sent) {
-                    showToast('✅ ' + data.webhook_message, 'success');
+                const webhookStatus = document.getElementById('webhookStatus');
+                const webhookIndicator = document.getElementById('webhookIndicator');
+
+                if (data.status === 'success') {
+                    webhookStatus.textContent = '✓ Connected - ' + data.message;
+                    webhookIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
+                    showToast(data.message, 'success');
                 } else {
-                    showToast('⚠️ ' + data.webhook_message, 'error');
+                    webhookStatus.textContent = '✗ Error - ' + data.message;
+                    webhookIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+                    showToast(data.message, 'error');
                 }
             } catch (error) {
                 console.error('Test webhook error:', error);
                 showToast('Failed to test webhook - check network connection', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML || '<i class="fas fa-paper-plane mr-2"></i>Test Webhook';
+                }
+            }
+        }
+
+        // Real-time admin activity feed
+        async function loadAdminActivity() {
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_BASE_URL}/admin/activity?user_id=${AppState.currentUser.user_id}&limit=20`,
+                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                const data = await response.json();
+
+                const feedContainer = document.getElementById('adminActivityFeed');
+
+                if (!response.ok || !data.activities || data.activities.length === 0) {
+                    feedContainer.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No recent activity</p>';
+                    return;
+                }
+
+                feedContainer.innerHTML = data.activities.map(act => {
+                    const tempClass = act.lead_temperature === 'hot' ? 'bg-red-100 text-red-600' :
+                                     act.lead_temperature === 'warm' ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600';
+                    const tempIcon = act.lead_temperature === 'hot' ? 'text-red-600' :
+                                    act.lead_temperature === 'warm' ? 'text-orange-600' : 'text-gray-600';
+
+                    const sourceIcon = act.source === 'scan' ? '<i class="fas fa-camera text-blue-500"></i>' : '<i class="fas fa-user-plus text-gray-500"></i>';
+                    const timeAgo = formatTimestamp(act.timestamp);
+
+                    return `
+                        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition">
+                            <div class="w-10 h-10 rounded-full ${tempClass} flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-user text-sm ${tempIcon}"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(act.contact_name)}</p>
+                                <p class="text-xs text-gray-500">${escapeHtml(act.company)} • by ${escapeHtml(act.user_name)}</p>
+                                <p class="text-xs text-gray-400">${timeAgo}</p>
+                            </div>
+                            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                                ${sourceIcon}
+                                ${act.lead_score != null ? `<span class="text-xs font-bold ${tempIcon}">${act.lead_score}</span>` : '<span class="text-xs text-gray-300">--</span>'}
+                            </div>
+                            <button onclick="adminDeleteContact('${act.contact_id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition flex-shrink-0" title="Delete contact">
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Load admin activity error:', error);
+                document.getElementById('adminActivityFeed').innerHTML = '<p class="text-sm text-red-500 text-center py-4">Failed to load activity feed</p>';
+            }
+        }
+
+        // Admin delete contact
+        async function adminDeleteContact(contactId) {
+            if (!confirm('Delete this contact? This cannot be undone.')) return;
+
+            try {
+                const response = await fetch(
+                    `${CONFIG.API_BASE_URL}/admin/contact/${contactId}?user_id=${AppState.currentUser.user_id}`,
+                    {
+                        method: 'DELETE',
+                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    showToast('Contact deleted', 'success');
+                    loadAdminActivity(); // Reload feed
+                    loadAdminDashboard(); // Reload stats
+                } else {
+                    showToast(data.detail || 'Failed to delete contact', 'error');
+                }
+            } catch (error) {
+                console.error('Admin delete contact error:', error);
+                showToast('Failed to delete contact', 'error');
+            }
+        }
+
+        // Helper function to format timestamps
+        function formatTimestamp(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `${diffHours}h ago`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays < 7) return `${diffDays}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // Auto-refresh admin dashboard every 30 seconds
+        let adminAutoRefreshInterval = null;
+
+        function startAdminAutoRefresh() {
+            if (adminAutoRefreshInterval) clearInterval(adminAutoRefreshInterval);
+
+            adminAutoRefreshInterval = setInterval(() => {
+                if (AppState.activeScreen === 'admin') {
+                    loadAdminDashboard();
+                    loadAdminActivity();
+                }
+            }, 30000); // 30 seconds
+        }
+
+        function stopAdminAutoRefresh() {
+            if (adminAutoRefreshInterval) {
+                clearInterval(adminAutoRefreshInterval);
+                adminAutoRefreshInterval = null;
             }
         }
 

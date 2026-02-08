@@ -93,6 +93,55 @@
 - [ ] Save profile
 - [ ] Verify AI uses profile in chat
 
+### **10. Event Setup Flow** (Phase 2)
+- [ ] Open Profile tab → "Current Event" card
+- [ ] Type event name: "WHX Dubai 2026"
+- [ ] Smart detection suggests description (confirm dialog)
+- [ ] Accept auto-filled description OR write custom
+- [ ] Add event goals (one per line)
+- [ ] Save event settings
+- [ ] Verify Expo tab header shows YOUR event name (not hardcoded)
+- [ ] Try different event: "CES 2026" → Verify smart detection works
+- [ ] Try accessing Expo tab without setting event → Should be blocked
+
+### **11. Digital Business Card** (Phase 2)
+- [ ] Profile tab → "Digital Business Card" section
+- [ ] Fill mandatory fields: Full name + valid email
+- [ ] Leave optional fields empty
+- [ ] Click "Save Card" → Should succeed (no Pydantic errors)
+- [ ] Fill optional fields: LinkedIn URL, website, phone
+- [ ] Save again → Should succeed
+- [ ] Try invalid email format "notanemail" → Should show error
+- [ ] After successful save, click "Generate QR Code"
+- [ ] QR code displays immediately
+- [ ] Scan QR code with phone camera
+- [ ] Card viewer loads at `/card/{token}` (no auth required)
+- [ ] All fields display correctly on card viewer
+
+### **12. Exhibitor Verification Badges** (Phase 2)
+- [ ] Set event to "WHX Dubai 2026" in Profile
+- [ ] Open Expo tab
+- [ ] Total exhibitors: Should be 19 (not 82)
+- [ ] Search "Siemens" → Should show "✅ Verified Booth" badge (green)
+- [ ] Search "GE HealthCare" → Should show "◐ Confirmed" badge (blue)
+- [ ] Search "Medtronic" → Should return 0 results (speculative removed)
+- [ ] Verify booth numbers: Siemens N23.D10, Mindray N21.D10, GWS N37.C58
+- [ ] All exhibitors have either ✅ Verified or ◐ Confirmed badge
+
+### **13. Admin Webhook Controls** (Phase 2 - Admin Only)
+- [ ] Login as admin user
+- [ ] Click Admin nav button (only visible to admins)
+- [ ] Scroll to "Webhook Configuration" section
+- [ ] **If WEBHOOK_URL set:** Status shows green dot + "Configured and active"
+- [ ] **If WEBHOOK_URL NOT set:** Status shows red dot + "Not configured"
+- [ ] Click "Test Webhook (Send Greeting)" button
+- [ ] **If configured:** Toast shows "✅ Test webhook sent successfully!"
+- [ ] **If not configured:** Toast shows "⚠️ WEBHOOK_URL not configured..."
+- [ ] Check n8n workflow logs (if configured) → Should see test payload
+- [ ] Scan a business card as regular user
+- [ ] Webhook triggers automatically (check Railway logs for POST /contact/{id}/accepted)
+- [ ] n8n receives contact data (if configured)
+
 ---
 
 ## 🔬 **ADVANCED TESTING**

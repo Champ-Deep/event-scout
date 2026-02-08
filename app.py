@@ -2212,6 +2212,126 @@ async def admin_list_contacts(
         await session.close()
 
 
+@app.get("/admin/activity")
+async def admin_activity_feed(
+    admin_id: str = Depends(verify_admin),
+    limit: int = Query(50, description="Number of recent activities"),
+):
+    """Real-time activity feed for admin dashboard monitoring."""
+    session = await get_db_session()
+    try:
+        # Get recent contacts with user info
+        result = await session.execute(
+            select(ContactDB, UserDB.name.label('user_name'))
+            .join(UserDB, ContactDB.user_id == UserDB.id)
+            .order_by(ContactDB.created_at.desc())
+            .limit(limit)
+        )
+
+        activities = []
+        for contact, user_name in result:
+            activities.append({
+                "type": "contact_added",
+                "contact_id": str(contact.id),
+                "contact_name": contact.name,
+                "company": contact.company_name or "N/A",
+                "user_id": str(contact.user_id),
+                "user_name": user_name,
+                "source": contact.source or "manual",
+                "timestamp": contact.created_at.isoformat() if contact.created_at else "",
+                "lead_temperature": contact.lead_temperature or "unscored",
+                "lead_score": contact.lead_score,
+            })
+
+        return {"status": "success", "activities": activities}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.delete("/admin/contact/{contact_id}")
+async def admin_delete_contact(
+    contact_id: str,
+    admin_id: str = Depends(verify_admin),
+):
+    """Admin endpoint to delete any contact across all users."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactDB).where(ContactDB.id == uuid.UUID(contact_id))
+        )
+        contact = result.scalar_one_or_none()
+
+        if not contact:
+            raise HTTPException(status_code=404, detail="Contact not found")
+
+        # Delete from FAISS
+        try:
+            faiss_index.delete_contact(str(contact.user_id), contact_id)
+        except Exception as faiss_err:
+            print(f"[FAISS] Failed to delete contact {contact_id}: {faiss_err}")
+
+        # Delete from DB
+        await session.delete(contact)
+        await session.commit()
+
+        return {"status": "success", "message": "Contact deleted", "contact_id": contact_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.post("/admin/webhook/test")
+async def test_webhook_connection(
+    admin_id: str = Depends(verify_admin),
+):
+    """Test n8n webhook connectivity from admin dashboard."""
+    if not WEBHOOK_URL:
+        return {
+            "status": "error",
+            "message": "WEBHOOK_URL not configured. Set the WEBHOOK_URL environment variable."
+        }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                WEBHOOK_URL,
+                json={
+                    "test": True,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "message": "Test webhook from Event Scout admin dashboard",
+                    "source": "admin_test"
+                }
+            )
+
+            success = response.status_code == 200
+            return {
+                "status": "success" if success else "error",
+                "status_code": response.status_code,
+                "message": "Webhook reachable" if success else f"Webhook returned HTTP {response.status_code}",
+                "webhook_url": WEBHOOK_URL
+            }
+    except httpx.TimeoutException:
+        return {
+            "status": "error",
+            "message": "Webhook timeout after 10 seconds",
+            "webhook_url": WEBHOOK_URL
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Webhook error: {str(e)}",
+            "webhook_url": WEBHOOK_URL
+        }
+
+
 @app.get("/admin/dashboard")
 async def admin_dashboard(admin_id: str = Depends(verify_admin)):
     """Global admin dashboard with stats across all users."""
@@ -2384,8 +2504,10 @@ async def add_audio_note(
             if contact.notes:
                 summary += f", {contact.notes[:200]}"
             faiss_index.update_contact(user_id, contact_id, summary)
-        except Exception:
-            pass
+        except Exception as faiss_err:
+            print(f"[FAISS] Failed to update contact {contact_id} after audio note: {faiss_err}")
+            traceback.print_exc()
+            # Don't fail the request - audio note is still saved in database
 
         return {"status": "success", "message": "Audio note saved", "total_audio_notes": len(audio_notes)}
     except HTTPException:
