@@ -2061,7 +2061,7 @@ async def import_exhibitors_route(
 
 @app.get("/exhibitors/")
 async def list_exhibitors_route(
-    event: str = Query(..., description="Event name (required)"),
+    event: str = Query("WHX Dubai 2026", description="Event name (defaults to WHX Dubai 2026)"),
     category: str = Query("", description="Filter by category"),
     search: str = Query("", description="Search exhibitor names"),
     limit: int = Query(100, description="Max results"),
@@ -2109,7 +2109,7 @@ async def list_exhibitors_route(
 
 @app.get("/exhibitors/categories/")
 async def list_exhibitor_categories(
-    event: str = Query(..., description="Event name (required)"),
+    event: str = Query("WHX Dubai 2026", description="Event name (defaults to WHX Dubai 2026)"),
     api_key: str = Depends(verify_api_key),
 ):
     """List unique exhibitor categories for filtering by event."""
