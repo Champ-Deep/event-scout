@@ -1205,7 +1205,7 @@ Rules: hot >= 70, warm = 40-69, cold < 40. Return ONLY raw JSON."""
 
 
 # --- FASTAPI APP ---
-app = FastAPI(title="Contact Assistant API - Multi-User (PostgreSQL)")
+app = FastAPI(title="Contact Assistant API - Multi-User (PostgreSQL)", version="2.1.0-admin-cmd")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
