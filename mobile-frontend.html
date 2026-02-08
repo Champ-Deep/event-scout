@@ -567,8 +567,8 @@
                 <div class="safe-area-inset-top">
                     <!-- Expo Header -->
                     <div class="bg-gradient-to-r from-emerald-600 to-teal-500 text-white p-4">
-                        <h2 class="font-semibold text-lg">WHX Dubai 2026</h2>
-                        <p class="text-xs text-emerald-100">Feb 9-13 | Dubai Exhibition Centre</p>
+                        <h2 id="expoEventName" class="font-semibold text-lg">Select Event in Profile</h2>
+                        <p id="expoEventDetails" class="text-xs text-emerald-100">Set your current event to see exhibitors</p>
                     </div>
 
                     <!-- Search & Filter -->
@@ -2179,20 +2179,28 @@
         async function saveDigitalCard() {
             if (!AppState.currentUser) return;
 
+            // Convert empty strings to null for optional fields
             const cardData = {
                 full_name: document.getElementById('cardFullName').value.trim(),
-                job_title: document.getElementById('cardJobTitle').value.trim(),
-                company_name: document.getElementById('cardCompanyName').value.trim(),
                 email: document.getElementById('cardEmail').value.trim(),
-                phone: document.getElementById('cardPhone').value.trim(),
-                linkedin_url: document.getElementById('cardLinkedIn').value.trim(),
-                zoom_number: document.getElementById('cardZoom').value.trim(),
-                website: document.getElementById('cardWebsite').value.trim(),
+                job_title: document.getElementById('cardJobTitle').value.trim() || null,
+                company_name: document.getElementById('cardCompanyName').value.trim() || null,
+                phone: document.getElementById('cardPhone').value.trim() || null,
+                linkedin_url: document.getElementById('cardLinkedIn').value.trim() || null,
+                zoom_number: document.getElementById('cardZoom').value.trim() || null,
+                website: document.getElementById('cardWebsite').value.trim() || null,
             };
 
-            // Validation
+            // Validation - mandatory fields
             if (!cardData.full_name || !cardData.email) {
                 showToast('Please enter at least your name and email', 'error');
+                return;
+            }
+
+            // Email format validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(cardData.email)) {
+                showToast('Please enter a valid email address', 'error');
                 return;
             }
 
@@ -2206,7 +2214,12 @@
                     body: JSON.stringify(cardData)
                 });
 
-                if (!response.ok) throw new Error('Failed to save card');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Save card error details:', errorData);
+                    showToast(errorData.detail || 'Failed to save card. Please try again.', 'error');
+                    return;
+                }
 
                 const data = await response.json();
                 showToast('Digital card saved successfully!', 'success');
@@ -2568,8 +2581,32 @@
         let exhibitorCategories = [];
 
         async function loadExhibitors() {
+            // Check if user has set their current event
+            const eventName = AppState.userProfile?.current_event_name || '';
+            const eventDesc = AppState.userProfile?.current_event_description || '';
+
+            // Update header with event name and description
+            if (eventName) {
+                document.getElementById('expoEventName').textContent = eventName;
+                document.getElementById('expoEventDetails').textContent = eventDesc || 'Loading exhibitors...';
+            } else {
+                document.getElementById('expoEventName').textContent = 'Select Event in Profile';
+                document.getElementById('expoEventDetails').textContent = 'Set your current event to see exhibitors';
+                document.getElementById('exhibitorList').innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-calendar-alt text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-600 font-medium mb-2">No Event Selected</p>
+                        <p class="text-sm text-gray-500 mb-4">Please set your current event in Profile settings first</p>
+                        <button onclick="switchScreen('profile'); setTimeout(() => openSettingsSheet('event'), 300);"
+                                class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium">
+                            Set Event Now
+                        </button>
+                    </div>`;
+                return;
+            }
+
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/?limit=200`, {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/?event=${encodeURIComponent(eventName)}&limit=200`, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await response.json();
@@ -2577,16 +2614,21 @@
                     exhibitorCache = data.exhibitors || [];
                     renderExhibitors(exhibitorCache);
                     loadExhibitorCategories();
+                } else if (data.status === 'error') {
+                    document.getElementById('exhibitorList').innerHTML = `<p class="text-center text-gray-500 py-8">${data.detail || 'Failed to load exhibitors'}</p>`;
                 }
             } catch (error) {
                 console.error('Failed to load exhibitors:', error);
-                document.getElementById('exhibitorList').innerHTML = '<p class="text-center text-gray-500 py-8">No exhibitor data available yet.</p>';
+                document.getElementById('exhibitorList').innerHTML = '<p class="text-center text-gray-500 py-8">No exhibitor data available for this event.</p>';
             }
         }
 
         async function loadExhibitorCategories() {
+            const eventName = AppState.userProfile?.current_event_name || '';
+            if (!eventName) return; // No event set, no categories to load
+
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/categories/`, {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/categories/?event=${encodeURIComponent(eventName)}`, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await response.json();
@@ -2639,11 +2681,24 @@
 
             let html = `<p class="text-sm text-gray-500 mb-2">${exhibitors.length} exhibitors</p>`;
             exhibitors.forEach(ex => {
+                // Verification badge
+                let verificationBadge = '';
+                if (ex.verification === 'verified') {
+                    verificationBadge = '<span class="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium"><i class="fas fa-check-circle mr-1"></i>Verified Booth</span>';
+                } else if (ex.verification === 'confirmed') {
+                    verificationBadge = '<span class="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium"><i class="fas fa-info-circle mr-1"></i>Confirmed</span>';
+                } else {
+                    verificationBadge = '<span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full font-medium"><i class="fas fa-tilde mr-1"></i>Estimated</span>';
+                }
+
                 html += `
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100" onclick="showExhibitorDetail('${ex.name.replace(/'/g, "\\'")}')">
                     <div class="flex items-start justify-between">
                         <div class="flex-1 min-w-0">
-                            <h4 class="font-semibold text-gray-900 truncate">${ex.name}</h4>
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-semibold text-gray-900 truncate">${ex.name}</h4>
+                                ${verificationBadge}
+                            </div>
                             ${ex.category ? `<p class="text-xs text-emerald-600 mt-0.5">${ex.category}</p>` : ''}
                             <div class="flex items-center gap-3 mt-1 text-xs text-gray-500">
                                 ${ex.booth ? `<span><i class="fas fa-map-pin mr-1"></i>${ex.booth}${ex.hall ? `, ${ex.hall}` : ''}</span>` : ''}

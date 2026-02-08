@@ -4,8 +4,7 @@ Import WHX Dubai 2026 exhibitor data into Event Scout.
 Usage:
     python import_exhibitors.py
 
-This script contains curated exhibitor data for the World Health Expo (WHX) Dubai 2026
-and imports it via the Event Scout API.
+Reads exhibitor data from whx_exhibitors.json and imports via the Event Scout API.
 """
 
 import json
@@ -16,13 +15,15 @@ import sys
 API_BASE = "https://event-scout-production.up.railway.app"
 API_KEY = "OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s"
 
-# WHX Dubai 2026 Exhibitor Data
-# Event: Feb 9-13, 2026, Dubai Exhibition Centre
-# Categories: Medical Devices, Pharmaceuticals, Health IT, Hospital Equipment,
-#             Wellness & Nutrition, Laboratory, Diagnostics, Telemedicine,
-#             Healthcare Furniture, Infection Control, Rehabilitation
+# Load exhibitors from JSON file
+print("Loading exhibitor data from whx_exhibitors.json...")
+with open('whx_exhibitors.json', 'r') as f:
+    data = json.load(f)
+    EXHIBITORS = data['exhibitors']
+    print(f"Loaded {len(EXHIBITORS)} exhibitors")
 
-EXHIBITORS = [
+# Note: This is a placeholder - actual exhibitor list is loaded from JSON above
+EXHIBITORS_HARDCODED = [
     # --- Medical Devices ---
     {"name": "Medtronic", "booth": "A1-120", "hall": "Hall 1", "category": "Medical Devices", "subcategory": "Surgical & Cardiac", "country": "USA", "website": "https://www.medtronic.com", "description": "Global leader in medical technology - cardiac devices, surgical tools, diabetes management, and neuromodulation therapies.", "products": ["Pacemakers", "Insulin Pumps", "Surgical Navigation", "Spinal Implants"], "tags": ["cardiac", "diabetes", "surgery", "implants"]},
     {"name": "Siemens Healthineers", "booth": "A1-200", "hall": "Hall 1", "category": "Medical Devices", "subcategory": "Imaging & Diagnostics", "country": "Germany", "website": "https://www.siemens-healthineers.com", "description": "Pioneering breakthroughs in healthcare. Imaging, diagnostics, and advanced therapies.", "products": ["MRI Systems", "CT Scanners", "Ultrasound", "Laboratory Diagnostics"], "tags": ["imaging", "diagnostics", "radiology", "AI"]},

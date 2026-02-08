@@ -2061,13 +2061,13 @@ async def import_exhibitors_route(
 
 @app.get("/exhibitors/")
 async def list_exhibitors_route(
-    event: str = Query("WHX Dubai 2026", description="Event name"),
+    event: str = Query(..., description="Event name (required)"),
     category: str = Query("", description="Filter by category"),
     search: str = Query("", description="Search exhibitor names"),
     limit: int = Query(100, description="Max results"),
     api_key: str = Depends(verify_api_key),
 ):
-    """List exhibitors with optional filtering."""
+    """List exhibitors with optional filtering by event, category, and search."""
     session = await get_db_session()
     try:
         query = select(ExhibitorDB).where(ExhibitorDB.event_name == event)
@@ -2109,10 +2109,10 @@ async def list_exhibitors_route(
 
 @app.get("/exhibitors/categories/")
 async def list_exhibitor_categories(
-    event: str = Query("WHX Dubai 2026", description="Event name"),
+    event: str = Query(..., description="Event name (required)"),
     api_key: str = Depends(verify_api_key),
 ):
-    """List unique exhibitor categories for filtering."""
+    """List unique exhibitor categories for filtering by event."""
     session = await get_db_session()
     try:
         result = await session.execute(
@@ -2427,15 +2427,16 @@ async def update_user_card(
             # Update existing card
             existing = card.card_data or {}
             for key, value in update_data.items():
-                if value is not None:
+                # Only store non-None and non-empty strings
+                if value is not None and (not isinstance(value, str) or value.strip()):
                     existing[key] = value
             card.card_data = existing
             card.updated_at = datetime.now(timezone.utc)
         else:
-            # Create new card
+            # Create new card - only store non-None and non-empty strings
             card = UserCardDB(
                 user_id=uuid.UUID(user_id),
-                card_data={k: v for k, v in update_data.items() if v is not None},
+                card_data={k: v for k, v in update_data.items() if v is not None and (not isinstance(v, str) or v.strip())},
             )
             session.add(card)
 

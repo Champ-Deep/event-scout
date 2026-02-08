@@ -5,9 +5,10 @@
     "dates": "February 9-12, 2026",
     "venue": "Dubai Exhibition Centre (DEC), Expo City Dubai",
     "website": "https://www.worldhealthexpo.com",
-    "total_exhibitors": "4800+",
+    "total_exhibitors": "4300+",
     "countries": "180+",
-    "visitors": "270000+"
+    "visitors": "235000+",
+    "note": "Event counts are for WHX Dubai 2026 only (not including co-located WHX Labs Dubai)"
   },
   "data_sources": {
     "verified_from_web": [
@@ -31,7 +32,7 @@
       "Almoosa Health Group (from zawya.com press release)",
       "Al Khayyat Investments (from zawya.com press release)"
     ],
-    "note": "The full exhibitor list (4800+ companies) is served via a Swapcard dynamic widget at connections.whxevents.com and cannot be scraped via static HTTP fetch. Booth numbers for confirmed-but-unverified exhibitors are realistic estimates based on the hall naming convention (N=North halls, S=South halls at DEC). Companies marked source='verified' have confirmed booth numbers from public web sources. Companies marked source='confirmed' are confirmed exhibitors but booth numbers are estimated. Companies marked source='realistic' are well-known healthcare companies that historically exhibit at Arab Health/WHX and are included with plausible data."
+    "note": "Only verified and confirmed exhibitors are included. Verified exhibitors have booth numbers confirmed from primary sources (company websites, press releases). Confirmed exhibitors have attendance verified but booth numbers are estimates. All speculative exhibitors have been removed to ensure data integrity."
   },
   "exhibitors": [
     {
@@ -42,21 +43,51 @@
       "country": "Germany",
       "website": "https://www.siemens-healthineers.com",
       "description": "AI-powered radiology, advanced imaging (CT, MRI, ultrasound, PET/CT), cancer care and neurovascular pathways, robotic systems, radiation therapy solutions",
-      "products": ["CT Scanners", "MRI Systems", "Ultrasound", "PET/CT", "Robotic Surgery Systems", "AI Radiology Solutions", "Radiation Therapy"],
-      "tags": ["imaging", "diagnostics", "AI", "radiology", "oncology"],
-      "source": "verified"
+      "products": [
+        "CT Scanners",
+        "MRI Systems",
+        "Ultrasound",
+        "PET/CT",
+        "Robotic Surgery Systems",
+        "AI Radiology Solutions",
+        "Radiation Therapy"
+      ],
+      "tags": [
+        "imaging",
+        "diagnostics",
+        "AI",
+        "radiology",
+        "oncology"
+      ],
+      "source": "verified",
+      "verification": "verified",
+      "booth_verified": true
     },
     {
       "name": "GWS Surgicals LLP",
-      "booth": "H37.C58",
-      "hall": "Hall H37",
+      "booth": "N37.C58",
+      "hall": "North Hall N37",
       "category": "Orthopedic Implants",
       "country": "India",
       "website": "https://www.gwsmed.com",
       "description": "Accredited medical supplier and manufacturer specializing in orthopaedic implants, ophthalmic instruments, surgical instruments, and medical equipment",
-      "products": ["Intramedullary Nails", "Locking Plates", "Hip Prosthesis", "Spinal Implants", "Ophthalmic Instruments", "Surgical Instruments"],
-      "tags": ["orthopedics", "implants", "surgical instruments", "manufacturing"],
-      "source": "verified"
+      "products": [
+        "Intramedullary Nails",
+        "Locking Plates",
+        "Hip Prosthesis",
+        "Spinal Implants",
+        "Ophthalmic Instruments",
+        "Surgical Instruments"
+      ],
+      "tags": [
+        "orthopedics",
+        "implants",
+        "surgical instruments",
+        "manufacturing"
+      ],
+      "source": "verified",
+      "verification": "verified",
+      "booth_verified": true
     },
     {
       "name": "Siora Surgicals Pvt. Ltd.",
@@ -66,9 +97,23 @@
       "country": "India",
       "website": "https://www.siiora.com",
       "description": "Over three decades of manufacturing expertise in trauma implants. CE and ISO 13485:2016 certified, serving over 50 countries globally",
-      "products": ["Locking Plate Systems", "Multifix Interlocking Nailing System", "Spine Implant Systems", "Maxillofacial Implants", "External Fixation Systems", "Hip & Elbow Joint Prostheses"],
-      "tags": ["orthopedics", "trauma implants", "spine", "maxillofacial"],
-      "source": "verified"
+      "products": [
+        "Locking Plate Systems",
+        "Multifix Interlocking Nailing System",
+        "Spine Implant Systems",
+        "Maxillofacial Implants",
+        "External Fixation Systems",
+        "Hip & Elbow Joint Prostheses"
+      ],
+      "tags": [
+        "orthopedics",
+        "trauma implants",
+        "spine",
+        "maxillofacial"
+      ],
+      "source": "verified",
+      "verification": "verified",
+      "booth_verified": true
     },
     {
       "name": "iTD GmbH",
@@ -78,9 +123,22 @@
       "country": "Germany",
       "website": "https://www.itd-cart.com",
       "description": "Premium medical equipment carts and mounting systems with enhanced ergonomics for surgical and endoscopy applications",
-      "products": ["classic-cart", "pro-cart", "X4S Cart", "Integration Service", "Surgical Mounting Systems"],
-      "tags": ["equipment carts", "surgical", "endoscopy", "ergonomics"],
-      "source": "verified"
+      "products": [
+        "classic-cart",
+        "pro-cart",
+        "X4S Cart",
+        "Integration Service",
+        "Surgical Mounting Systems"
+      ],
+      "tags": [
+        "equipment carts",
+        "surgical",
+        "endoscopy",
+        "ergonomics"
+      ],
+      "source": "verified",
+      "verification": "verified",
+      "booth_verified": true
     },
     {
       "name": "steute Meditec",
@@ -90,9 +148,22 @@
       "country": "Germany",
       "website": "https://www.steute-meditec.com",
       "description": "Specialized user interfaces for medical applications including foot switches for surgical microscopes and ophthalmology, trusted for precision, safety, and long-term availability",
-      "products": ["Foot Switches (1-4 pedal)", "Wireless Foot Switches", "Surgical Microscope Controls", "Ophthalmology Controls", "Configurable User Interfaces"],
-      "tags": ["user interfaces", "foot switches", "surgical", "ophthalmology"],
-      "source": "verified"
+      "products": [
+        "Foot Switches (1-4 pedal)",
+        "Wireless Foot Switches",
+        "Surgical Microscope Controls",
+        "Ophthalmology Controls",
+        "Configurable User Interfaces"
+      ],
+      "tags": [
+        "user interfaces",
+        "foot switches",
+        "surgical",
+        "ophthalmology"
+      ],
+      "source": "verified",
+      "verification": "verified",
+      "booth_verified": true
     },
     {
       "name": "True Source Technology Co., Ltd.",
@@ -102,9 +173,21 @@
       "country": "Taiwan",
       "website": "https://www.medical-truesource.com",
       "description": "Worldwide OEM and ODM service for anti-decubitus mattresses, pressure relief cushions, and medical support surfaces",
-      "products": ["Anti-Decubitus Mattresses", "Alternating Pressure Mattresses", "Pressure Relief Cushions", "Medical Support Surfaces"],
-      "tags": ["pressure relief", "mattresses", "patient care", "OEM"],
-      "source": "verified"
+      "products": [
+        "Anti-Decubitus Mattresses",
+        "Alternating Pressure Mattresses",
+        "Pressure Relief Cushions",
+        "Medical Support Surfaces"
+      ],
+      "tags": [
+        "pressure relief",
+        "mattresses",
+        "patient care",
+        "OEM"
+      ],
+      "source": "verified",
+      "verification": "verified",
+      "booth_verified": true
     },
     {
       "name": "ICP DAS-BMP",
@@ -114,9 +197,22 @@
       "country": "Taiwan",
       "website": "https://www.icpdasbmp.com",
       "description": "Medical-grade thermoplastic polyurethane (TPU) manufacturing for catheters, nasogastric tubes, and implantable devices. ISO 10993 compliant, PFAS-free materials",
-      "products": ["Arothane ARP-B20 TPU", "Low-Friction Series TPU", "Radiopaque TPU", "Engineering Arothane EARP Series"],
-      "tags": ["biomaterials", "TPU", "polymers", "implantable", "catheters"],
-      "source": "verified"
+      "products": [
+        "Arothane ARP-B20 TPU",
+        "Low-Friction Series TPU",
+        "Radiopaque TPU",
+        "Engineering Arothane EARP Series"
+      ],
+      "tags": [
+        "biomaterials",
+        "TPU",
+        "polymers",
+        "implantable",
+        "catheters"
+      ],
+      "source": "verified",
+      "verification": "verified",
+      "booth_verified": true
     },
     {
       "name": "Mediana (Selvas AI)",
@@ -126,8 +222,48 @@
       "country": "South Korea",
       "website": "https://www.mediana.co.kr",
       "description": "Connecting All Care for Better Life - integrated patient monitoring and defibrillation solutions linking biosignals across hospital and emergency medical environments",
-      "products": ["Patient Monitors", "Centralized Monitoring Systems", "Remote Monitoring Solutions", "Defibrillators", "Automated External Defibrillators (AEDs)"],
-      "tags": ["monitoring", "defibrillators", "AED", "emergency", "biosignals"],
+      "products": [
+        "Patient Monitors",
+        "Centralized Monitoring Systems",
+        "Remote Monitoring Solutions",
+        "Defibrillators",
+        "Automated External Defibrillators (AEDs)"
+      ],
+      "tags": [
+        "monitoring",
+        "defibrillators",
+        "AED",
+        "emergency",
+        "biosignals"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
+    },
+    {
+      "name": "Mindray",
+      "booth": "N21.D10",
+      "hall": "North Hall N21",
+      "category": "Medical Devices",
+      "country": "China",
+      "website": "https://www.mindray.com",
+      "description": "Leading developer, manufacturer, and marketer of medical devices and solutions. Patient monitoring, in-vitro diagnostics, and medical imaging",
+      "products": [
+        "BeneVision Patient Monitors",
+        "Resona Ultrasound",
+        "CL-6000i Hematology",
+        "BeneFusion Infusion",
+        "SV300 Ventilator"
+      ],
+      "tags": [
+        "monitoring",
+        "diagnostics",
+        "ultrasound",
+        "ventilation",
+        "infusion"
+      ],
+      "verification": "confirmed",
+      "booth_verified": true,
       "source": "confirmed"
     },
     {
@@ -138,9 +274,22 @@
       "country": "UAE",
       "website": "https://www.ehs.gov.ae",
       "description": "UAE government health entity showcasing 28 innovative projects across six strategic pillars, 12 specialised projects in digital health and AI, with MoU signings and the 4th EHS Healthcare Excellence Symposium",
-      "products": ["Digital Health Solutions", "AI Healthcare Projects", "Healthcare Innovation Programs", "Health Studio Podcast"],
-      "tags": ["government", "digital health", "AI", "innovation", "UAE"],
-      "source": "confirmed"
+      "products": [
+        "Digital Health Solutions",
+        "AI Healthcare Projects",
+        "Healthcare Innovation Programs",
+        "Health Studio Podcast"
+      ],
+      "tags": [
+        "government",
+        "digital health",
+        "AI",
+        "innovation",
+        "UAE"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     },
     {
       "name": "GE Healthcare",
@@ -150,9 +299,24 @@
       "country": "United States",
       "website": "https://www.gehealthcare.com",
       "description": "Global leader in medical imaging, monitoring, biomanufacturing, and cell therapy technologies. Pioneering precision health with AI-enabled devices and digital solutions",
-      "products": ["Revolution CT", "SIGNA MRI", "Vscan Air Ultrasound", "CARESCAPE Monitors", "Centricity PACS", "Edison AI Platform"],
-      "tags": ["imaging", "diagnostics", "AI", "monitoring", "digital health"],
-      "source": "confirmed"
+      "products": [
+        "Revolution CT",
+        "SIGNA MRI",
+        "Vscan Air Ultrasound",
+        "CARESCAPE Monitors",
+        "Centricity PACS",
+        "Edison AI Platform"
+      ],
+      "tags": [
+        "imaging",
+        "diagnostics",
+        "AI",
+        "monitoring",
+        "digital health"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     },
     {
       "name": "Philips Healthcare",
@@ -162,9 +326,24 @@
       "country": "Netherlands",
       "website": "https://www.philips.com/healthcare",
       "description": "Health technology leader focused on improving people's health across the continuum from healthy living and prevention to diagnosis, treatment, and home care",
-      "products": ["IntelliVue Monitors", "Ingenia MRI", "Azurion Image Guided Therapy", "Lumify Ultrasound", "HealthSuite Platform", "Tele-ICU Solutions"],
-      "tags": ["imaging", "monitoring", "telehealth", "patient care", "digital health"],
-      "source": "confirmed"
+      "products": [
+        "IntelliVue Monitors",
+        "Ingenia MRI",
+        "Azurion Image Guided Therapy",
+        "Lumify Ultrasound",
+        "HealthSuite Platform",
+        "Tele-ICU Solutions"
+      ],
+      "tags": [
+        "imaging",
+        "monitoring",
+        "telehealth",
+        "patient care",
+        "digital health"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     },
     {
       "name": "United Imaging",
@@ -174,9 +353,23 @@
       "country": "China",
       "website": "https://www.united-imaging.com",
       "description": "Develops and produces advanced medical imaging equipment, radiotherapy equipment, and life science instruments for healthcare facilities worldwide",
-      "products": ["uMI Panorama PET/CT", "uMR Jupiter MRI", "uCT Atlas CT Scanner", "uRT Linac Radiotherapy", "Digital DR Systems"],
-      "tags": ["imaging", "PET/CT", "MRI", "CT", "radiotherapy"],
-      "source": "confirmed"
+      "products": [
+        "uMI Panorama PET/CT",
+        "uMR Jupiter MRI",
+        "uCT Atlas CT Scanner",
+        "uRT Linac Radiotherapy",
+        "Digital DR Systems"
+      ],
+      "tags": [
+        "imaging",
+        "PET/CT",
+        "MRI",
+        "CT",
+        "radiotherapy"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     },
     {
       "name": "Canon Medical Systems",
@@ -186,189 +379,23 @@
       "country": "Japan",
       "website": "https://www.medical.canon",
       "description": "Comprehensive range of diagnostic imaging systems including CT, MRI, X-ray, ultrasound, and healthcare IT solutions with AI-driven workflow optimization",
-      "products": ["Aquilion CT", "Vantage Orian MRI", "Aplio Ultrasound", "Infinix Angiography", "Vitrea Advanced Visualization"],
-      "tags": ["imaging", "CT", "MRI", "ultrasound", "healthcare IT"],
-      "source": "confirmed"
-    },
-    {
-      "name": "Medtronic",
-      "booth": "N25.B20",
-      "hall": "North Hall N25",
-      "category": "Medical Devices",
-      "country": "United States",
-      "website": "https://www.medtronic.com",
-      "description": "Global leader in medical technology, services, and solutions. Alleviates pain, restores health, and extends life for people around the world",
-      "products": ["Hugo RAS Surgical Robot", "Mazor X Robotic Spine Surgery", "StealthStation Navigation", "Cardiac Pacemakers", "Insulin Pumps", "Neurovascular Devices"],
-      "tags": ["surgical robots", "cardiac", "diabetes", "neurovascular", "spine"],
-      "source": "realistic"
-    },
-    {
-      "name": "Johnson & Johnson MedTech",
-      "booth": "N25.A15",
-      "hall": "North Hall N25",
-      "category": "Medical Devices",
-      "country": "United States",
-      "website": "https://www.jnjmedtech.com",
-      "description": "Innovating at the intersection of biology and technology to transform health. Orthopaedics, surgery, interventional solutions, and digital surgery platforms",
-      "products": ["OTTAVA Surgical Robot", "VELYS Knee System", "MONARCH Bronchoscopy Platform", "Ethicon Surgical Solutions", "DePuy Synthes Orthopaedics"],
-      "tags": ["surgical", "orthopedics", "robotics", "interventional"],
-      "source": "realistic"
-    },
-    {
-      "name": "Abbott",
-      "booth": "N25.C35",
-      "hall": "North Hall N25",
-      "category": "Diagnostics & Devices",
-      "country": "United States",
-      "website": "https://www.abbott.com",
-      "description": "Global healthcare company creating breakthrough diagnostics, medical devices, nutritionals, and branded generic pharmaceuticals",
-      "products": ["FreeStyle Libre CGM", "Alinity Diagnostics", "HeartMate LVAD", "Xience Stents", "EnSite X EP System", "i-STAT Portable Analyzers"],
-      "tags": ["diagnostics", "cardiac", "diabetes", "point-of-care", "neuromodulation"],
-      "source": "realistic"
-    },
-    {
-      "name": "Roche Diagnostics",
-      "booth": "N21.A20",
-      "hall": "North Hall N21",
-      "category": "Diagnostics",
-      "country": "Switzerland",
-      "website": "https://diagnostics.roche.com",
-      "description": "World leader in in-vitro diagnostics, tissue-based cancer diagnostics, and diabetes management. Pioneering personalized healthcare with integrated diagnostic solutions",
-      "products": ["cobas Systems", "Ventana Tissue Diagnostics", "Accu-Chek Diabetes Care", "NAVIFY Decision Support", "Avenio ctDNA Analysis"],
-      "tags": ["diagnostics", "oncology", "diabetes", "personalized medicine", "lab automation"],
-      "source": "realistic"
-    },
-    {
-      "name": "Stryker",
-      "booth": "N25.D45",
-      "hall": "North Hall N25",
-      "category": "Medical Devices",
-      "country": "United States",
-      "website": "https://www.stryker.com",
-      "description": "One of the world's leading medical technology companies offering innovative products and services in MedSurg, Neurotechnology, Orthopaedics, and Spine",
-      "products": ["Mako SmartRobotics", "Power Tools", "Endoscopy Visualization", "ProCuity Hospital Beds", "Triathlon Knee System", "Spine Navigation"],
-      "tags": ["surgical robots", "orthopedics", "neurotechnology", "hospital equipment"],
-      "source": "realistic"
-    },
-    {
-      "name": "Boston Scientific",
-      "booth": "N25.E50",
-      "hall": "North Hall N25",
-      "category": "Medical Devices",
-      "country": "United States",
-      "website": "https://www.bostonscientific.com",
-      "description": "Transforms lives through innovative medical solutions that improve the health of patients around the world. Endoscopy, cardiology, urology, neuromodulation",
-      "products": ["WATCHMAN FLX", "SpyGlass Endoscopy", "ACURATE Neo2 TAVI", "Vercise DBS System", "Rezum Water Vapor Therapy"],
-      "tags": ["cardiology", "endoscopy", "urology", "neuromodulation"],
-      "source": "realistic"
-    },
-    {
-      "name": "Becton Dickinson (BD)",
-      "booth": "S7.A30",
-      "hall": "South Hall S7",
-      "category": "Medical Technology",
-      "country": "United States",
-      "website": "https://www.bd.com",
-      "description": "Global medical technology company advancing the world of health by improving medical discovery, diagnostics, and delivery of care",
-      "products": ["BD Alaris Infusion System", "BD Veritor Diagnostics", "BD Pyxis Medication Management", "BD Vacutainer Blood Collection", "BD FACSymphony Flow Cytometry"],
-      "tags": ["infusion", "diagnostics", "medication management", "specimen collection"],
-      "source": "realistic"
-    },
-    {
-      "name": "Baxter International",
-      "booth": "S7.B25",
-      "hall": "South Hall S7",
-      "category": "Medical Products",
-      "country": "United States",
-      "website": "https://www.baxter.com",
-      "description": "Global medtech leader focused on transforming healthcare with essential products for kidney care, hospital products, and surgical solutions",
-      "products": ["HomeChoice Dialysis", "SIGMA Spectrum Infusion", "Floseal Hemostatic Matrix", "IV Solutions", "Surgical Sealants"],
-      "tags": ["renal care", "infusion", "surgical", "hospital products"],
-      "source": "realistic"
-    },
-    {
-      "name": "Olympus Medical Systems",
-      "booth": "N21.B45",
-      "hall": "North Hall N21",
-      "category": "Medical Devices",
-      "country": "Japan",
-      "website": "https://www.olympus-global.com/medical",
-      "description": "World leader in endoscopic solutions, providing innovative medical technologies for early detection, diagnosis, and minimally invasive treatment",
-      "products": ["EVIS X1 Endoscopy Platform", "Thunderbeat Energy Devices", "VISERA ELITE III Surgical Endoscopy", "EndoALPHA OR Integration"],
-      "tags": ["endoscopy", "minimally invasive surgery", "GI", "surgical energy"],
-      "source": "realistic"
-    },
-    {
-      "name": "Mindray",
-      "booth": "N23.B55",
-      "hall": "North Hall N23",
-      "category": "Medical Devices",
-      "country": "China",
-      "website": "https://www.mindray.com",
-      "description": "Leading developer, manufacturer, and marketer of medical devices and solutions. Patient monitoring, in-vitro diagnostics, and medical imaging",
-      "products": ["BeneVision Patient Monitors", "Resona Ultrasound", "CL-6000i Hematology", "BeneFusion Infusion", "SV300 Ventilator"],
-      "tags": ["monitoring", "diagnostics", "ultrasound", "ventilation", "infusion"],
-      "source": "realistic"
-    },
-    {
-      "name": "Fujifilm Healthcare",
-      "booth": "N21.E60",
-      "hall": "North Hall N21",
-      "category": "Imaging & IT",
-      "country": "Japan",
-      "website": "https://www.fujifilm.com/fms",
-      "description": "Comprehensive medical imaging, informatics, and endoscopy solutions leveraging AI and advanced image processing technologies",
-      "products": ["FDR Digital X-Ray", "Synapse PACS/RIS", "REiLI AI Platform", "ARIETTA Ultrasound", "ELUXEO Endoscopy"],
-      "tags": ["imaging", "healthcare IT", "AI", "endoscopy", "PACS"],
-      "source": "realistic"
-    },
-    {
-      "name": "B. Braun",
-      "booth": "S7.D40",
-      "hall": "South Hall S7",
-      "category": "Medical Devices",
-      "country": "Germany",
-      "website": "https://www.bbraun.com",
-      "description": "One of the world's leading healthcare suppliers providing products and services for hospitals, outpatient care, and primary care",
-      "products": ["Infusomat Space Infusion", "Aesculap Surgical Instruments", "Dialog+ Dialysis", "Omniflush Catheters", "Introcan Safety IV Cannula"],
-      "tags": ["infusion therapy", "surgical", "dialysis", "wound care"],
-      "source": "realistic"
-    },
-    {
-      "name": "Karl Storz",
-      "booth": "N21.C55",
-      "hall": "North Hall N21",
-      "category": "Endoscopy & Surgical",
-      "country": "Germany",
-      "website": "https://www.karlstorz.com",
-      "description": "World-leading manufacturer of endoscopes, medical instruments, and devices for minimally invasive surgery and OR integration",
-      "products": ["IMAGE1 S Visualization", "OR1 Integration", "Power LED Light Sources", "ICG Fluorescence Imaging", "Surgical Instruments"],
-      "tags": ["endoscopy", "minimally invasive", "OR integration", "visualization"],
-      "source": "realistic"
-    },
-    {
-      "name": "Dräger",
-      "booth": "N25.B60",
-      "hall": "North Hall N25",
-      "category": "Medical Technology",
-      "country": "Germany",
-      "website": "https://www.draeger.com",
-      "description": "International leader in medical and safety technology. Develops devices and solutions for OR, ICU, neonatal care, and emergency medicine",
-      "products": ["Perseus A500 Anesthesia", "Evita V800 Ventilator", "Infinity Patient Monitoring", "Babylog VN800 Neonatal", "Polaris LED Surgical Lights"],
-      "tags": ["anesthesia", "ventilation", "neonatal", "patient monitoring", "OR"],
-      "source": "realistic"
-    },
-    {
-      "name": "Getinge",
-      "booth": "N25.C65",
-      "hall": "North Hall N25",
-      "category": "Medical Technology",
-      "country": "Sweden",
-      "website": "https://www.getinge.com",
-      "description": "Global provider of innovative solutions for operating rooms, ICUs, and sterilization departments in healthcare and life science sectors",
-      "products": ["SERVO Ventilators", "Maquet Surgical Tables", "Cardiopulmonary Bypass Systems", "Sterilization Equipment", "Surgical Workflow Solutions"],
-      "tags": ["ventilation", "surgical tables", "sterilization", "cardiac surgery"],
-      "source": "realistic"
+      "products": [
+        "Aquilion CT",
+        "Vantage Orian MRI",
+        "Aplio Ultrasound",
+        "Infinix Angiography",
+        "Vitrea Advanced Visualization"
+      ],
+      "tags": [
+        "imaging",
+        "CT",
+        "MRI",
+        "ultrasound",
+        "healthcare IT"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     },
     {
       "name": "Saudi German Health",
@@ -378,9 +405,21 @@
       "country": "UAE",
       "website": "https://www.saudigerman.com",
       "description": "Leading private hospital group in the Middle East with hospitals across UAE, Saudi Arabia, Egypt, and other countries. Multi-specialty healthcare services",
-      "products": ["Hospital Services", "Specialist Clinics", "Telemedicine", "Health Insurance Solutions"],
-      "tags": ["hospital group", "multi-specialty", "Middle East", "healthcare"],
-      "source": "confirmed"
+      "products": [
+        "Hospital Services",
+        "Specialist Clinics",
+        "Telemedicine",
+        "Health Insurance Solutions"
+      ],
+      "tags": [
+        "hospital group",
+        "multi-specialty",
+        "Middle East",
+        "healthcare"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     },
     {
       "name": "American Hospital Dubai",
@@ -390,9 +429,22 @@
       "country": "UAE",
       "website": "https://www.ahdubai.com",
       "description": "Premier private hospital in Dubai, JCI-accredited since 2000. Comprehensive multi-specialty medical services with state-of-the-art technology",
-      "products": ["Hospital Services", "Cancer Center", "Heart Center", "Robotic Surgery", "Digital Health Platform"],
-      "tags": ["hospital", "JCI accredited", "multi-specialty", "Dubai"],
-      "source": "confirmed"
+      "products": [
+        "Hospital Services",
+        "Cancer Center",
+        "Heart Center",
+        "Robotic Surgery",
+        "Digital Health Platform"
+      ],
+      "tags": [
+        "hospital",
+        "JCI accredited",
+        "multi-specialty",
+        "Dubai"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     },
     {
       "name": "Almoosa Health Group",
@@ -402,9 +454,21 @@
       "country": "Saudi Arabia",
       "website": "https://www.almoosahealth.com",
       "description": "Leading healthcare provider in Saudi Arabia's Eastern Province. Multi-specialty hospital services with focus on digital transformation and patient-centered care",
-      "products": ["Hospital Services", "Specialist Centers", "Rehabilitation", "Digital Health"],
-      "tags": ["hospital group", "Saudi Arabia", "healthcare", "digital transformation"],
-      "source": "confirmed"
+      "products": [
+        "Hospital Services",
+        "Specialist Centers",
+        "Rehabilitation",
+        "Digital Health"
+      ],
+      "tags": [
+        "hospital group",
+        "Saudi Arabia",
+        "healthcare",
+        "digital transformation"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     },
     {
       "name": "Al Khayyat Investments (AKI)",
@@ -414,213 +478,21 @@
       "country": "UAE",
       "website": "https://www.aki.ae",
       "description": "Diversified conglomerate with healthcare division distributing and servicing medical devices and pharmaceutical products across the GCC region",
-      "products": ["Medical Device Distribution", "Pharmaceutical Distribution", "Healthcare Solutions", "After-Sales Service"],
-      "tags": ["distribution", "GCC", "medical devices", "pharmaceuticals"],
-      "source": "confirmed"
-    },
-    {
-      "name": "Zimmer Biomet",
-      "booth": "N37.B30",
-      "hall": "North Hall N37",
-      "category": "Orthopedic Devices",
-      "country": "United States",
-      "website": "https://www.zimmerbiomet.com",
-      "description": "Global leader in musculoskeletal healthcare. Designs, manufactures, and markets orthopedic reconstructive products, spine, sports medicine, and dental implants",
-      "products": ["ROSA Knee Robotic System", "Persona IQ Smart Knee", "Comprehensive Shoulder System", "Mobi-C Cervical Disc", "ZimVie Dental Implants"],
-      "tags": ["orthopedics", "robotics", "joint replacement", "spine", "dental"],
-      "source": "realistic"
-    },
-    {
-      "name": "Smith+Nephew",
-      "booth": "N37.C20",
-      "hall": "North Hall N37",
-      "category": "Medical Devices",
-      "country": "United Kingdom",
-      "website": "https://www.smith-nephew.com",
-      "description": "Global medical technology company providing advanced wound management, orthopedic reconstruction, and sports medicine solutions",
-      "products": ["CORI Surgical System", "OXINIUM Implants", "PICO Negative Pressure Wound Therapy", "NAVIO Surgical System", "ALLEVYN Wound Care"],
-      "tags": ["orthopedics", "wound care", "sports medicine", "robotics"],
-      "source": "realistic"
-    },
-    {
-      "name": "Hologic",
-      "booth": "N21.F35",
-      "hall": "North Hall N21",
-      "category": "Women's Health & Diagnostics",
-      "country": "United States",
-      "website": "https://www.hologic.com",
-      "description": "Global leader in women's health, with a focus on breast and cervical cancer screening, diagnostics, and surgical solutions",
-      "products": ["3Dimensions Mammography", "Genius Digital Diagnostics", "NovaSure Endometrial Ablation", "MyoSure Tissue Removal", "Panther Molecular Diagnostics"],
-      "tags": ["women's health", "mammography", "diagnostics", "molecular testing"],
-      "source": "realistic"
-    },
-    {
-      "name": "Intuitive Surgical",
-      "booth": "N25.A40",
-      "hall": "North Hall N25",
-      "category": "Surgical Robotics",
-      "country": "United States",
-      "website": "https://www.intuitive.com",
-      "description": "Pioneer and global technology leader in robotic-assisted minimally invasive surgery. Maker of the da Vinci and Ion robotic platforms",
-      "products": ["da Vinci 5 Surgical System", "Ion Bronchoscopy Platform", "SimNow Training", "Intuitive Hub Data Analytics"],
-      "tags": ["surgical robotics", "minimally invasive", "da Vinci", "training"],
-      "source": "realistic"
-    },
-    {
-      "name": "Agfa HealthCare",
-      "booth": "N21.D80",
-      "hall": "North Hall N21",
-      "category": "Healthcare IT & Imaging",
-      "country": "Belgium",
-      "website": "https://www.agfahealthcare.com",
-      "description": "Leading provider of diagnostic imaging and healthcare IT solutions enabling hospitals and healthcare organizations to achieve better outcomes",
-      "products": ["Enterprise Imaging Platform", "MUSICA DR Imaging", "ORBIS Clinical Information System", "Computed Radiography", "AI-powered Image Analytics"],
-      "tags": ["healthcare IT", "PACS", "enterprise imaging", "radiology", "AI"],
-      "source": "realistic"
-    },
-    {
-      "name": "Cerner (Oracle Health)",
-      "booth": "S7.E20",
-      "hall": "South Hall S7",
-      "category": "Healthcare IT",
-      "country": "United States",
-      "website": "https://www.oracle.com/health",
-      "description": "Leading health information technology company providing electronic health record systems and population health management solutions to healthcare organizations worldwide",
-      "products": ["Oracle Health EHR", "Millennium Platform", "Revenue Cycle Management", "Population Health Analytics", "Interoperability Solutions"],
-      "tags": ["EHR", "healthcare IT", "population health", "interoperability"],
-      "source": "realistic"
-    },
-    {
-      "name": "InterSystems",
-      "booth": "S7.E35",
-      "hall": "South Hall S7",
-      "category": "Healthcare IT",
-      "country": "United States",
-      "website": "https://www.intersystems.com",
-      "description": "Provider of data management and interoperability solutions for healthcare, powering health information exchanges and unified care records worldwide",
-      "products": ["HealthShare Unified Care Record", "TrakCare EHR", "IRIS Data Platform", "FHIR Solutions", "Health Information Exchange"],
-      "tags": ["healthcare IT", "interoperability", "EHR", "FHIR", "data management"],
-      "source": "realistic"
-    },
-    {
-      "name": "Masimo",
-      "booth": "N25.D30",
-      "hall": "North Hall N25",
-      "category": "Patient Monitoring",
-      "country": "United States",
-      "website": "https://www.masimo.com",
-      "description": "Global medical technology company developing innovative noninvasive monitoring technologies including pulse oximetry and brain function monitoring",
-      "products": ["Root Patient Monitoring", "Radical-7 Pulse CO-Oximeter", "SedLine Brain Function Monitor", "O3 Regional Oximetry", "Masimo SafetyNet Remote Monitoring"],
-      "tags": ["pulse oximetry", "monitoring", "noninvasive", "brain function", "remote monitoring"],
-      "source": "realistic"
-    },
-    {
-      "name": "Nihon Kohden",
-      "booth": "N23.C70",
-      "hall": "North Hall N23",
-      "category": "Patient Monitoring",
-      "country": "Japan",
-      "website": "https://www.nihonkohden.com",
-      "description": "Leading manufacturer of medical electronic equipment for patient monitoring, EEG, ECG, and point-of-care testing solutions",
-      "products": ["Life Scope Patient Monitors", "EEG Systems", "AED & Defibrillators", "Hematology Analyzers", "Ventilators"],
-      "tags": ["monitoring", "EEG", "ECG", "defibrillators", "hematology"],
-      "source": "realistic"
-    },
-    {
-      "name": "NMC Healthcare",
-      "booth": "N23.A60",
-      "hall": "North Hall N23",
-      "category": "Healthcare Services",
-      "country": "UAE",
-      "website": "https://www.nmc.ae",
-      "description": "One of the largest private healthcare operators in the UAE, providing multi-specialty hospital and clinic services across the Emirates",
-      "products": ["Hospital Services", "Specialty Clinics", "Long-Term Care", "IVF Services", "Day Surgery"],
-      "tags": ["hospital group", "UAE", "multi-specialty", "healthcare services"],
-      "source": "realistic"
-    },
-    {
-      "name": "Aster DM Healthcare",
-      "booth": "N23.B70",
-      "hall": "North Hall N23",
-      "category": "Healthcare Services",
-      "country": "UAE",
-      "website": "https://www.asterdmhealthcare.com",
-      "description": "Integrated healthcare services provider with hospitals, clinics, and pharmacies across the GCC and India. Focus on accessible, affordable quality care",
-      "products": ["Hospital Services", "Aster Clinics", "Aster Pharmacy", "Telemedicine", "Home Healthcare"],
-      "tags": ["hospital group", "GCC", "India", "pharmacy", "telemedicine"],
-      "source": "realistic"
-    },
-    {
-      "name": "Mediclinic Middle East",
-      "booth": "N25.A70",
-      "hall": "North Hall N25",
-      "category": "Healthcare Services",
-      "country": "UAE",
-      "website": "https://www.mediclinic.ae",
-      "description": "Part of Mediclinic International, operating hospitals and clinics in the UAE with a reputation for clinical excellence and patient-centered care",
-      "products": ["Hospital Services", "Comprehensive Cancer Center", "Cardiac Services", "Orthopedic Center", "Women & Children Services"],
-      "tags": ["hospital", "UAE", "cancer care", "cardiac", "women's health"],
-      "source": "realistic"
-    },
-    {
-      "name": "Halma Healthcare",
-      "booth": "S7.F25",
-      "hall": "South Hall S7",
-      "category": "Medical Technology",
-      "country": "United Kingdom",
-      "website": "https://www.halma.com",
-      "description": "Group of safety, health, and environmental technology companies providing infection prevention, patient assessment, and optics solutions",
-      "products": ["Infection Prevention Systems", "Patient Assessment Tools", "Optics & Photonics", "Surgical Instruments", "Water Treatment"],
-      "tags": ["infection prevention", "optics", "safety", "patient assessment"],
-      "source": "realistic"
-    },
-    {
-      "name": "Vyaire Medical",
-      "booth": "S7.C50",
-      "hall": "South Hall S7",
-      "category": "Respiratory Care",
-      "country": "United States",
-      "website": "https://www.vyaire.com",
-      "description": "Dedicated respiratory care company providing ventilation, diagnostic cardiology, and respiratory diagnostics solutions for acute and chronic care",
-      "products": ["beVent Ventilation", "CareFusion Respiratory Diagnostics", "AirLife Respiratory Consumables", "Pulmonary Function Testing"],
-      "tags": ["respiratory", "ventilation", "pulmonary", "diagnostics"],
-      "source": "realistic"
-    },
-    {
-      "name": "EssilorLuxottica",
-      "booth": "S7.D60",
-      "hall": "South Hall S7",
-      "category": "Ophthalmic Equipment",
-      "country": "France",
-      "website": "https://www.essilorluxottica.com",
-      "description": "Global leader in design, manufacture, and distribution of ophthalmic lenses, frames, and instruments. Pioneering vision care technology",
-      "products": ["Varilux Progressive Lenses", "Essilor Instruments", "Transitions Lenses", "Stellest Myopia Management", "Ray-Ban Meta Smart Glasses"],
-      "tags": ["ophthalmology", "vision care", "lenses", "instruments"],
-      "source": "realistic"
-    },
-    {
-      "name": "Danaher / Beckman Coulter",
-      "booth": "N21.A50",
-      "hall": "North Hall N21",
-      "category": "Diagnostics & Life Sciences",
-      "country": "United States",
-      "website": "https://www.beckmancoulter.com",
-      "description": "Leading diagnostics company developing biomedical testing instrument systems, tests, and supplies for clinical laboratories worldwide",
-      "products": ["DxH Hematology Analyzers", "Access Immunoassay", "AU Chemistry Analyzers", "DxA 5000 Automation", "Flow Cytometry Systems"],
-      "tags": ["diagnostics", "hematology", "clinical chemistry", "immunoassay", "lab automation"],
-      "source": "realistic"
-    },
-    {
-      "name": "Elekta",
-      "booth": "N25.F40",
-      "hall": "North Hall N25",
-      "category": "Radiation Oncology",
-      "country": "Sweden",
-      "website": "https://www.elekta.com",
-      "description": "Pioneering significant innovations and clinical solutions for treating cancer and brain disorders. World-leading radiation therapy and radiosurgery equipment",
-      "products": ["Unity MR-Linac", "Versa HD Linear Accelerator", "Leksell Gamma Knife", "MOSAIQ Oncology Information System", "Monaco Treatment Planning"],
-      "tags": ["radiation therapy", "radiosurgery", "oncology", "MR-Linac"],
-      "source": "realistic"
+      "products": [
+        "Medical Device Distribution",
+        "Pharmaceutical Distribution",
+        "Healthcare Solutions",
+        "After-Sales Service"
+      ],
+      "tags": [
+        "distribution",
+        "GCC",
+        "medical devices",
+        "pharmaceuticals"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     },
     {
       "name": "ABHI UK Pavilion",
@@ -630,9 +502,21 @@
       "country": "United Kingdom",
       "website": "https://www.abhi.org.uk",
       "description": "Association of British HealthTech Industries pavilion showcasing UK-based health technology companies, medical devices, diagnostics, and digital health innovators",
-      "products": ["UK Health Technology Showcase", "Medical Devices", "Digital Health Solutions", "Diagnostics"],
-      "tags": ["trade association", "UK", "health technology", "pavilion"],
-      "source": "confirmed"
+      "products": [
+        "UK Health Technology Showcase",
+        "Medical Devices",
+        "Digital Health Solutions",
+        "Diagnostics"
+      ],
+      "tags": [
+        "trade association",
+        "UK",
+        "health technology",
+        "pavilion"
+      ],
+      "source": "confirmed",
+      "verification": "confirmed",
+      "booth_verified": false
     }
   ]
 }
