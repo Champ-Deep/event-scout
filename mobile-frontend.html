@@ -581,6 +581,28 @@
                         </div>
                     </div>
 
+                    <!-- Event Materials Section -->
+                    <div class="p-4 bg-blue-50 border-b border-blue-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-file-download text-blue-600 text-lg"></i>
+                                <h3 class="text-base font-semibold text-gray-900">Event Materials</h3>
+                            </div>
+                            <button onclick="refreshEventFiles()" class="text-xs text-blue-600 hover:text-blue-700">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                        <div class="flex gap-2 overflow-x-auto pb-1 mb-3">
+                            <button onclick="filterFilesByCategory('')" class="file-cat-btn px-3 py-1 bg-blue-600 text-white rounded-full whitespace-nowrap text-xs font-medium">All</button>
+                            <button onclick="filterFilesByCategory('catalog')" class="file-cat-btn px-3 py-1 bg-white text-gray-700 rounded-full whitespace-nowrap text-xs font-medium">Catalogs</button>
+                            <button onclick="filterFilesByCategory('brochure')" class="file-cat-btn px-3 py-1 bg-white text-gray-700 rounded-full whitespace-nowrap text-xs font-medium">Brochures</button>
+                            <button onclick="filterFilesByCategory('pricing')" class="file-cat-btn px-3 py-1 bg-white text-gray-700 rounded-full whitespace-nowrap text-xs font-medium">Pricing</button>
+                        </div>
+                        <div id="eventFilesList" class="space-y-2">
+                            <p class="text-sm text-gray-400 text-center py-2">No files available</p>
+                        </div>
+                    </div>
+
                     <!-- Exhibitor List -->
                     <div id="exhibitorList" class="p-4 space-y-3">
                         <div class="text-center text-gray-500 py-8">
@@ -830,6 +852,43 @@
                         </div>
                         <div id="adminActivityFeed" class="space-y-2 max-h-96 overflow-y-auto">
                             <p class="text-sm text-gray-400 text-center py-4">Loading...</p>
+                        </div>
+                    </div>
+
+                    <!-- Event Files Management -->
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                <i class="fas fa-file-upload mr-1"></i>Event Files
+                            </h3>
+                            <button onclick="refreshAdminFiles()" class="text-xs text-blue-600 hover:text-blue-700">
+                                <i class="fas fa-sync-alt mr-1"></i>Refresh
+                            </button>
+                        </div>
+
+                        <!-- Upload Form -->
+                        <div class="mb-4 p-3 bg-purple-50 rounded-lg">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Upload New File</label>
+                            <input type="file" id="adminFileInput" accept=".pdf,.ppt,.pptx"
+                                   class="w-full text-sm text-gray-600 mb-2 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white">
+                            <input type="text" id="adminFileDescription" placeholder="Description (optional)"
+                                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2">
+                            <select id="adminFileCategory" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2">
+                                <option value="general">General</option>
+                                <option value="catalog">Product Catalog</option>
+                                <option value="brochure">Brochure</option>
+                                <option value="pricing">Pricing</option>
+                            </select>
+                            <button onclick="uploadAdminFile()"
+                                    class="w-full px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
+                                <i class="fas fa-cloud-upload-alt"></i> Upload File
+                            </button>
+                            <p class="text-xs text-gray-500 mt-2">PDF, PPT, PPTX only. Max 20MB.</p>
+                        </div>
+
+                        <!-- Uploaded Files List -->
+                        <div id="adminFilesList" class="space-y-2">
+                            <p class="text-sm text-gray-400 text-center py-4">No files uploaded yet</p>
                         </div>
                     </div>
                 </div>
@@ -1305,9 +1364,11 @@
                     return;
                 }
                 loadExhibitors();
+                refreshEventFiles();
             } else if (screenName === 'admin') {
                 loadAdminDashboard();
                 startAdminAutoRefresh();
+                refreshAdminFiles();
             }
         }
 
@@ -3444,6 +3505,152 @@
                 clearInterval(adminAutoRefreshInterval);
                 adminAutoRefreshInterval = null;
             }
+        }
+
+        // ==================== EVENT FILES (Admin Upload + User Download) ====================
+        let currentFileCategory = '';
+
+        async function uploadAdminFile() {
+            const fileInput = document.getElementById('adminFileInput');
+            const description = document.getElementById('adminFileDescription').value.trim();
+            const category = document.getElementById('adminFileCategory').value;
+
+            if (!fileInput.files.length) { showToast('Please select a file', 'error'); return; }
+
+            const file = fileInput.files[0];
+            if (file.size > 20 * 1024 * 1024) {
+                showToast('File too large. Max 20MB.', 'error'); return;
+            }
+
+            const allowed = ['application/pdf', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+            if (!allowed.includes(file.type)) {
+                showToast('Only PDF and PPT files allowed', 'error'); return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showToast('Uploading...', 'info');
+            try {
+                const resp = await fetch(
+                    `${CONFIG.API_BASE_URL}/admin/files/upload?user_id=${AppState.currentUser.user_id}&description=${encodeURIComponent(description)}&category=${encodeURIComponent(category)}`,
+                    { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }, body: formData }
+                );
+                const data = await resp.json();
+                if (resp.ok) {
+                    showToast('File uploaded!', 'success');
+                    fileInput.value = '';
+                    document.getElementById('adminFileDescription').value = '';
+                    refreshAdminFiles();
+                } else {
+                    showToast(data.detail || 'Upload failed', 'error');
+                }
+            } catch (err) { console.error('Upload error:', err); showToast('Upload failed', 'error'); }
+        }
+
+        async function refreshAdminFiles() {
+            const container = document.getElementById('adminFilesList');
+            if (!container) return;
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">Loading...</p>';
+            try {
+                const resp = await fetch(
+                    `${CONFIG.API_BASE_URL}/files/list?user_id=${AppState.currentUser.user_id}`,
+                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                const data = await resp.json();
+                if (resp.ok && data.files && data.files.length > 0) {
+                    container.innerHTML = data.files.map(f => {
+                        const icon = f.file_type === 'pdf' ? 'fa-file-pdf text-red-500' : 'fa-file-powerpoint text-orange-500';
+                        return `<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-3 flex-1 min-w-0">
+                                <i class="fas ${icon} text-xl"></i>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">${f.filename}</p>
+                                    <p class="text-xs text-gray-500">${f.file_size_mb}MB &middot; ${f.category} &middot; ${f.download_count} downloads</p>
+                                </div>
+                            </div>
+                            <button onclick="deleteAdminFile('${f.id}', '${f.filename.replace(/'/g, "\\'")}')" class="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>`;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No files uploaded yet</p>';
+                }
+            } catch (err) { console.error('Load admin files error:', err); container.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Failed to load files</p>'; }
+        }
+
+        async function deleteAdminFile(fileId, filename) {
+            if (!confirm(`Delete "${filename}"?`)) return;
+            try {
+                const resp = await fetch(
+                    `${CONFIG.API_BASE_URL}/admin/files/${fileId}?user_id=${AppState.currentUser.user_id}`,
+                    { method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                if (resp.ok) { showToast('File deleted', 'success'); refreshAdminFiles(); refreshEventFiles(); }
+                else { const d = await resp.json(); showToast(d.detail || 'Delete failed', 'error'); }
+            } catch (err) { console.error('Delete error:', err); showToast('Delete failed', 'error'); }
+        }
+
+        async function refreshEventFiles() {
+            const container = document.getElementById('eventFilesList');
+            if (!container) return;
+            container.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">Loading...</p>';
+            try {
+                let url = `${CONFIG.API_BASE_URL}/files/list?user_id=${AppState.currentUser.user_id}`;
+                if (currentFileCategory) url += `&category=${encodeURIComponent(currentFileCategory)}`;
+                const resp = await fetch(url, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const data = await resp.json();
+                if (resp.ok && data.files && data.files.length > 0) {
+                    container.innerHTML = data.files.map(f => {
+                        const icon = f.file_type === 'pdf' ? 'fa-file-pdf text-red-500' : 'fa-file-powerpoint text-orange-500';
+                        return `<div class="bg-white rounded-lg p-3 shadow-sm active:bg-gray-50 transition cursor-pointer" onclick="downloadEventFile('${f.id}', '${f.filename.replace(/'/g, "\\'")}')">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas ${icon} text-xl"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate">${f.filename}</p>
+                                    <p class="text-xs text-gray-500">${f.file_size_mb}MB${f.description ? ' &middot; ' + f.description : ''}</p>
+                                </div>
+                                <i class="fas fa-download text-gray-400 flex-shrink-0"></i>
+                            </div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">No files available</p>';
+                }
+            } catch (err) { console.error('Load event files error:', err); container.innerHTML = '<p class="text-sm text-red-500 text-center py-2">Failed to load files</p>'; }
+        }
+
+        function filterFilesByCategory(cat) {
+            currentFileCategory = cat;
+            document.querySelectorAll('.file-cat-btn').forEach(btn => {
+                const isActive = (cat === '' && btn.textContent.trim() === 'All') ||
+                                 (cat && btn.getAttribute('onclick').includes("'" + cat + "'"));
+                btn.className = 'file-cat-btn px-3 py-1 rounded-full whitespace-nowrap text-xs font-medium ' +
+                    (isActive ? 'bg-blue-600 text-white' : 'bg-white text-gray-700');
+            });
+            refreshEventFiles();
+        }
+
+        async function downloadEventFile(fileId, filename) {
+            showToast('Downloading...', 'info');
+            try {
+                const resp = await fetch(
+                    `${CONFIG.API_BASE_URL}/files/download/${fileId}?user_id=${AppState.currentUser.user_id}`,
+                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                if (!resp.ok) throw new Error('Download failed');
+                const blob = await resp.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                showToast('Downloaded!', 'success');
+            } catch (err) { console.error('Download error:', err); showToast('Download failed', 'error'); }
         }
 
         // ==================== VOICE RECORDING (Swipe Right) ====================

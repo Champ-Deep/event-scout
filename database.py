@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any
 
 from sqlalchemy import (
     Column, String, Text, Boolean, Integer, Float, DateTime,
-    ForeignKey, Index, JSON, create_engine, text
+    ForeignKey, Index, JSON, LargeBinary, create_engine, text
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -180,6 +180,32 @@ class UserCardDB(Base):
 
     __table_args__ = (
         Index("idx_user_cards_token", "shareable_token"),
+    )
+
+
+class EventFileDB(Base):
+    """Store event materials (PDFs, PPTs) uploaded by admins for team access."""
+    __tablename__ = "event_files"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    filename = Column(String(500), nullable=False)
+    original_filename = Column(String(500), nullable=False)
+    file_type = Column(String(50), nullable=False)  # 'pdf', 'ppt', 'pptx'
+    mime_type = Column(String(100), nullable=False)
+    file_size = Column(Integer, nullable=False)  # bytes
+    file_data = Column(LargeBinary, nullable=False)  # Actual file content (bytea)
+    description = Column(Text, default="")
+    event_name = Column(String(255), default="WHX Dubai 2026")
+    category = Column(String(100), default="general")  # 'general', 'catalog', 'brochure', 'pricing'
+    uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False, server_default="true")
+    download_count = Column(Integer, default=0, nullable=False, server_default="0")
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_event_files_event_name", "event_name"),
+        Index("idx_event_files_active", "is_active"),
     )
 
 

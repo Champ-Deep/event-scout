@@ -27,7 +27,7 @@ from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import (
-    UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB, UserCardDB,
+    UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB, UserCardDB, EventFileDB,
     get_engine, get_session_factory, init_db, ASYNC_DATABASE_URL
 )
 
@@ -2532,6 +2532,201 @@ async def admin_test_webhook(admin_id: str = Depends(verify_admin)):
             "webhook_sent": False,
             "webhook_message": f"Webhook test failed: {str(e)}",
         }
+
+
+# --- EVENT FILES ENDPOINTS ---
+
+@app.post("/admin/files/upload")
+async def upload_event_file(
+    file: UploadFile = File(...),
+    description: str = Query(""),
+    event_name: str = Query("WHX Dubai 2026"),
+    category: str = Query("general"),
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Upload event file (PDF/PPT). Admin only. Max 20MB."""
+    await verify_admin(user_id, api_key)
+
+    allowed_types = {
+        'application/pdf': 'pdf',
+        'application/vnd.ms-powerpoint': 'ppt',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+    }
+
+    content_type = file.content_type or ''
+    if content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="File type not allowed. Supported: PDF, PPT, PPTX")
+
+    content = await file.read()
+    file_size = len(content)
+
+    if file_size == 0:
+        raise HTTPException(status_code=400, detail="Empty file")
+    if file_size > 20 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail=f"File too large. Max 20MB, got {file_size / 1024 / 1024:.1f}MB")
+
+    original_filename = file.filename or "untitled"
+    safe_filename = re.sub(r'[^\w\s\-\.]', '_', original_filename)
+
+    session = await get_db_session()
+    try:
+        db_file = EventFileDB(
+            filename=safe_filename,
+            original_filename=original_filename,
+            file_type=allowed_types[content_type],
+            mime_type=content_type,
+            file_size=file_size,
+            file_data=content,
+            description=description,
+            event_name=event_name,
+            category=category,
+            uploaded_by=uuid.UUID(user_id),
+        )
+        session.add(db_file)
+        await session.commit()
+
+        return {
+            "status": "success",
+            "file_id": str(db_file.id),
+            "filename": safe_filename,
+            "file_size": file_size,
+            "message": f"File '{original_filename}' uploaded successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/files/list")
+async def list_event_files(
+    event_name: str = Query("WHX Dubai 2026"),
+    category: str = Query(""),
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """List available event files for download."""
+    session = await get_db_session()
+    try:
+        query = select(EventFileDB).where(
+            EventFileDB.event_name == event_name,
+            EventFileDB.is_active == True
+        )
+
+        if category:
+            query = query.where(EventFileDB.category == category)
+
+        query = query.order_by(EventFileDB.created_at.desc())
+        result = await session.execute(query)
+        files = result.scalars().all()
+
+        return {
+            "status": "success",
+            "total": len(files),
+            "files": [
+                {
+                    "id": str(f.id),
+                    "filename": f.original_filename,
+                    "file_type": f.file_type,
+                    "file_size": f.file_size,
+                    "file_size_mb": round(f.file_size / 1024 / 1024, 2),
+                    "description": f.description or "",
+                    "category": f.category or "general",
+                    "download_count": f.download_count or 0,
+                    "created_at": f.created_at.isoformat() if f.created_at else None,
+                }
+                for f in files
+            ]
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/files/download/{file_id}")
+async def download_event_file(
+    file_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Download an event file."""
+    from fastapi.responses import Response
+
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(EventFileDB).where(
+                EventFileDB.id == uuid.UUID(file_id),
+                EventFileDB.is_active == True
+            )
+        )
+        file_obj = result.scalar_one_or_none()
+
+        if not file_obj:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Increment download count
+        file_obj.download_count = (file_obj.download_count or 0) + 1
+        await session.commit()
+
+        return Response(
+            content=file_obj.file_data,
+            media_type=file_obj.mime_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{file_obj.original_filename}"',
+                "Content-Length": str(file_obj.file_size),
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.delete("/admin/files/{file_id}")
+async def delete_event_file(
+    file_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Delete an event file (soft delete). Admin only."""
+    await verify_admin(user_id, api_key)
+
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(EventFileDB).where(EventFileDB.id == uuid.UUID(file_id))
+        )
+        file_obj = result.scalar_one_or_none()
+
+        if not file_obj:
+            raise HTTPException(status_code=404, detail="File not found")
+
+        file_obj.is_active = False
+        await session.commit()
+
+        return {
+            "status": "success",
+            "message": f"File '{file_obj.original_filename}' deleted"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
 
 
 # --- VOICE NOTE ENDPOINTS ---
