@@ -837,7 +837,8 @@ def extract_contact_from_image_with_gemini(image_path: str) -> dict:
         print("[GEMINI] API key not configured")
         return fields
 
-    model_names = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-lite']
+    # Only try ONE model — all 3 share the same free-tier quota, so cascade is pointless
+    model_names = ['gemini-2.5-flash']
     img = Image.open(image_path)
     print(f"[GEMINI] Image opened: {img.size}, mode={img.mode}")
 
@@ -875,9 +876,9 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
             print(f"[GEMINI] Trying model: {model_name}")
             model = genai.GenerativeModel(model_name)
 
-            # 25s timeout — card OCR is simple, if >25s the model is stuck/rate-limited
+            # 15s timeout — card OCR is simple, if model can't respond in 15s it's stuck
             import google.generativeai.types as genai_types
-            request_options = genai_types.RequestOptions(timeout=25)
+            request_options = genai_types.RequestOptions(timeout=15)
             response = model.generate_content([prompt, img], request_options=request_options)
             if not response or not response.text:
                 err_msg = f"{model_name}: empty response"
