@@ -2483,14 +2483,13 @@ async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api
         if is_admin_mode:
             # Search across ALL users' FAISS indices
             all_results = []
-            for uid in list(faiss_index.user_indices.keys()):
+            for uid in list(faiss_index.indices.keys()):
                 try:
                     user_results = faiss_index.search(uid, query.query, k=2)
                     all_results.extend(user_results)
                 except Exception:
                     pass
-            # Sort by relevance (FAISS score) and take top_k
-            all_results.sort(key=lambda x: x[1].get("_score", 0) if isinstance(x[1], dict) else 0, reverse=True)
+            # Take top results (already sorted by FAISS relevance within each user)
             retrieved_contacts = all_results[:query.top_k or 8]
         else:
             retrieved_contacts = faiss_index.search(query.user_id, query.query, k=query.top_k or 4)
