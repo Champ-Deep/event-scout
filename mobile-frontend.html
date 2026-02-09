@@ -481,9 +481,13 @@
                                 <i class="fas fa-image text-sm"></i>
                             </button>
 
-                            <button id="captureBtn" onclick="captureBusinessCard()" class="w-16 h-16 bg-white rounded-full shadow-lg active:scale-95 transition flex items-center justify-center border-4 border-gray-300">
-                                <div class="w-12 h-12 bg-white rounded-full border-2 border-gray-400"></div>
-                            </button>
+                            <div class="relative">
+                                <button id="captureBtn" onclick="captureBusinessCard()" class="w-16 h-16 bg-white rounded-full shadow-lg active:scale-90 transition-transform flex items-center justify-center border-4 border-gray-300">
+                                    <div class="w-12 h-12 bg-white rounded-full border-2 border-gray-400"></div>
+                                </button>
+                                <!-- Capture count badge on shutter button -->
+                                <div id="captureBadge" class="hidden absolute -top-1 -right-1 bg-green-500 text-white w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shadow-md">0</div>
+                            </div>
 
                             <button onclick="switchCamera()" class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
                                 <i class="fas fa-sync-alt text-sm"></i>
@@ -497,8 +501,8 @@
                         </div>
                     </div>
 
-                    <!-- Scan Feed - per-card processing status -->
-                    <div id="scanFeed" class="absolute bottom-28 left-2 right-2 z-20 space-y-1.5 pointer-events-none flex flex-col items-start">
+                    <!-- Scan Feed - per-card processing status (above controls bar) -->
+                    <div id="scanFeed" class="absolute bottom-32 left-2 right-2 z-20 space-y-1 pointer-events-none flex flex-col items-start max-h-48 overflow-hidden">
                         <!-- Dynamically populated with scan status pills -->
                     </div>
 
@@ -1615,10 +1619,13 @@
             } else if (screenName === 'scan') {
                 // Initialize camera and reset bulk scan counter
                 scanSessionCount = 0;
+                captureCount = 0;
                 scanQueue.length = 0;
                 document.getElementById('scanCounter').classList.add('hidden');
                 document.getElementById('bulkScanDone').classList.add('hidden');
                 document.getElementById('pendingScanBadge').classList.add('hidden');
+                const capBadgeEl = document.getElementById('captureBadge');
+                if (capBadgeEl) capBadgeEl.classList.add('hidden');
                 const scanFeedEl = document.getElementById('scanFeed');
                 if (scanFeedEl) scanFeedEl.innerHTML = '';
                 initCamera();
@@ -2083,7 +2090,7 @@
         let cameraStream = null;
         let facingMode = 'environment';
         let scanSessionCount = 0; // Bulk scan counter
-        let scanProcessing = false; // Prevent double-tap
+        let lastCaptureTime = 0; // Debounce rapid taps (replaces mutex)
 
         async function initCamera() {
             try {
@@ -2176,6 +2183,18 @@
 
         const scanQueue = []; // { id, status: 'uploading'|'done'|'error'|'duplicate', name, ts }
         let scanQueueIdCounter = 0;
+        let captureCount = 0; // Total photos taken this session (shown on shutter badge)
+
+        function updateCaptureBadge() {
+            const badge = document.getElementById('captureBadge');
+            if (badge && captureCount > 0) {
+                badge.textContent = captureCount;
+                badge.classList.remove('hidden');
+                // Brief scale animation
+                badge.style.transform = 'scale(1.3)';
+                setTimeout(() => badge.style.transform = 'scale(1)', 200);
+            }
+        }
 
         function addToScanQueue() {
             const id = ++scanQueueIdCounter;
@@ -2188,56 +2207,49 @@
             const entry = scanQueue.find(e => e.id === id);
             if (entry) { entry.status = status; entry.name = name || entry.name; }
             renderScanFeed();
-            // Auto-remove completed/duplicate entries after 4s
-            if (status === 'done' || status === 'duplicate') {
-                setTimeout(() => {
-                    const idx = scanQueue.findIndex(e => e.id === id);
-                    if (idx !== -1) scanQueue.splice(idx, 1);
-                    renderScanFeed();
-                }, 4000);
-            }
-            // Auto-remove errors after 6s
-            if (status === 'error') {
-                setTimeout(() => {
-                    const idx = scanQueue.findIndex(e => e.id === id);
-                    if (idx !== -1) scanQueue.splice(idx, 1);
-                    renderScanFeed();
-                }, 6000);
-            }
+            // Keep pills visible — only clear on finishBulkScan or screen switch
         }
 
         function renderScanFeed() {
             const feed = document.getElementById('scanFeed');
             if (!feed) return;
 
-            const total = scanQueue.length + scanSessionCount;
-            const done = scanQueue.filter(e => e.status === 'done').length + scanSessionCount;
             const uploading = scanQueue.filter(e => e.status === 'uploading').length;
+            const doneInQueue = scanQueue.filter(e => e.status === 'done').length;
+            const duplicates = scanQueue.filter(e => e.status === 'duplicate').length;
+            const errors = scanQueue.filter(e => e.status === 'error').length;
+            const totalProcessed = scanSessionCount; // Includes done items already counted
+            const totalInFlight = scanQueue.length;
 
-            // Update the top-left badge with progress
+            // Update the top-left badge — ALWAYS visible when there are items
             const badge = document.getElementById('pendingScanBadge');
             const badgeText = document.getElementById('pendingScanText');
-            if (uploading > 0) {
+            if (totalInFlight > 0 || totalProcessed > 0) {
                 badge.classList.remove('hidden');
-                badgeText.textContent = `${done}/${total} done`;
+                if (uploading > 0) {
+                    badge.classList.add('animate-pulse');
+                    badgeText.textContent = `${uploading} processing...`;
+                } else if (totalProcessed > 0) {
+                    badge.classList.remove('animate-pulse');
+                    badgeText.textContent = `${totalProcessed} saved`;
+                }
             } else {
                 badge.classList.add('hidden');
             }
 
-            // Render individual status pills
+            // Render individual status pills — stay visible until session ends
             feed.innerHTML = scanQueue.map(entry => {
-                const icons = { uploading: 'fa-spinner fa-spin', done: 'fa-check', error: 'fa-times', duplicate: 'fa-clone' };
-                const colors = { uploading: 'bg-blue-500/90', done: 'bg-green-500/90', error: 'bg-red-500/90', duplicate: 'bg-yellow-500/90' };
+                const icons = { uploading: 'fa-spinner fa-spin', done: 'fa-check-circle', error: 'fa-exclamation-circle', duplicate: 'fa-clone' };
+                const colors = { uploading: 'bg-blue-600/95', done: 'bg-green-600/95', error: 'bg-red-600/95', duplicate: 'bg-yellow-600/95' };
                 const labels = {
                     uploading: 'Processing...',
-                    done: entry.name ? `${entry.name} saved` : 'Saved',
-                    error: entry.name || 'Failed',
-                    duplicate: entry.name ? `Already saved: ${entry.name}` : 'Duplicate'
+                    done: entry.name ? `Saved: ${entry.name}` : 'Saved!',
+                    error: entry.name || 'Failed — tap to retry',
+                    duplicate: entry.name ? `Already have: ${entry.name}` : 'Duplicate'
                 };
-                const fadeClass = (entry.status === 'done' || entry.status === 'duplicate') ? 'opacity-90' : '';
-                return `<div class="flex items-center gap-2 ${colors[entry.status]} text-white px-3 py-1.5 rounded-full text-xs font-medium shadow-lg ${fadeClass}" style="transition: opacity 0.5s">
-                    <i class="fas ${icons[entry.status]} text-[10px]"></i>
-                    <span class="truncate max-w-[200px]">${labels[entry.status]}</span>
+                return `<div class="flex items-center gap-2 ${colors[entry.status]} text-white px-3 py-1.5 rounded-full text-xs font-medium shadow-lg backdrop-blur-sm" style="transition: all 0.3s">
+                    <i class="fas ${icons[entry.status]} text-[11px]"></i>
+                    <span class="truncate max-w-[220px]">${labels[entry.status]}</span>
                 </div>`;
             }).join('');
         }
@@ -2328,17 +2340,17 @@
         }
 
         async function captureBusinessCard() {
-            if (scanProcessing) {
-                console.log('Scan already in progress, ignoring...');
+            // Debounce: ignore taps within 600ms of last capture
+            const now = Date.now();
+            if (now - lastCaptureTime < 600) {
+                console.log('[SCAN] Debounce: too fast, ignoring tap');
                 return;
             }
-
-            scanProcessing = true;
+            lastCaptureTime = now;
 
             const videoElement = document.getElementById('cameraStream');
-            if (!videoElement.srcObject) {
-                showToast('Camera not initialized. Please refresh the page.', 'error');
-                scanProcessing = false;
+            if (!videoElement || !videoElement.srcObject) {
+                showToast('Camera not ready. Please wait a moment.', 'error');
                 return;
             }
 
@@ -2348,16 +2360,25 @@
                 canvas.height = videoElement.videoHeight;
 
                 if (canvas.width === 0 || canvas.height === 0) {
-                    throw new Error('Invalid video dimensions. Camera may not be ready.');
+                    showToast('Camera still starting up...', 'warning');
+                    return;
                 }
 
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(videoElement, 0, 0);
 
+                // Immediate visual feedback BEFORE toBlob (which can be slow on mobile)
+                const flash = document.getElementById('shutterFlash');
+                if (flash) { flash.style.opacity = '0.7'; setTimeout(() => flash.style.opacity = '0', 180); }
+
+                // Vibrate if available (subtle haptic) + update capture count
+                if (navigator.vibrate) navigator.vibrate(50);
+                captureCount++;
+                updateCaptureBadge();
+
                 canvas.toBlob(async (blob) => {
                     if (!blob || blob.size < 1000) {
-                        showToast('Failed to capture image. Please try again.', 'error');
-                        scanProcessing = false;
+                        showToast('Capture failed — try again', 'error');
                         return;
                     }
 
@@ -2366,20 +2387,14 @@
                     const safeBlob = new Blob([arrayBuffer], { type: 'image/jpeg' });
                     console.log('[SCAN] Captured image:', safeBlob.size, 'bytes');
 
-                    // Shutter flash feedback
-                    const flash = document.getElementById('shutterFlash');
-                    if (flash) { flash.style.opacity = '0.6'; setTimeout(() => flash.style.opacity = '0', 150); }
-
                     // Fire-and-forget: process in background, allow next capture immediately
                     processImageUpload(safeBlob, 'business-card.jpg').catch(error => {
                         console.error('Background scan error:', error);
                     });
-                    scanProcessing = false;
                 }, 'image/jpeg', 0.92);
             } catch (error) {
                 console.error('Capture error:', error);
                 showToast(error.message || 'Failed to capture photo', 'error');
-                scanProcessing = false;
             }
         }
 
@@ -2390,10 +2405,13 @@
                 cameraStream = null;
             }
             scanSessionCount = 0;
+            captureCount = 0;
             scanQueue.length = 0; // Clear scan feed
             document.getElementById('scanCounter').classList.add('hidden');
             document.getElementById('bulkScanDone').classList.add('hidden');
             document.getElementById('pendingScanBadge').classList.add('hidden');
+            const capBadge = document.getElementById('captureBadge');
+            if (capBadge) capBadge.classList.add('hidden');
             const feed = document.getElementById('scanFeed');
             if (feed) feed.innerHTML = '';
             switchScreen('contacts');
@@ -5653,7 +5671,25 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             document.getElementById('voiceTranscript').classList.remove('hidden');
             document.getElementById('voiceTranscript').innerHTML = '<span class="text-gray-400 italic">Listening...</span>';
             voiceTimerInterval = setInterval(function() { voiceSeconds++; var m = Math.floor(voiceSeconds/60), s = voiceSeconds%60; document.getElementById('voiceTimer').textContent = m + ':' + s.toString().padStart(2,'0'); if (voiceSeconds >= 60) stopVoiceRecording(); }, 1000);
-            try { var stream = await navigator.mediaDevices.getUserMedia({audio:true}); voiceMediaRecorder = new MediaRecorder(stream, {mimeType:'audio/webm;codecs=opus'}); voiceMediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) voiceAudioChunks.push(e.data); }; voiceMediaRecorder.onstop = function() { stream.getTracks().forEach(function(t){t.stop();}); if (voiceAudioChunks.length > 0) AppState._voiceAudioBlob = new Blob(voiceAudioChunks, {type:'audio/webm'}); }; voiceMediaRecorder.start(1000); } catch(err) { console.warn('[Voice] MediaRecorder unavailable:', err); }
+            try {
+                var stream = await navigator.mediaDevices.getUserMedia({audio:true});
+                // Try multiple MIME types for cross-browser compatibility (iOS doesn't support webm)
+                var mimeType = 'audio/webm;codecs=opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'audio/webm';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        mimeType = 'audio/mp4';
+                        if (!MediaRecorder.isTypeSupported(mimeType)) {
+                            mimeType = ''; // Let browser pick default
+                        }
+                    }
+                }
+                console.log('[Voice] Using MIME type:', mimeType || 'browser default');
+                voiceMediaRecorder = mimeType ? new MediaRecorder(stream, {mimeType}) : new MediaRecorder(stream);
+                voiceMediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) voiceAudioChunks.push(e.data); };
+                voiceMediaRecorder.onstop = function() { stream.getTracks().forEach(function(t){t.stop();}); if (voiceAudioChunks.length > 0) AppState._voiceAudioBlob = new Blob(voiceAudioChunks, {type: voiceMediaRecorder.mimeType || 'audio/webm'}); };
+                voiceMediaRecorder.start(1000);
+            } catch(err) { console.warn('[Voice] MediaRecorder unavailable:', err); document.getElementById('voiceStatus').textContent = 'Recording (voice only)...'; }
             var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (SR) { voiceRecognition = new SR(); voiceRecognition.continuous = true; voiceRecognition.interimResults = true; voiceRecognition.lang = 'en-US'; var finalT = ''; voiceRecognition.onresult = function(evt) { var interim = ''; for (var i = evt.resultIndex; i < evt.results.length; i++) { if (evt.results[i].isFinal) finalT += evt.results[i][0].transcript + ' '; else interim += evt.results[i][0].transcript; } AppState._voiceTranscript = finalT.trim(); document.getElementById('voiceTranscript').innerHTML = finalT + '<span class="text-gray-400">' + interim + '</span>'; }; voiceRecognition.onerror = function(e) { console.warn('[Voice] Recognition error:', e.error); }; voiceRecognition.onend = function() { if (voiceIsRecording) try { voiceRecognition.start(); } catch(e) {} }; voiceRecognition.start(); }
             else { document.getElementById('voiceTranscript').innerHTML = '<span class="text-gray-400 italic">Live transcription unavailable. Audio sent for AI transcription on save.</span>'; }
@@ -5683,7 +5719,22 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             var contactId = AppState._voiceContactId, transcript = AppState._voiceTranscript, audioBlob = AppState._voiceAudioBlob;
             if (!contactId) return;
             document.getElementById('voiceStatus').textContent = 'Saving...'; document.getElementById('voiceSaveBtn').disabled = true;
-            if (!transcript && audioBlob) { try { var fd = new FormData(); fd.append('file', audioBlob, 'voice_note.webm'); var r = await resilientFetch(CONFIG.API_BASE_URL + '/transcribe_audio/?user_id=' + AppState.currentUser.user_id, {method:'POST', headers:{'X-API-Key':CONFIG.API_KEY}, body:fd}); var d = await r.json(); if (r.ok && d.transcript) transcript = d.transcript; } catch(err) { console.error('[Voice] Gemini transcription failed:', err); } }
+            if (!transcript && audioBlob) {
+                document.getElementById('voiceStatus').textContent = 'Transcribing audio...';
+                try {
+                    var ext = (audioBlob.type || '').includes('mp4') ? 'voice_note.mp4' : 'voice_note.webm';
+                    var fd = new FormData(); fd.append('file', audioBlob, ext);
+                    var r = await resilientFetch(CONFIG.API_BASE_URL + '/transcribe_audio/?user_id=' + AppState.currentUser.user_id, {method:'POST', headers:{'X-API-Key':CONFIG.API_KEY}, body:fd});
+                    var d = await r.json();
+                    if (r.ok && d.transcript) transcript = d.transcript;
+                    else console.warn('[Voice] Transcription response:', d);
+                } catch(err) { console.error('[Voice] AI transcription failed:', err); }
+            }
+            if (!transcript && !audioBlob) {
+                showToast('No audio or transcript captured. Try again.', 'error');
+                document.getElementById('voiceSaveBtn').disabled = false;
+                return;
+            }
             var audioBase64 = '';
             if (audioBlob) { try { var buf = await audioBlob.arrayBuffer(); var bytes = new Uint8Array(buf); var bin = ''; bytes.forEach(function(b){ bin += String.fromCharCode(b); }); audioBase64 = btoa(bin); } catch(err) { console.warn('[Voice] Audio encode failed:', err); } }
             try { var response = await resilientFetch(CONFIG.API_BASE_URL + '/contact/' + contactId + '/audio_note?user_id=' + AppState.currentUser.user_id, { method:'POST', headers:{'Content-Type':'application/json','X-API-Key':CONFIG.API_KEY}, body:JSON.stringify({contact_id:contactId, transcript:transcript||'(no transcription)', audio_base64:audioBase64}) }); if (response.ok) { showToast('Voice note saved!', 'success'); loadContacts(); } else showToast('Failed to save voice note', 'error'); } catch(err) { showToast('Network error saving voice note', 'error'); }
