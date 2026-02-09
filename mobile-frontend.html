@@ -497,6 +497,14 @@
                         </div>
                     </div>
 
+                    <!-- Scan Feed - per-card processing status -->
+                    <div id="scanFeed" class="absolute bottom-28 left-2 right-2 z-20 space-y-1.5 pointer-events-none flex flex-col items-start">
+                        <!-- Dynamically populated with scan status pills -->
+                    </div>
+
+                    <!-- Shutter flash overlay -->
+                    <div id="shutterFlash" class="absolute inset-0 bg-white z-30 pointer-events-none opacity-0" style="transition: opacity 0.15s"></div>
+
                     <!-- Hidden file input (supports multiple) -->
                     <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
 
@@ -1607,8 +1615,12 @@
             } else if (screenName === 'scan') {
                 // Initialize camera and reset bulk scan counter
                 scanSessionCount = 0;
+                scanQueue.length = 0;
                 document.getElementById('scanCounter').classList.add('hidden');
                 document.getElementById('bulkScanDone').classList.add('hidden');
+                document.getElementById('pendingScanBadge').classList.add('hidden');
+                const scanFeedEl = document.getElementById('scanFeed');
+                if (scanFeedEl) scanFeedEl.innerHTML = '';
                 initCamera();
             } else if (screenName === 'chat') {
                 // Load chat history when entering chat screen
@@ -2162,16 +2174,72 @@
             }
         }
 
-        let pendingScans = 0;
-        function updatePendingScanBadge() {
+        const scanQueue = []; // { id, status: 'uploading'|'done'|'error'|'duplicate', name, ts }
+        let scanQueueIdCounter = 0;
+
+        function addToScanQueue() {
+            const id = ++scanQueueIdCounter;
+            scanQueue.push({ id, status: 'uploading', name: null, ts: Date.now() });
+            renderScanFeed();
+            return id;
+        }
+
+        function updateScanQueueEntry(id, status, name) {
+            const entry = scanQueue.find(e => e.id === id);
+            if (entry) { entry.status = status; entry.name = name || entry.name; }
+            renderScanFeed();
+            // Auto-remove completed/duplicate entries after 4s
+            if (status === 'done' || status === 'duplicate') {
+                setTimeout(() => {
+                    const idx = scanQueue.findIndex(e => e.id === id);
+                    if (idx !== -1) scanQueue.splice(idx, 1);
+                    renderScanFeed();
+                }, 4000);
+            }
+            // Auto-remove errors after 6s
+            if (status === 'error') {
+                setTimeout(() => {
+                    const idx = scanQueue.findIndex(e => e.id === id);
+                    if (idx !== -1) scanQueue.splice(idx, 1);
+                    renderScanFeed();
+                }, 6000);
+            }
+        }
+
+        function renderScanFeed() {
+            const feed = document.getElementById('scanFeed');
+            if (!feed) return;
+
+            const total = scanQueue.length + scanSessionCount;
+            const done = scanQueue.filter(e => e.status === 'done').length + scanSessionCount;
+            const uploading = scanQueue.filter(e => e.status === 'uploading').length;
+
+            // Update the top-left badge with progress
             const badge = document.getElementById('pendingScanBadge');
-            const text = document.getElementById('pendingScanText');
-            if (pendingScans > 0) {
+            const badgeText = document.getElementById('pendingScanText');
+            if (uploading > 0) {
                 badge.classList.remove('hidden');
-                text.textContent = `${pendingScans} processing...`;
+                badgeText.textContent = `${done}/${total} done`;
             } else {
                 badge.classList.add('hidden');
             }
+
+            // Render individual status pills
+            feed.innerHTML = scanQueue.map(entry => {
+                const icons = { uploading: 'fa-spinner fa-spin', done: 'fa-check', error: 'fa-times', duplicate: 'fa-clone' };
+                const colors = { uploading: 'bg-blue-500/90', done: 'bg-green-500/90', error: 'bg-red-500/90', duplicate: 'bg-yellow-500/90' };
+                const labels = {
+                    uploading: 'Processing...',
+                    done: entry.name ? `${entry.name} saved` : 'Saved',
+                    error: entry.name || 'Failed',
+                    duplicate: entry.name ? `Already saved: ${entry.name}` : 'Duplicate'
+                };
+                const fadeClass = (entry.status === 'done' || entry.status === 'duplicate') ? 'opacity-90' : '';
+                return `<div class="flex items-center gap-2 ${colors[entry.status]} text-white px-3 py-1.5 rounded-full text-xs font-medium shadow-lg ${fadeClass}" style="transition: opacity 0.5s">
+                    <i class="fas ${icons[entry.status]} text-[10px]"></i>
+                    <span class="truncate max-w-[200px]">${labels[entry.status]}</span>
+                </div>`;
+            }).join('');
         }
 
         async function processImageUpload(blob, filename) {
@@ -2182,8 +2250,7 @@
                 console.error('[SCAN] Blob too small:', blob.size);
                 return false;
             }
-            pendingScans++;
-            updatePendingScanBadge();
+            const scanId = addToScanQueue();
 
             try {
                 const formData = new FormData();
@@ -2204,19 +2271,24 @@
                     throw new Error('Server returned invalid response.');
                 }
 
+                if (response.ok && data.status === 'duplicate') {
+                    updateScanQueueEntry(scanId, 'duplicate', data.existing_name);
+                    return true;
+                }
+
                 if (response.ok && data.status === 'success') {
                     const fields = data.extracted_fields || {};
                     const name = fields.name || 'Unknown';
                     const contactId = data.contact_id;
                     scanSessionCount++;
                     updateScanCounter();
+                    updateScanQueueEntry(scanId, 'done', name);
 
                     // Trigger webhook for card acceptance (sends CookieMail)
                     if (contactId) {
                         triggerCardAcceptedWebhook(contactId, name);
                     }
 
-                    showToast(`${name} saved!`, 'success');
                     // Auto-refresh contact list in background
                     loadContacts();
                     return true;
@@ -2237,7 +2309,7 @@
                         errMsg = data.message;
                     }
 
-                    showToast(errMsg, 'error');
+                    updateScanQueueEntry(scanId, 'error', errMsg);
                     console.error('Scan error:', { status: response.status, data });
                     return false;
                 }
@@ -2249,12 +2321,9 @@
                     errorMessage = error.message;
                 }
 
-                showToast(errorMessage, 'error');
+                updateScanQueueEntry(scanId, 'error', errorMessage);
                 console.error('Upload error:', error);
                 return false;
-            } finally {
-                pendingScans--;
-                updatePendingScanBadge();
             }
         }
 
@@ -2297,12 +2366,15 @@
                     const safeBlob = new Blob([arrayBuffer], { type: 'image/jpeg' });
                     console.log('[SCAN] Captured image:', safeBlob.size, 'bytes');
 
+                    // Shutter flash feedback
+                    const flash = document.getElementById('shutterFlash');
+                    if (flash) { flash.style.opacity = '0.6'; setTimeout(() => flash.style.opacity = '0', 150); }
+
                     // Fire-and-forget: process in background, allow next capture immediately
                     processImageUpload(safeBlob, 'business-card.jpg').catch(error => {
                         console.error('Background scan error:', error);
                     });
                     scanProcessing = false;
-                    showToast('Photo captured! Processing...', 'info');
                 }, 'image/jpeg', 0.92);
             } catch (error) {
                 console.error('Capture error:', error);
@@ -2318,8 +2390,12 @@
                 cameraStream = null;
             }
             scanSessionCount = 0;
+            scanQueue.length = 0; // Clear scan feed
             document.getElementById('scanCounter').classList.add('hidden');
             document.getElementById('bulkScanDone').classList.add('hidden');
+            document.getElementById('pendingScanBadge').classList.add('hidden');
+            const feed = document.getElementById('scanFeed');
+            if (feed) feed.innerHTML = '';
             switchScreen('contacts');
             loadContacts();
         }

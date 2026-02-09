@@ -1103,6 +1103,38 @@ async def fire_webhook(contact_data: dict, user_data: dict, contact_id: str):
         print(f"[WEBHOOK] Failed to send: {e}")
 
 
+# --- DUPLICATE CHECK ---
+async def check_duplicate_contact(user_id: str, email: str, phone: str) -> dict | None:
+    """Check if a contact with matching email or phone already exists for this user."""
+    session = await get_db_session()
+    try:
+        conditions = []
+        if email and email != "N/A":
+            conditions.append(ContactDB.email == email)
+        if phone and phone != "N/A":
+            conditions.append(ContactDB.phone == phone)
+
+        if not conditions:
+            return None  # No matchable fields, can't dedup
+
+        result = await session.execute(
+            select(ContactDB).where(
+                ContactDB.user_id == uuid.UUID(user_id),
+                or_(*conditions)
+            ).limit(1)
+        )
+        existing = result.scalar_one_or_none()
+        if existing:
+            return {
+                "contact_id": str(existing.id),
+                "name": existing.name,
+                "matched_on": "email" if (email and email != "N/A" and existing.email == email) else "phone"
+            }
+        return None
+    finally:
+        await session.close()
+
+
 # --- CONTACT LOGIC (now using Postgres) ---
 async def add_contact_logic(contact: Contact, user_id: str, source: str = "manual", photo_base64: str = None) -> dict:
     """Add contact to PostgreSQL and FAISS index."""
@@ -1261,6 +1293,23 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         #         fields["linkedin"] = linkedin_url
         #         fields["linkedin_source"] = "ai_detected"
         #         print(f"[LINKEDIN] Auto-detected: {linkedin_url}")
+
+        # Check for duplicates before adding
+        duplicate = await check_duplicate_contact(
+            user_id,
+            fields.get("email", "N/A"),
+            fields.get("phone", "N/A")
+        )
+        if duplicate:
+            print(f"[SCAN] Duplicate detected: {duplicate['name']} (matched on {duplicate['matched_on']})")
+            return {
+                "status": "duplicate",
+                "message": f"Contact already exists: {duplicate['name']}",
+                "existing_contact_id": duplicate["contact_id"],
+                "existing_name": duplicate["name"],
+                "matched_on": duplicate["matched_on"],
+                "extracted_fields": fields,
+            }
 
         contact_obj = Contact(**{k: v for k, v in fields.items() if k in Contact.model_fields})
         result = await add_contact_logic(contact_obj, user_id, source="scan", photo_base64=photo_base64)
