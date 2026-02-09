@@ -540,9 +540,14 @@
                         <h2 class="font-semibold text-lg">AI Assistant</h2>
                         <p class="text-xs text-purple-100" id="chatModelLabel">Powered by Claude Opus 4.6</p>
                     </div>
-                    <button onclick="clearChatHistory()" class="p-2 text-white/80 active:bg-white/20 rounded-lg">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="toggleTeamMode()" id="teamModeBtn" class="hidden px-2.5 py-1 rounded-full text-[10px] font-medium bg-white/20 text-white/80 active:bg-white/30 transition-all">
+                            <i class="fas fa-users mr-1"></i>Team Mode
+                        </button>
+                        <button onclick="clearChatHistory()" class="p-2 text-white/80 active:bg-white/20 rounded-lg">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Suggested Queries (shown when empty) -->
@@ -986,6 +991,30 @@
                         </div>
                     </div>
 
+                    <!-- Pipeline Monitor -->
+                    <div class="bg-white rounded-xl p-4 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                <i class="fas fa-robot mr-1"></i>AI Pipeline Monitor
+                            </h3>
+                            <button onclick="loadPipelineMonitor()" class="text-xs text-blue-600 active:text-blue-800"><i class="fas fa-sync-alt"></i></button>
+                        </div>
+                        <div id="pipelineMonitorStats" class="flex gap-2 mb-3">
+                            <span class="px-2 py-1 bg-blue-100 text-blue-600 rounded-full text-[10px] font-medium">Active: <span id="pipelineActiveCount">-</span></span>
+                            <span class="px-2 py-1 bg-green-100 text-green-600 rounded-full text-[10px] font-medium">Done: <span id="pipelineDoneCount">-</span></span>
+                            <span class="px-2 py-1 bg-red-100 text-red-600 rounded-full text-[10px] font-medium">Failed: <span id="pipelineFailedCount">-</span></span>
+                        </div>
+                        <div id="pipelineMonitorList" class="space-y-2 max-h-48 overflow-y-auto">
+                            <p class="text-xs text-gray-400 text-center py-2">Loading pipelines...</p>
+                        </div>
+                        <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                            <span class="text-xs text-gray-500">Auto-pipeline on scan</span>
+                            <button onclick="toggleAutoPipeline()" id="autoPipelineToggle" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
+                                Loading...
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Database Backup -->
                     <div class="bg-white rounded-xl p-4 shadow-sm">
                         <div class="flex items-center justify-between mb-3">
@@ -1226,6 +1255,57 @@
             API_KEY: 'OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s'
         };
 
+        // ==================== NETWORK RESILIENCE ====================
+        const NETWORK = { TIMEOUT_MS: 15000, MAX_RETRIES: 2, RETRY_DELAY_MS: 1000 };
+
+        function getNetworkErrorMessage(error) {
+            if (!navigator.onLine) return 'You appear to be offline. Please check your network connection.';
+            if (error.name === 'AbortError') return 'Request timed out. Please check your connection and try again.';
+            if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError'))
+                return 'Cannot reach server. Please check your internet connection.';
+            return 'Connection error: ' + (error.message || 'Unknown error');
+        }
+
+        const _nativeFetch = window.fetch.bind(window);
+        async function resilientFetch(url, options = {}, retries = NETWORK.MAX_RETRIES) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), NETWORK.TIMEOUT_MS);
+            try {
+                const response = await _nativeFetch(url, { ...options, signal: controller.signal });
+                clearTimeout(timeout);
+                return response;
+            } catch (error) {
+                clearTimeout(timeout);
+                if (retries > 0 && (error.name === 'AbortError' || error.name === 'TypeError')) {
+                    console.warn(`[NET] Retry ${NETWORK.MAX_RETRIES - retries + 1}/${NETWORK.MAX_RETRIES} for ${url.split('?')[0]}`);
+                    await new Promise(r => setTimeout(r, NETWORK.RETRY_DELAY_MS));
+                    return resilientFetch(url, options, retries - 1);
+                }
+                error.userMessage = getNetworkErrorMessage(error);
+                throw error;
+            }
+        }
+
+        // Offline/online detection
+        function showOfflineBanner() {
+            let banner = document.getElementById('offlineBanner');
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'offlineBanner';
+                banner.className = 'fixed top-0 left-0 right-0 bg-red-600 text-white text-center py-2 text-sm font-medium z-[9999]';
+                banner.textContent = 'You are offline — some features may not work';
+                document.body.prepend(banner);
+            }
+            banner.classList.remove('hidden');
+        }
+        function hideOfflineBanner() {
+            const banner = document.getElementById('offlineBanner');
+            if (banner) banner.classList.add('hidden');
+        }
+        window.addEventListener('offline', showOfflineBanner);
+        window.addEventListener('online', hideOfflineBanner);
+        if (!navigator.onLine) showOfflineBanner();
+
         // ==================== STATE MANAGEMENT ====================
         const AppState = {
             currentUser: null,
@@ -1233,6 +1313,7 @@
             activeScreen: 'contacts',
             editingContactId: null,
             userProfile: {},
+            teamModeEnabled: false,
             _voiceContactId: null,
             _voiceTranscript: '',
             _voiceAudioBlob: null,
@@ -1246,7 +1327,7 @@
             }
 
             try {
-                const response = await fetch(
+                const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/user/validate?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
                     { method: 'GET', headers: { 'Content-Type': 'application/json' } }
                 );
@@ -1272,6 +1353,15 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            // API connectivity pre-check
+            try {
+                await resilientFetch(`${CONFIG.API_BASE_URL}/health/`, { method: 'GET' });
+                console.log('[INIT] API connectivity confirmed');
+            } catch (err) {
+                console.error('[INIT] API connectivity check failed:', err);
+                showAlert('authAlert', 'Cannot connect to Event Scout server. Please check your internet connection and try refreshing.', 'error');
+            }
+
             const savedUser = localStorage.getItem('eventScoutUser');
             if (savedUser) {
                 AppState.currentUser = JSON.parse(savedUser);
@@ -1288,11 +1378,11 @@
                 showDashboard();
             }
 
-            // Register service worker (if available)
+            // Unregister stale service workers that may interfere with requests
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(reg => console.log('[SW] Registered', reg))
-                    .catch(err => console.error('[SW] Registration failed', err));
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(reg => { reg.unregister(); console.log('[SW] Unregistered stale service worker'); });
+                });
             }
         });
 
@@ -1332,7 +1422,7 @@
             const password = document.getElementById('loginPassword').value;
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/login/`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/login/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -1354,7 +1444,7 @@
                     showAlert('authAlert', data.detail || 'Login failed', 'error');
                 }
             } catch (error) {
-                showAlert('authAlert', 'Network error. Please check your API configuration.', 'error');
+                showAlert('authAlert', error.userMessage || 'Network error. Please try again.', 'error');
                 console.error('Login error:', error);
             } finally {
                 btn.disabled = false;
@@ -1375,7 +1465,7 @@
             const password = document.getElementById('registerPassword').value;
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/register/`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/register/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password })
@@ -1397,7 +1487,7 @@
                     showAlert('authAlert', data.detail || 'Registration failed', 'error');
                 }
             } catch (error) {
-                showAlert('authAlert', 'Network error. Please check your API configuration.', 'error');
+                showAlert('authAlert', error.userMessage || 'Network error. Please try again.', 'error');
                 console.error('Register error:', error);
             } finally {
                 btn.disabled = false;
@@ -1523,6 +1613,9 @@
             } else if (screenName === 'chat') {
                 // Load chat history when entering chat screen
                 loadChatHistory();
+                // Show team mode toggle for admins
+                const teamBtn = document.getElementById('teamModeBtn');
+                if (teamBtn && AppState.currentUser?.is_admin) teamBtn.classList.remove('hidden');
             } else if (screenName === 'expo') {
                 // Ensure profile is loaded before reading event name (fixes timing issue for regular users)
                 try {
@@ -1567,7 +1660,7 @@
                     ? `${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&limit=500`
                     : `${CONFIG.API_BASE_URL}/list_contacts/?user_id=${AppState.currentUser.user_id}`;
 
-                const response = await fetch(url, {
+                const response = await resilientFetch(url, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
 
@@ -1581,7 +1674,7 @@
                     contactsList.innerHTML = `<div class="p-6 text-center text-red-500">Failed to load contacts</div>`;
                 }
             } catch (error) {
-                contactsList.innerHTML = `<div class="p-6 text-center text-red-500">Network error. Please check your API configuration.</div>`;
+                contactsList.innerHTML = `<div class="p-6 text-center text-red-500">${error.userMessage || 'Network error. Please try again.'}</div>`;
                 console.error('Load contacts error:', error);
             }
         }
@@ -1900,7 +1993,7 @@
 
                 if (AppState.editingContactId) {
                     // Update contact
-                    response = await fetch(
+                    response = await resilientFetch(
                         `${CONFIG.API_BASE_URL}/contact/${AppState.editingContactId}?user_id=${AppState.currentUser.user_id}`,
                         {
                             method: 'PUT',
@@ -1913,7 +2006,7 @@
                     );
                 } else {
                     // Add new contact
-                    response = await fetch(`${CONFIG.API_BASE_URL}/add_contact/`, {
+                    response = await resilientFetch(`${CONFIG.API_BASE_URL}/add_contact/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1952,7 +2045,7 @@
             }
 
             try {
-                const response = await fetch(
+                const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/contact/${contactId}?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'DELETE',
@@ -2098,7 +2191,7 @@
 
                 const url = `${CONFIG.API_BASE_URL}/add_contact_from_image/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`;
 
-                const response = await fetch(url, {
+                const response = await resilientFetch(url, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY },
                     body: formData
@@ -2368,7 +2461,7 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/converse/`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/converse/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2377,6 +2470,7 @@
                     body: JSON.stringify({
                         user_id: AppState.currentUser.user_id,
                         query: query,
+                        admin_mode: AppState.teamModeEnabled || false,
                         conversation_history: chatHistory.slice(-10).map(m => ({
                             role: m.role,
                             content: m.content
@@ -2430,6 +2524,26 @@
                 const form = input.closest('form');
                 if (form) form.dispatchEvent(new Event('submit', { cancelable: true }));
             }
+        }
+
+        function toggleTeamMode() {
+            AppState.teamModeEnabled = !AppState.teamModeEnabled;
+            const btn = document.getElementById('teamModeBtn');
+            if (btn) {
+                btn.className = AppState.teamModeEnabled
+                    ? 'px-2.5 py-1 rounded-full text-[10px] font-medium bg-white text-purple-600 active:bg-white/90 transition-all'
+                    : 'px-2.5 py-1 rounded-full text-[10px] font-medium bg-white/20 text-white/80 active:bg-white/30 transition-all';
+                btn.innerHTML = AppState.teamModeEnabled
+                    ? '<i class="fas fa-users mr-1"></i>Team Mode ON'
+                    : '<i class="fas fa-users mr-1"></i>Team Mode';
+            }
+            const label = document.getElementById('chatModelLabel');
+            if (label) {
+                label.textContent = AppState.teamModeEnabled
+                    ? 'Team Mode — searching all contacts'
+                    : 'Powered by Claude Opus 4.6';
+            }
+            showToast(AppState.teamModeEnabled ? 'Team Mode ON — queries all team contacts' : 'Team Mode OFF — your contacts only', 'info');
         }
 
         function clearChatHistory() {
@@ -2653,7 +2767,7 @@
         async function scoreContactFromChat(contactId) {
             showToast('Scoring lead...', 'info');
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/score?user_id=${AppState.currentUser.user_id}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/score?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await resp.json();
@@ -2673,7 +2787,7 @@
             if (!lastResearch) { showToast('No research to save', 'error'); return; }
 
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/enrich`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/enrich`, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2693,7 +2807,7 @@
             const lastPitch = chatHistory.filter(m => m.role === 'assistant').pop();
             if (!lastPitch) { showToast('No pitch to save', 'error'); return; }
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/enrich`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/enrich`, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -2915,6 +3029,32 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                         </div>
                     </div>
 
+                    <!-- AI Pipeline Status -->
+                    <div id="pipelineStatusCard" class="hidden">
+                        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 shadow-sm border border-indigo-200">
+                            <h3 class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-3"><i class="fas fa-robot mr-1"></i>AI Pipeline</h3>
+                            <div id="pipelineSteps" class="flex flex-wrap gap-2 mb-3"></div>
+                            <p id="pipelineCurrentStep" class="text-xs text-gray-500 italic mb-3"></p>
+                            <div id="pipelineResearchSection" class="hidden mb-3">
+                                <button onclick="togglePipelineSection('pipelineResearchContent')" class="text-xs font-medium text-indigo-600 flex items-center gap-1">
+                                    <i class="fas fa-chevron-right text-[10px]" id="pipelineResearchToggle"></i> View Research
+                                </button>
+                                <div id="pipelineResearchContent" class="hidden mt-2 text-xs text-gray-700 bg-white rounded-lg p-3 whitespace-pre-wrap"></div>
+                            </div>
+                            <div id="pipelinePitchSection" class="hidden mb-3">
+                                <button onclick="togglePipelineSection('pipelinePitchContent')" class="text-xs font-medium text-purple-600 flex items-center gap-1">
+                                    <i class="fas fa-chevron-right text-[10px]" id="pipelinePitchToggle"></i> View Pitch & Email
+                                </button>
+                                <div id="pipelinePitchContent" class="hidden mt-2 text-xs text-gray-700 bg-white rounded-lg p-3 space-y-2"></div>
+                            </div>
+                            <div id="pipelineActions" class="flex gap-2">
+                                <button onclick="runContactPipeline('${contact.id}')" id="pipelineRunBtn" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-xs font-medium active:bg-indigo-700">
+                                    <i class="fas fa-play mr-1"></i>Run Pipeline
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Intelligence Actions -->
                     <div class="flex gap-2 mb-3">
                         <button onclick="getPitchAngle('${contact.id}', '${escapedName}', '${(company || '').replace(/'/g, "\\'")}')"
@@ -2958,6 +3098,8 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             detailContent.className = 'h-full overflow-y-auto slide-in-right';
             // Load contact documents from HQ
             loadContactFiles(contactId, 'userContactFiles', false);
+            // Load AI pipeline status
+            loadPipelineStatus(contactId);
         }
 
         function closeContactDetail() {
@@ -2988,7 +3130,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             const query = `Generate a specific pitch angle for ${name} at ${company}. Consider their role, my products/services, and how my value propositions align with their potential needs. Give me 2-3 talking points I can use.`;
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/converse/`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/converse/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-API-Key': CONFIG.API_KEY },
                     body: JSON.stringify({ user_id: AppState.currentUser.user_id, query, conversation_history: [] })
@@ -3017,7 +3159,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             const query = `Quick briefing on ${name} at ${company} before my meeting: Who are they? Why do they matter to me? Suggested talking points? What should I pitch? Keep it concise and actionable.`;
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/converse/`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/converse/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-API-Key': CONFIG.API_KEY },
                     body: JSON.stringify({ user_id: AppState.currentUser.user_id, query, conversation_history: [] })
@@ -3056,7 +3198,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 } else {
                     // CSV export via backend
                     const url = `${CONFIG.API_BASE_URL}/export_contacts/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}&format=csv`;
-                    const response = await fetch(url, {
+                    const response = await resilientFetch(url, {
                         headers: { 'X-API-Key': CONFIG.API_KEY }
                     });
 
@@ -3115,7 +3257,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             if (!AppState.currentUser) return;
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/user/card/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/user/card/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
 
@@ -3185,7 +3327,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Saving...</span>';
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/user/card/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/user/card/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3225,7 +3367,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span>Generating...</span>';
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/user/card/generate_token/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/user/card/generate_token/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
@@ -3299,7 +3441,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             if (!AppState.currentUser || !contactId) return;
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/accepted?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/accepted?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
@@ -3374,7 +3516,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                     ...options.headers
                 };
 
-                const response = await fetch(url, { ...options, headers });
+                const response = await resilientFetch(url, { ...options, headers });
 
                 // Try to parse JSON response
                 let data;
@@ -3426,7 +3568,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         // ==================== USER PROFILE FUNCTIONS ====================
         async function loadUserProfile() {
             try {
-                const response = await fetch(
+                const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/user/profile/?user_id=${AppState.currentUser.user_id}`,
                     { headers: { 'X-API-Key': CONFIG.API_KEY } }
                 );
@@ -3448,7 +3590,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         async function saveAIModel() {
             const model = document.getElementById('aiModelSelect').value;
             try {
-                await fetch(`${CONFIG.API_BASE_URL}/user/profile/?user_id=${AppState.currentUser.user_id}`, {
+                await resilientFetch(`${CONFIG.API_BASE_URL}/user/profile/?user_id=${AppState.currentUser.user_id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3477,7 +3619,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
 
         async function saveUserProfile(updates) {
             try {
-                const response = await fetch(
+                const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/user/profile/?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'PUT',
@@ -3846,7 +3988,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             }
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/?event=${encodeURIComponent(eventName)}&limit=200`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/exhibitors/?event=${encodeURIComponent(eventName)}&limit=200`, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await response.json();
@@ -3867,7 +4009,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             const eventName = AppState.userProfile?.current_event_name || 'WHX Dubai 2026';
 
             try {
-                const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/categories/?event=${encodeURIComponent(eventName)}`, {
+                const response = await resilientFetch(`${CONFIG.API_BASE_URL}/exhibitors/categories/?event=${encodeURIComponent(eventName)}`, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await response.json();
@@ -3977,7 +4119,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         async function scoreContact(contactId) {
             showToast('Scoring contact...', 'info');
             try {
-                const response = await fetch(
+                const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/contact/${contactId}/score?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'POST',
@@ -4013,7 +4155,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             btn.disabled = true;
 
             try {
-                const response = await fetch(
+                const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/contacts/score_all?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'POST',
@@ -4039,7 +4181,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
 
         async function loadDashboardStats() {
             try {
-                const response = await fetch(
+                const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/dashboard?user_id=${AppState.currentUser.user_id}`,
                     { headers: { 'X-API-Key': CONFIG.API_KEY } }
                 );
@@ -4117,7 +4259,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         // ==================== ADMIN DASHBOARD ====================
         async function loadAdminDashboard() {
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/dashboard?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/dashboard?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
                 const data = await resp.json();
                 if (!resp.ok || data.status !== 'success') { showToast(data.detail || 'Admin access denied', 'error'); return; }
                 document.getElementById('adminStatUsers').textContent = data.total_users;
@@ -4180,8 +4322,9 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 if (webhookInput && savedUrl) webhookInput.value = savedUrl;
                 else if (webhookInput && data.webhook_url_preview) webhookInput.placeholder = data.webhook_url_preview + '...';
 
-                // Load activity feed
+                // Load activity feed and pipeline monitor
                 loadAdminActivity();
+                loadPipelineMonitor();
             } catch (err) { console.error('Admin dashboard error:', err); showToast('Failed to load admin data', 'error'); }
         }
 
@@ -4210,7 +4353,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                     fetchOpts.body = JSON.stringify(customPayload);
                 }
 
-                const response = await fetch(url, fetchOpts);
+                const response = await resilientFetch(url, fetchOpts);
                 const data = await response.json();
 
                 const webhookStatus = document.getElementById('webhookStatus');
@@ -4250,7 +4393,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
 
             try {
                 let url = `${CONFIG.API_BASE_URL}/admin/webhook/test?user_id=${AppState.currentUser.user_id}&webhook_url=${encodeURIComponent(customUrl)}&save=true`;
-                const response = await fetch(url, { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const response = await resilientFetch(url, { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY } });
                 const data = await response.json();
                 if (data.status === 'success') {
                     showToast('Webhook URL saved and tested!', 'success');
@@ -4272,7 +4415,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         // Real-time admin activity feed
         async function loadAdminActivity() {
             try {
-                const response = await fetch(
+                const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/admin/activity?user_id=${AppState.currentUser.user_id}&limit=20`,
                     { headers: { 'X-API-Key': CONFIG.API_KEY } }
                 );
@@ -4325,7 +4468,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             if (!confirm('Delete this contact? This cannot be undone.')) return;
 
             try {
-                const response = await fetch(
+                const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/admin/contact/${contactId}?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'DELETE',
@@ -4402,7 +4545,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             resultsDiv.classList.remove('hidden');
             resultsDiv.innerHTML = '<p class="text-sm text-gray-400 text-center py-3"><i class="fas fa-spinner fa-spin mr-1"></i>Searching...</p>';
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/search?q=${encodeURIComponent(term)}&user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/search?q=${encodeURIComponent(term)}&user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
                 const data = await resp.json();
                 if (!resp.ok || !data.contacts || data.contacts.length === 0) {
                     resultsDiv.innerHTML = '<p class="text-sm text-gray-400 text-center py-3">No results found</p>';
@@ -4432,7 +4575,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             const priority = document.getElementById('broadcastPriority').value;
             if (!msg) { showToast('Enter a message', 'error'); return; }
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/broadcast?user_id=${AppState.currentUser.user_id}&message=${encodeURIComponent(msg)}&priority=${priority}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/broadcast?user_id=${AppState.currentUser.user_id}&message=${encodeURIComponent(msg)}&priority=${priority}`, {
                     method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await resp.json();
@@ -4446,7 +4589,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
 
         async function loadBroadcastHistory() {
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/broadcasts/active?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/broadcasts/active?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
                 const data = await resp.json();
                 const container = document.getElementById('broadcastHistory');
                 if (!container) return;
@@ -4467,7 +4610,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
 
         async function dismissBroadcast(broadcastId) {
             try {
-                await fetch(`${CONFIG.API_BASE_URL}/broadcasts/${broadcastId}/dismiss?user_id=${AppState.currentUser.user_id}`, {
+                await resilientFetch(`${CONFIG.API_BASE_URL}/broadcasts/${broadcastId}/dismiss?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 loadBroadcastHistory();
@@ -4478,7 +4621,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         // Check and display broadcasts for all users (banner at top)
         async function checkBroadcasts() {
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/broadcasts/active?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/broadcasts/active?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
                 const data = await resp.json();
                 const banner = document.getElementById('broadcastBanner');
                 if (!banner) return;
@@ -4505,7 +4648,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             document.getElementById('drilldownStats').innerHTML = '';
 
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&filter_user=${userId}&limit=500`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&filter_user=${userId}&limit=500`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
                 const data = await resp.json();
                 if (!resp.ok || !data.contacts) { document.getElementById('drilldownContactList').innerHTML = '<p class="text-sm text-red-500 text-center py-4">Failed to load</p>'; return; }
 
@@ -4557,7 +4700,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             content.innerHTML = '<p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p>';
 
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&filter_user=${contactUserId}&limit=500`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&filter_user=${contactUserId}&limit=500`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
                 const data = await resp.json();
                 const contact = data.contacts?.find(c => c.id === contactId);
                 if (!contact) { content.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Contact not found</p>'; return; }
@@ -4635,6 +4778,29 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                         </div>
                     </div>
 
+                    <!-- AI Pipeline (Admin) -->
+                    <div id="adminPipelineCard" class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
+                        <h4 class="text-xs font-semibold text-indigo-600 uppercase mb-3"><i class="fas fa-robot mr-1"></i>AI Pipeline</h4>
+                        <div id="adminPipelineSteps" class="flex flex-wrap gap-2 mb-2"></div>
+                        <p id="adminPipelineStep" class="text-xs text-gray-500 italic mb-2"></p>
+                        <div id="adminPipelineResearch" class="hidden mb-2">
+                            <button onclick="togglePipelineSection('adminPipelineResearchText')" class="text-xs font-medium text-indigo-600"><i class="fas fa-chevron-right text-[10px]"></i> Research</button>
+                            <div id="adminPipelineResearchText" class="hidden mt-1 text-xs text-gray-700 bg-white rounded-lg p-2 whitespace-pre-wrap max-h-32 overflow-y-auto"></div>
+                        </div>
+                        <div id="adminPipelinePitch" class="hidden mb-2">
+                            <button onclick="togglePipelineSection('adminPipelinePitchText')" class="text-xs font-medium text-purple-600"><i class="fas fa-chevron-right text-[10px]"></i> Pitch & Email</button>
+                            <div id="adminPipelinePitchText" class="hidden mt-1 text-xs text-gray-700 bg-white rounded-lg p-2 space-y-1 max-h-40 overflow-y-auto"></div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="runContactPipeline('${contact.id}')" class="flex-1 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium active:bg-indigo-700">
+                                <i class="fas fa-play mr-1"></i>Run Pipeline
+                            </button>
+                            <button onclick="retryContactPipeline('${contact.id}')" class="py-1.5 px-3 bg-orange-100 text-orange-600 rounded-lg text-xs font-medium active:bg-orange-200">
+                                <i class="fas fa-redo mr-1"></i>Retry
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Links -->
                     ${contact.links?.length ? `<div class="bg-gray-50 rounded-xl p-4">
                         <h4 class="text-xs font-semibold text-gray-400 uppercase mb-2">Enrichment Links</h4>
@@ -4658,6 +4824,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 `;
                 // Load contact documents
                 loadContactFiles(contact.id, 'adminContactFiles', true);
+                loadPipelineStatus(contact.id, true);
             } catch (err) { console.error('Contact detail error:', err); content.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Failed to load contact</p>'; }
         }
 
@@ -4668,7 +4835,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         async function saveAdminNote(contactId) {
             const note = document.getElementById('adminNoteTextarea')?.value || '';
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/contact/${contactId}/note?user_id=${AppState.currentUser.user_id}&note=${encodeURIComponent(note)}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact/${contactId}/note?user_id=${AppState.currentUser.user_id}&note=${encodeURIComponent(note)}`, {
                     method: 'PUT', headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 if (resp.ok) { showToast('Admin note saved', 'success'); }
@@ -4689,7 +4856,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             formData.append('category', categorySelect.value);
             try {
                 showToast('Uploading...', 'info');
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/contact/${contactId}/files?user_id=${AppState.currentUser.user_id}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact/${contactId}/files?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }, body: formData
                 });
                 const data = await resp.json();
@@ -4708,7 +4875,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             const container = document.getElementById(containerId);
             if (!container) return;
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/files?user_id=${AppState.currentUser.user_id}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/files?user_id=${AppState.currentUser.user_id}`, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await resp.json();
@@ -4744,7 +4911,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         async function downloadContactFile(fileId, filename) {
             try {
                 showToast('Downloading...', 'info');
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/contact/files/download/${fileId}?user_id=${AppState.currentUser.user_id}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/files/download/${fileId}?user_id=${AppState.currentUser.user_id}`, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 if (!resp.ok) throw new Error('Download failed');
@@ -4760,7 +4927,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         async function deleteContactFile(fileId, contactId, containerId) {
             if (!confirm('Delete this document?')) return;
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/contact/files/${fileId}?user_id=${AppState.currentUser.user_id}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact/files/${fileId}?user_id=${AppState.currentUser.user_id}`, {
                     method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 if (resp.ok) { showToast('Document deleted', 'success'); loadContactFiles(contactId, containerId, true); }
@@ -4782,6 +4949,123 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         function getCategoryColor(category) {
             const colors = { research: 'bg-green-100 text-green-600', pitch: 'bg-purple-100 text-purple-600', brief: 'bg-orange-100 text-orange-600', other: 'bg-gray-100 text-gray-600' };
             return colors[category] || 'bg-gray-100 text-gray-600';
+        }
+
+        // --- AI Pipeline Functions ---
+        const PIPELINE_STEPS = ['research', 'score', 'pitch', 'deck', 'attach'];
+        const PIPELINE_STEP_LABELS = { research: 'Research', score: 'Score', pitch: 'Pitch', deck: 'Deck', attach: 'Attach' };
+        const PIPELINE_STATUS_MAP = {
+            'pending': { done: [] },
+            'researching': { done: [], active: 'research' },
+            'scoring': { done: ['research'], active: 'score' },
+            'pitching': { done: ['research', 'score'], active: 'pitch' },
+            'generating_deck': { done: ['research', 'score', 'pitch'], active: 'deck' },
+            'attaching': { done: ['research', 'score', 'pitch', 'deck'], active: 'attach' },
+            'complete': { done: ['research', 'score', 'pitch', 'deck', 'attach'] },
+            'complete_no_deck': { done: ['research', 'score', 'pitch'], skipped: ['deck', 'attach'] },
+            'failed': { done: [] },
+        };
+
+        function renderPipelineSteps(status, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const info = PIPELINE_STATUS_MAP[status] || { done: [] };
+            container.innerHTML = PIPELINE_STEPS.map(step => {
+                let cls = 'bg-gray-100 text-gray-400';
+                let icon = 'fa-circle';
+                if (info.done?.includes(step)) { cls = 'bg-green-100 text-green-600'; icon = 'fa-check-circle'; }
+                else if (info.active === step) { cls = 'bg-indigo-100 text-indigo-600'; icon = 'fa-spinner fa-spin'; }
+                else if (info.skipped?.includes(step)) { cls = 'bg-yellow-100 text-yellow-500'; icon = 'fa-minus-circle'; }
+                else if (status === 'failed') { cls = 'bg-red-100 text-red-500'; icon = 'fa-times-circle'; }
+                return `<span class="px-2 py-1 rounded-full text-[10px] font-medium ${cls}"><i class="fas ${icon} mr-0.5"></i>${PIPELINE_STEP_LABELS[step]}</span>`;
+            }).join('');
+        }
+
+        async function loadPipelineStatus(contactId, isAdmin = false) {
+            const card = document.getElementById(isAdmin ? 'adminPipelineCard' : 'pipelineStatusCard');
+            const stepsId = isAdmin ? 'adminPipelineSteps' : 'pipelineSteps';
+            const stepTextId = isAdmin ? 'adminPipelineStep' : 'pipelineCurrentStep';
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/pipeline?user_id=${AppState.currentUser.user_id}`, {
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+                const data = await resp.json();
+                if (data.status === 'none') {
+                    if (card && !isAdmin) card.classList.remove('hidden');
+                    renderPipelineSteps('pending', stepsId);
+                    const stepEl = document.getElementById(stepTextId);
+                    if (stepEl) stepEl.textContent = 'Pipeline has not run yet. Tap "Run Pipeline" to start.';
+                    return;
+                }
+                if (card) card.classList.remove('hidden');
+                renderPipelineSteps(data.status, stepsId);
+                const stepEl = document.getElementById(stepTextId);
+                if (stepEl) stepEl.textContent = data.current_step || data.status;
+
+                // Show research section if available
+                const researchSection = document.getElementById(isAdmin ? 'adminPipelineResearch' : 'pipelineResearchSection');
+                const researchContent = document.getElementById(isAdmin ? 'adminPipelineResearchText' : 'pipelineResearchContent');
+                if (data.research_summary && researchSection && researchContent) {
+                    researchSection.classList.remove('hidden');
+                    researchContent.textContent = data.research_summary;
+                }
+
+                // Show pitch section if available
+                const pitchSection = document.getElementById(isAdmin ? 'adminPipelinePitch' : 'pipelinePitchSection');
+                const pitchContent = document.getElementById(isAdmin ? 'adminPipelinePitchText' : 'pipelinePitchContent');
+                if (data.pitch_email_subject && pitchSection && pitchContent) {
+                    pitchSection.classList.remove('hidden');
+                    pitchContent.innerHTML = `<p class="font-medium">Subject: ${escapeHtml(data.pitch_email_subject)}</p><p class="mt-1 whitespace-pre-wrap">${escapeHtml(data.pitch_email_body || '')}</p>`;
+                }
+
+                // Update run button based on status
+                const runBtn = document.getElementById('pipelineRunBtn');
+                if (runBtn) {
+                    if (['pending', 'failed', 'complete', 'complete_no_deck', 'none'].includes(data.status)) {
+                        runBtn.disabled = false;
+                        runBtn.innerHTML = data.status === 'failed'
+                            ? '<i class="fas fa-redo mr-1"></i>Retry Pipeline'
+                            : data.status.startsWith('complete')
+                            ? '<i class="fas fa-redo mr-1"></i>Re-run Pipeline'
+                            : '<i class="fas fa-play mr-1"></i>Run Pipeline';
+                    } else {
+                        runBtn.disabled = true;
+                        runBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Running...';
+                    }
+                }
+
+                // Auto-refresh if still running
+                if (!['complete', 'complete_no_deck', 'failed', 'none'].includes(data.status)) {
+                    setTimeout(() => loadPipelineStatus(contactId, isAdmin), 5000);
+                }
+            } catch (err) { console.error('Pipeline status error:', err); }
+        }
+
+        async function runContactPipeline(contactId) {
+            try {
+                showToast('Starting AI pipeline...', 'info');
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/pipeline/run?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+                const data = await resp.json();
+                if (data.status === 'already_running') { showToast('Pipeline already running', 'warning'); return; }
+                showToast('Pipeline started! Research in progress...', 'success');
+                setTimeout(() => loadPipelineStatus(contactId, false), 3000);
+            } catch (err) { console.error('Run pipeline error:', err); showToast('Failed to start pipeline', 'error'); }
+        }
+
+        async function retryContactPipeline(contactId) {
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/pipeline/retry?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+                if (resp.ok) { showToast('Pipeline restarted', 'success'); setTimeout(() => loadPipelineStatus(contactId, true), 3000); }
+            } catch (err) { showToast('Retry failed', 'error'); }
+        }
+
+        function togglePipelineSection(contentId) {
+            const el = document.getElementById(contentId);
+            if (el) el.classList.toggle('hidden');
         }
 
         function exportSingleContact(contactId) {
@@ -4827,7 +5111,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                     timestamp: new Date().toISOString()
                 };
                 const url = `${CONFIG.API_BASE_URL}/admin/webhook/test?user_id=${AppState.currentUser.user_id}&webhook_url=${encodeURIComponent(webhookUrl)}`;
-                const resp = await fetch(url, {
+                const resp = await resilientFetch(url, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -4845,7 +5129,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         function adminExportAll() {
             const url = `${CONFIG.API_BASE_URL}/admin/export?user_id=${AppState.currentUser.user_id}&format=csv`;
             // Create a hidden link with API key header - use fetch + blob for auth
-            fetch(url, { headers: { 'X-API-Key': CONFIG.API_KEY } })
+            resilientFetch(url, { headers: { 'X-API-Key': CONFIG.API_KEY } })
                 .then(resp => resp.blob())
                 .then(blob => {
                     const a = document.createElement('a');
@@ -4863,7 +5147,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             if (!confirm(`DELETE user "${userName}" and ALL their contacts? This cannot be undone!`)) return;
             if (!confirm(`Are you absolutely sure? This will permanently delete ${userName} and all their data.`)) return;
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/users?user_id=${AppState.currentUser.user_id}&action=delete&target_user_id=${userId}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/users?user_id=${AppState.currentUser.user_id}&action=delete&target_user_id=${userId}`, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await resp.json();
@@ -4900,7 +5184,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
 
             showToast('Uploading...', 'info');
             try {
-                const resp = await fetch(
+                const resp = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/admin/files/upload?user_id=${AppState.currentUser.user_id}&description=${encodeURIComponent(description)}&category=${encodeURIComponent(category)}`,
                     { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }, body: formData }
                 );
@@ -4921,7 +5205,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             if (!container) return;
             container.innerHTML = '<p class="text-sm text-gray-400 text-center py-2">Loading...</p>';
             try {
-                const resp = await fetch(
+                const resp = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/files/list?user_id=${AppState.currentUser.user_id}`,
                     { headers: { 'X-API-Key': CONFIG.API_KEY } }
                 );
@@ -4951,7 +5235,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         async function deleteAdminFile(fileId, filename) {
             if (!confirm(`Delete "${filename}"?`)) return;
             try {
-                const resp = await fetch(
+                const resp = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/admin/files/${fileId}?user_id=${AppState.currentUser.user_id}`,
                     { method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY } }
                 );
@@ -4961,13 +5245,87 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         }
 
         // ==================== DATABASE BACKUP ====================
+        // --- Pipeline Monitor (Admin) ---
+        async function loadPipelineMonitor() {
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/pipelines?user_id=${AppState.currentUser.user_id}&limit=20`, {
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+                const data = await resp.json();
+                const counts = data.status_counts || {};
+                const activeStatuses = ['pending', 'researching', 'scoring', 'pitching', 'generating_deck', 'attaching'];
+                const activeCount = activeStatuses.reduce((sum, s) => sum + (counts[s] || 0), 0);
+                const doneCount = (counts['complete'] || 0) + (counts['complete_no_deck'] || 0);
+                const failedCount = counts['failed'] || 0;
+
+                const el = id => document.getElementById(id);
+                if (el('pipelineActiveCount')) el('pipelineActiveCount').textContent = activeCount;
+                if (el('pipelineDoneCount')) el('pipelineDoneCount').textContent = doneCount;
+                if (el('pipelineFailedCount')) el('pipelineFailedCount').textContent = failedCount;
+
+                const listEl = el('pipelineMonitorList');
+                if (!listEl) return;
+
+                if (!data.pipelines?.length) {
+                    listEl.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">No pipelines yet. Pipelines auto-run when cards are scanned.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = data.pipelines.map(p => {
+                    const statusColors = {
+                        complete: 'text-green-600', complete_no_deck: 'text-green-500', failed: 'text-red-600',
+                        researching: 'text-blue-600', scoring: 'text-blue-600', pitching: 'text-purple-600',
+                        generating_deck: 'text-indigo-600', pending: 'text-gray-400'
+                    };
+                    const statusIcons = {
+                        complete: 'fa-check-circle', complete_no_deck: 'fa-check-circle', failed: 'fa-times-circle',
+                        researching: 'fa-spinner fa-spin', scoring: 'fa-spinner fa-spin', pitching: 'fa-spinner fa-spin',
+                        generating_deck: 'fa-spinner fa-spin', pending: 'fa-clock'
+                    };
+                    const color = statusColors[p.status] || 'text-gray-500';
+                    const icon = statusIcons[p.status] || 'fa-circle';
+                    return `<div class="flex items-center gap-2 text-xs">
+                        <i class="fas ${icon} ${color} w-4 text-center"></i>
+                        <span class="font-medium text-gray-800 truncate flex-1">${escapeHtml(p.contact_name)}</span>
+                        <span class="text-gray-400 truncate">${escapeHtml(p.user_name)}</span>
+                        <span class="${color} text-[10px]">${p.current_step || p.status}</span>
+                    </div>`;
+                }).join('');
+
+                // Update toggle button
+                const toggleBtn = el('autoPipelineToggle');
+                if (toggleBtn) {
+                    const enabled = data.auto_pipeline_enabled;
+                    toggleBtn.textContent = enabled ? 'ON' : 'OFF';
+                    toggleBtn.className = `px-3 py-1 rounded-full text-xs font-medium ${enabled ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`;
+                }
+            } catch (err) { console.error('Pipeline monitor error:', err); }
+        }
+
+        async function toggleAutoPipeline() {
+            const btn = document.getElementById('autoPipelineToggle');
+            const currentlyOn = btn?.textContent?.trim() === 'ON';
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/pipeline/settings?user_id=${AppState.currentUser.user_id}&auto_enabled=${!currentlyOn}`, {
+                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+                const data = await resp.json();
+                const enabled = data.current_settings?.auto_pipeline_enabled;
+                if (btn) {
+                    btn.textContent = enabled ? 'ON' : 'OFF';
+                    btn.className = `px-3 py-1 rounded-full text-xs font-medium ${enabled ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`;
+                }
+                showToast(`Auto-pipeline ${enabled ? 'enabled' : 'disabled'}`, 'success');
+            } catch (err) { showToast('Failed to update setting', 'error'); }
+        }
+
         async function triggerBackup() {
             const btn = document.getElementById('backupBtn');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Backing up...';
 
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/backup?user_id=${AppState.currentUser.user_id}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/backup?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
@@ -4990,7 +5348,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
 
         async function checkBackupStatus() {
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/backup/status?user_id=${AppState.currentUser.user_id}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/backup/status?user_id=${AppState.currentUser.user_id}`, {
                     headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await resp.json();
@@ -5062,7 +5420,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             try {
                 let url = `${CONFIG.API_BASE_URL}/files/list?user_id=${AppState.currentUser.user_id}`;
                 if (currentFileCategory) url += `&category=${encodeURIComponent(currentFileCategory)}`;
-                const resp = await fetch(url, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(url, { headers: { 'X-API-Key': CONFIG.API_KEY } });
                 const data = await resp.json();
                 if (resp.ok && data.files && data.files.length > 0) {
                     container.innerHTML = data.files.map(f => {
@@ -5100,7 +5458,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         async function downloadEventFile(fileId, filename) {
             showToast('Downloading...', 'info');
             try {
-                const resp = await fetch(
+                const resp = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/files/download/${fileId}?user_id=${AppState.currentUser.user_id}`,
                     { headers: { 'X-API-Key': CONFIG.API_KEY } }
                 );
@@ -5177,7 +5535,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 e.stopPropagation();
                 if (!confirm('Delete ' + contactName + '? This cannot be undone.')) { btn.remove(); return; }
                 try {
-                    const resp = await fetch(
+                    const resp = await resilientFetch(
                         CONFIG.API_BASE_URL + '/contact/' + contactId + '?user_id=' + AppState.currentUser.user_id,
                         { method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY } }
                     );
@@ -5249,10 +5607,10 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             var contactId = AppState._voiceContactId, transcript = AppState._voiceTranscript, audioBlob = AppState._voiceAudioBlob;
             if (!contactId) return;
             document.getElementById('voiceStatus').textContent = 'Saving...'; document.getElementById('voiceSaveBtn').disabled = true;
-            if (!transcript && audioBlob) { try { var fd = new FormData(); fd.append('file', audioBlob, 'voice_note.webm'); var r = await fetch(CONFIG.API_BASE_URL + '/transcribe_audio/?user_id=' + AppState.currentUser.user_id, {method:'POST', headers:{'X-API-Key':CONFIG.API_KEY}, body:fd}); var d = await r.json(); if (r.ok && d.transcript) transcript = d.transcript; } catch(err) { console.error('[Voice] Gemini transcription failed:', err); } }
+            if (!transcript && audioBlob) { try { var fd = new FormData(); fd.append('file', audioBlob, 'voice_note.webm'); var r = await resilientFetch(CONFIG.API_BASE_URL + '/transcribe_audio/?user_id=' + AppState.currentUser.user_id, {method:'POST', headers:{'X-API-Key':CONFIG.API_KEY}, body:fd}); var d = await r.json(); if (r.ok && d.transcript) transcript = d.transcript; } catch(err) { console.error('[Voice] Gemini transcription failed:', err); } }
             var audioBase64 = '';
             if (audioBlob) { try { var buf = await audioBlob.arrayBuffer(); var bytes = new Uint8Array(buf); var bin = ''; bytes.forEach(function(b){ bin += String.fromCharCode(b); }); audioBase64 = btoa(bin); } catch(err) { console.warn('[Voice] Audio encode failed:', err); } }
-            try { var response = await fetch(CONFIG.API_BASE_URL + '/contact/' + contactId + '/audio_note?user_id=' + AppState.currentUser.user_id, { method:'POST', headers:{'Content-Type':'application/json','X-API-Key':CONFIG.API_KEY}, body:JSON.stringify({contact_id:contactId, transcript:transcript||'(no transcription)', audio_base64:audioBase64}) }); if (response.ok) { showToast('Voice note saved!', 'success'); loadContacts(); } else showToast('Failed to save voice note', 'error'); } catch(err) { showToast('Network error saving voice note', 'error'); }
+            try { var response = await resilientFetch(CONFIG.API_BASE_URL + '/contact/' + contactId + '/audio_note?user_id=' + AppState.currentUser.user_id, { method:'POST', headers:{'Content-Type':'application/json','X-API-Key':CONFIG.API_KEY}, body:JSON.stringify({contact_id:contactId, transcript:transcript||'(no transcription)', audio_base64:audioBase64}) }); if (response.ok) { showToast('Voice note saved!', 'success'); loadContacts(); } else showToast('Failed to save voice note', 'error'); } catch(err) { showToast('Network error saving voice note', 'error'); }
             AppState._voiceContactId = null; AppState._voiceTranscript = ''; AppState._voiceAudioBlob = null;
             document.getElementById('voiceRecordingOverlay').classList.add('hidden'); document.getElementById('voiceSaveBtn').disabled = false;
         }

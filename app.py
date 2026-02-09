@@ -96,6 +96,7 @@ class ConverseQuery(BaseModel):
     user_id: str
     conversation_history: Optional[List[Dict[str, str]]] = None
     top_k: Optional[int] = 4
+    admin_mode: Optional[bool] = False  # Cross-user search for admins
 
 
 class ContactUpdate(BaseModel):
@@ -1959,6 +1960,7 @@ async def run_backup() -> dict:
         ("user_cards", UserCardDB),
         ("event_files", EventFileDB),
         ("contact_files", ContactFileDB),
+        ("contact_pipelines", ContactPipelineDB),
         ("admin_broadcasts", AdminBroadcastDB),
     ]
 
@@ -2464,7 +2466,34 @@ async def update_contact_route(
 @app.post("/converse/")
 async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api_key)):
     try:
-        retrieved_contacts = faiss_index.search(query.user_id, query.query, k=query.top_k or 4)
+        # Check if admin mode requested — verify admin status
+        is_admin_mode = False
+        if query.admin_mode:
+            session_check = await get_db_session()
+            try:
+                admin_result = await session_check.execute(
+                    select(UserDB).where(UserDB.id == uuid.UUID(query.user_id))
+                )
+                admin_user = admin_result.scalar_one_or_none()
+                is_admin_mode = admin_user and admin_user.is_admin
+            finally:
+                await session_check.close()
+
+        # FAISS search — cross-user for admin mode
+        if is_admin_mode:
+            # Search across ALL users' FAISS indices
+            all_results = []
+            for uid in list(faiss_index.user_indices.keys()):
+                try:
+                    user_results = faiss_index.search(uid, query.query, k=2)
+                    all_results.extend(user_results)
+                except Exception:
+                    pass
+            # Sort by relevance (FAISS score) and take top_k
+            all_results.sort(key=lambda x: x[1].get("_score", 0) if isinstance(x[1], dict) else 0, reverse=True)
+            retrieved_contacts = all_results[:query.top_k or 8]
+        else:
+            retrieved_contacts = faiss_index.search(query.user_id, query.query, k=query.top_k or 4)
 
         session = await get_db_session()
         try:
@@ -2475,10 +2504,13 @@ async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api
             profile_row = result.scalar_one_or_none()
             user_profile = profile_row.profile_data if profile_row else {}
 
-            # Load all contacts summary for broader context
-            all_contacts_result = await session.execute(
-                select(ContactDB).where(ContactDB.user_id == uuid.UUID(query.user_id))
-            )
+            # Load contacts summary — all users for admin mode, own contacts otherwise
+            if is_admin_mode:
+                all_contacts_result = await session.execute(select(ContactDB))
+            else:
+                all_contacts_result = await session.execute(
+                    select(ContactDB).where(ContactDB.user_id == uuid.UUID(query.user_id))
+                )
             all_contacts_rows = all_contacts_result.scalars().all()
             all_contacts = [
                 {
@@ -4597,7 +4629,7 @@ async def admin_backup_status(
         for table_name, model in [
             ("users", UserDB), ("contacts", ContactDB), ("exhibitors", ExhibitorDB),
             ("conversations", ConversationDB), ("user_cards", UserCardDB),
-            ("event_files", EventFileDB), ("admin_broadcasts", AdminBroadcastDB),
+            ("event_files", EventFileDB), ("contact_pipelines", ContactPipelineDB), ("admin_broadcasts", AdminBroadcastDB),
         ]:
             result = await primary_session.execute(select(func.count(model.id)))
             primary_counts[table_name] = result.scalar() or 0
@@ -4613,7 +4645,7 @@ async def admin_backup_status(
             for table_name, model in [
                 ("users", UserDB), ("contacts", ContactDB), ("exhibitors", ExhibitorDB),
                 ("conversations", ConversationDB), ("user_cards", UserCardDB),
-                ("event_files", EventFileDB), ("admin_broadcasts", AdminBroadcastDB),
+                ("event_files", EventFileDB), ("contact_pipelines", ContactPipelineDB), ("admin_broadcasts", AdminBroadcastDB),
             ]:
                 result = await backup_session.execute(select(func.count(model.id)))
                 backup_counts[table_name] = result.scalar() or 0
@@ -4629,6 +4661,193 @@ async def admin_backup_status(
         "backup_counts": backup_counts,
         "in_sync": primary_counts == backup_counts if isinstance(backup_counts, dict) and "error" not in backup_counts else False
     }
+
+
+# ==================== PIPELINE ENDPOINTS ====================
+
+@app.get("/contact/{contact_id}/pipeline")
+async def get_pipeline_status(
+    contact_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Get pipeline status and generated content for a contact."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactPipelineDB)
+            .where(ContactPipelineDB.contact_id == uuid.UUID(contact_id))
+            .order_by(ContactPipelineDB.created_at.desc())
+        )
+        pipeline = result.scalar_one_or_none()
+        if not pipeline:
+            return {"status": "none", "message": "No pipeline run for this contact"}
+
+        return {
+            "id": str(pipeline.id),
+            "status": pipeline.status,
+            "current_step": pipeline.current_step,
+            "error_message": pipeline.error_message,
+            "research_summary": pipeline.research_summary,
+            "research_data": pipeline.research_data,
+            "score_completed": pipeline.score_completed,
+            "pitch_angle": pipeline.pitch_angle,
+            "pitch_email_subject": pipeline.pitch_email_subject,
+            "pitch_email_body": pipeline.pitch_email_body,
+            "pitch_slides_content": pipeline.pitch_slides_content,
+            "deck_file_id": str(pipeline.deck_file_id) if pipeline.deck_file_id else None,
+            "presenton_presentation_id": pipeline.presenton_presentation_id,
+            "started_at": pipeline.started_at.isoformat() if pipeline.started_at else None,
+            "completed_at": pipeline.completed_at.isoformat() if pipeline.completed_at else None,
+        }
+    finally:
+        await session.close()
+
+
+@app.post("/contact/{contact_id}/pipeline/run")
+async def trigger_pipeline(
+    contact_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Manually trigger the intelligence pipeline for a contact."""
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(status_code=400, detail="OpenRouter API key not configured. Pipeline requires AI access.")
+
+    # Verify contact exists and belongs to user (or user is admin)
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactDB).where(ContactDB.id == uuid.UUID(contact_id))
+        )
+        contact = result.scalar_one_or_none()
+        if not contact:
+            raise HTTPException(status_code=404, detail="Contact not found")
+
+        # Check if pipeline already running
+        existing = await session.execute(
+            select(ContactPipelineDB)
+            .where(
+                ContactPipelineDB.contact_id == uuid.UUID(contact_id),
+                ContactPipelineDB.status.in_(["pending", "researching", "scoring", "pitching", "generating_deck", "attaching"])
+            )
+        )
+        if existing.scalar_one_or_none():
+            return {"status": "already_running", "message": "Pipeline is already running for this contact"}
+    finally:
+        await session.close()
+
+    # Fire pipeline in background
+    asyncio.create_task(run_contact_pipeline(contact_id, user_id))
+    return {"status": "started", "message": f"Pipeline started for {contact.name}"}
+
+
+@app.post("/contact/{contact_id}/pipeline/retry")
+async def retry_pipeline(
+    contact_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Retry a failed pipeline for a contact."""
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(status_code=400, detail="OpenRouter API key not configured")
+
+    session = await get_db_session()
+    try:
+        # Delete old failed pipeline
+        await session.execute(
+            delete(ContactPipelineDB).where(
+                ContactPipelineDB.contact_id == uuid.UUID(contact_id),
+                ContactPipelineDB.status == "failed"
+            )
+        )
+        await session.commit()
+    finally:
+        await session.close()
+
+    asyncio.create_task(run_contact_pipeline(contact_id, user_id))
+    return {"status": "retrying", "message": "Pipeline restarted"}
+
+
+@app.get("/admin/pipelines")
+async def admin_list_pipelines(
+    admin_id: str = Depends(verify_admin),
+    status_filter: str = Query(None),
+    limit: int = Query(50),
+):
+    """List all pipelines across all users (admin only)."""
+    session = await get_db_session()
+    try:
+        query = select(ContactPipelineDB).order_by(ContactPipelineDB.created_at.desc()).limit(limit)
+        if status_filter:
+            query = query.where(ContactPipelineDB.status == status_filter)
+
+        result = await session.execute(query)
+        pipelines = result.scalars().all()
+
+        # Get contact names for display
+        contact_ids = [p.contact_id for p in pipelines]
+        contacts_result = await session.execute(
+            select(ContactDB).where(ContactDB.id.in_(contact_ids))
+        )
+        contacts_map = {str(c.id): c.name for c in contacts_result.scalars().all()}
+
+        # Get user names
+        user_ids = list(set(p.user_id for p in pipelines))
+        users_result = await session.execute(
+            select(UserDB).where(UserDB.id.in_(user_ids))
+        )
+        users_map = {str(u.id): u.name for u in users_result.scalars().all()}
+
+        # Count by status
+        count_result = await session.execute(
+            select(ContactPipelineDB.status, func.count(ContactPipelineDB.id))
+            .group_by(ContactPipelineDB.status)
+        )
+        status_counts = dict(count_result.all())
+
+        return {
+            "pipelines": [
+                {
+                    "id": str(p.id),
+                    "contact_id": str(p.contact_id),
+                    "contact_name": contacts_map.get(str(p.contact_id), "Unknown"),
+                    "user_id": str(p.user_id),
+                    "user_name": users_map.get(str(p.user_id), "Unknown"),
+                    "status": p.status,
+                    "current_step": p.current_step,
+                    "error_message": p.error_message,
+                    "started_at": p.started_at.isoformat() if p.started_at else None,
+                    "completed_at": p.completed_at.isoformat() if p.completed_at else None,
+                }
+                for p in pipelines
+            ],
+            "status_counts": status_counts,
+            "auto_pipeline_enabled": AUTO_PIPELINE_ENABLED,
+        }
+    finally:
+        await session.close()
+
+
+@app.post("/admin/pipeline/settings")
+async def admin_pipeline_settings(
+    admin_id: str = Depends(verify_admin),
+    auto_enabled: bool = Query(None),
+):
+    """Toggle auto-pipeline settings (admin only)."""
+    global AUTO_PIPELINE_ENABLED
+    result = {}
+    if auto_enabled is not None:
+        AUTO_PIPELINE_ENABLED = auto_enabled
+        result["auto_pipeline_enabled"] = AUTO_PIPELINE_ENABLED
+        print(f"[PIPELINE] Auto-pipeline {'enabled' if auto_enabled else 'disabled'} by admin")
+
+    result["current_settings"] = {
+        "auto_pipeline_enabled": AUTO_PIPELINE_ENABLED,
+        "presenton_configured": bool(PRESENTON_API_URL),
+        "openrouter_configured": bool(OPENROUTER_API_KEY),
+    }
+    return result
 
 
 if __name__ == "__main__":
