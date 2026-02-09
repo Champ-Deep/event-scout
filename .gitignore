@@ -12,6 +12,10 @@ node_modules/
 .DS_Store
 server.log
 
+# Test artifacts
+test_card.jpg
+test_card_*.jpg
+
 # Claude settings (local only)
 .claude/settings.local.json
 .vercel
