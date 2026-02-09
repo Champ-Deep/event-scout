@@ -2396,7 +2396,7 @@ async def admin_list_users(admin_id: str = Depends(verify_admin)):
         await session.close()
 
 
-@app.delete("/admin/user/{target_user_id}")
+@app.post("/admin/user/{target_user_id}/delete")
 async def admin_delete_user(
     target_user_id: str,
     admin_id: str = Depends(verify_admin),

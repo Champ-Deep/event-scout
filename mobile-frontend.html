@@ -3992,8 +3992,8 @@
             if (!confirm(`DELETE user "${userName}" and ALL their contacts? This cannot be undone!`)) return;
             if (!confirm(`Are you absolutely sure? This will permanently delete ${userName} and all their data.`)) return;
             try {
-                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/user/${userId}?user_id=${AppState.currentUser.user_id}`, {
-                    method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY }
+                const resp = await fetch(`${CONFIG.API_BASE_URL}/admin/user/${userId}/delete?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await resp.json();
                 if (resp.ok && data.status === 'success') {
