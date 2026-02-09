@@ -350,7 +350,7 @@
     ======================================== -->
     <div id="mainApp" class="screen hidden flex flex-col h-screen bg-gray-50">
         <!-- Content Area (swappable screens) -->
-        <div id="contentArea" class="flex-1 overflow-y-auto pb-20">
+        <div id="contentArea" class="flex-1 overflow-y-auto pb-20" style="scroll-padding-top: 120px">
 
             <!-- CONTACTS SCREEN -->
             <div id="contactsScreen" class="content-screen">
@@ -399,7 +399,7 @@
                 </div>
 
                 <!-- Contact List -->
-                <div id="contactsList" class="divide-y divide-gray-200 pt-2">
+                <div id="contactsList" class="divide-y divide-gray-200 pt-4">
                     <!-- Contacts will be rendered here -->
                 </div>
 
@@ -550,11 +550,13 @@
                 <!-- Input Area (fixed at bottom) -->
                 <div class="border-t border-gray-200 bg-white p-4 pb-safe-area fixed bottom-16 left-0 right-0">
                     <form onsubmit="sendChatMessage(event)" class="flex gap-2">
-                        <input type="text"
-                               id="chatInput"
+                        <textarea id="chatInput"
+                               rows="1"
                                placeholder="Ask about your contacts..."
-                               class="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 outline-none"
-                               required>
+                               class="flex-1 px-4 py-3 text-base border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none resize-none max-h-24 overflow-y-auto"
+                               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,96)+'px'"
+                               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.closest('form').dispatchEvent(new Event('submit',{cancelable:true}))}"
+                               required></textarea>
                         <button type="button" onclick="toggleChatVoice()" id="chatMicBtn"
                                 class="w-12 h-12 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center active:bg-purple-100 flex-shrink-0 transition">
                             <i class="fas fa-microphone"></i>
@@ -762,6 +764,10 @@
                                 <img id="cardQRImage" src="" alt="QR Code" class="mx-auto max-w-full" style="max-width: 250px;">
                                 <p class="text-xs text-gray-600 mt-2">Share this QR code with people you meet!</p>
                                 <p id="cardShareableURL" class="text-xs text-blue-600 mt-1 break-all"></p>
+                                <button onclick="saveMyCardToPhone()" class="mt-3 w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white rounded-lg font-semibold active:bg-blue-700 transition">
+                                    <i class="fas fa-address-book"></i>
+                                    <span>Save My Card to Phone</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -2261,8 +2267,9 @@
             chatHistory.push({ role: 'user', content: query });
             renderChatHistory();
 
-            // Clear input
+            // Clear input and reset height
             input.value = '';
+            input.style.height = 'auto';
 
             // Show typing indicator
             const messagesContainer = document.getElementById('chatMessages');
@@ -2388,7 +2395,7 @@
 
             detailContent.innerHTML = `
                 <!-- Header -->
-                <div class="bg-gradient-to-br from-gray-900 to-gray-700 text-white p-6 pt-12 safe-area-inset-top">
+                <div class="bg-gradient-to-br from-gray-900 to-gray-700 text-white p-6 pt-16 safe-area-inset-top">
                     <button onclick="closeContactDetail()" class="mb-4 flex items-center gap-2 text-white/80 active:text-white">
                         <i class="fas fa-arrow-left"></i>
                         <span class="text-sm">Back</span>
@@ -2792,6 +2799,44 @@
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
+        }
+
+        function saveMyCardToPhone() {
+            const name = document.getElementById('cardFullName')?.value || AppState.currentUser?.name || '';
+            const email = document.getElementById('cardEmail')?.value || '';
+            const phone = document.getElementById('cardPhone')?.value || '';
+            const company = document.getElementById('cardCompanyName')?.value || '';
+            const title = document.getElementById('cardJobTitle')?.value || '';
+            const linkedin = document.getElementById('cardLinkedIn')?.value || '';
+            const website = document.getElementById('cardWebsite')?.value || '';
+
+            if (!name) { showToast('Please fill in your card details first', 'warning'); return; }
+
+            const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
+            const nameParts = name.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            lines.push('N:' + lastName + ';' + firstName + ';;;');
+            lines.push('FN:' + name);
+            if (title) lines.push('TITLE:' + title);
+            if (company) lines.push('ORG:' + company);
+            if (email) lines.push('EMAIL;TYPE=INTERNET:' + email);
+            if (phone) lines.push('TEL;TYPE=CELL:' + phone);
+            if (linkedin) lines.push('URL:' + linkedin);
+            if (website) lines.push('URL:' + website);
+            lines.push('END:VCARD');
+
+            const vcard = lines.join('\r\n');
+            const blob = new Blob([vcard], { type: 'text/vcard' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name.replace(/\s+/g, '_') + '.vcf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Opening contact save dialog...', 'info');
         }
 
         async function triggerCardAcceptedWebhook(contactId, contactName) {
@@ -4382,9 +4427,77 @@
         function initSwipeHandlers() {
             const cl = document.getElementById('contactsList');
             let sx = 0, sy = 0, sc = null;
-            cl.addEventListener('touchstart', e => { const c = e.target.closest('.contact-card'); if (!c) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; sc = c; }, { passive: true });
-            cl.addEventListener('touchmove', e => { if (!sc) return; const dx = e.touches[0].clientX - sx, dy = Math.abs(e.touches[0].clientY - sy); if (dy > 30) { sc.style.transform = ''; sc.style.background = ''; sc = null; return; } if (dx > 20 && dx < 120) { sc.style.transform = 'translateX(' + Math.min(dx * 0.3, 30) + 'px)'; sc.style.background = 'linear-gradient(90deg, rgba(124,58,237,' + (dx/300) + ') 0%, transparent 40%)'; } }, { passive: true });
-            cl.addEventListener('touchend', e => { if (!sc) return; const dx = e.changedTouches[0].clientX - sx, dy = Math.abs(e.changedTouches[0].clientY - sy); sc.style.transform = ''; sc.style.background = ''; if (dx > 50 && dy < 40) { _swipeVoiceTriggered = Date.now(); const cid = sc.dataset.id; const ct = AppState.contacts.find(c => c.id === cid); if (ct) openVoiceRecordingOverlay(cid, ct.name); } sc = null; }, { passive: true });
+            cl.addEventListener('touchstart', e => {
+                const c = e.target.closest('.contact-card');
+                if (!c) return;
+                sx = e.touches[0].clientX; sy = e.touches[0].clientY; sc = c;
+                // Reset any previously revealed delete buttons
+                document.querySelectorAll('.swipe-delete-btn').forEach(b => b.remove());
+                document.querySelectorAll('.contact-card').forEach(card => { card.style.transform = ''; card.style.background = ''; });
+            }, { passive: true });
+            cl.addEventListener('touchmove', e => {
+                if (!sc) return;
+                const dx = e.touches[0].clientX - sx, dy = Math.abs(e.touches[0].clientY - sy);
+                if (dy > 30) { sc.style.transform = ''; sc.style.background = ''; sc = null; return; }
+                // Right swipe → voice recording indicator
+                if (dx > 20 && dx < 120) {
+                    sc.style.transform = 'translateX(' + Math.min(dx * 0.3, 30) + 'px)';
+                    sc.style.background = 'linear-gradient(90deg, rgba(124,58,237,' + (dx/300) + ') 0%, transparent 40%)';
+                }
+                // Left swipe → delete indicator (red from right)
+                if (dx < -20 && dx > -120) {
+                    sc.style.transform = 'translateX(' + Math.max(dx * 0.3, -30) + 'px)';
+                    sc.style.background = 'linear-gradient(270deg, rgba(239,68,68,' + (Math.abs(dx)/300) + ') 0%, transparent 40%)';
+                }
+            }, { passive: true });
+            cl.addEventListener('touchend', e => {
+                if (!sc) return;
+                const dx = e.changedTouches[0].clientX - sx, dy = Math.abs(e.changedTouches[0].clientY - sy);
+                sc.style.transform = ''; sc.style.background = '';
+                // Right swipe → voice recording
+                if (dx > 50 && dy < 40) {
+                    _swipeVoiceTriggered = Date.now();
+                    const cid = sc.dataset.id;
+                    const ct = AppState.contacts.find(c => c.id === cid);
+                    if (ct) openVoiceRecordingOverlay(cid, ct.name);
+                }
+                // Left swipe → reveal delete button
+                if (dx < -50 && dy < 40) {
+                    _swipeVoiceTriggered = Date.now();
+                    const cid = sc.dataset.id;
+                    const ct = AppState.contacts.find(c => c.id === cid);
+                    if (ct) showSwipeDeleteButton(sc, cid, ct.name);
+                }
+                sc = null;
+            }, { passive: true });
+        }
+
+        function showSwipeDeleteButton(cardEl, contactId, contactName) {
+            // Remove any existing delete buttons
+            document.querySelectorAll('.swipe-delete-btn').forEach(b => b.remove());
+            const btn = document.createElement('button');
+            btn.className = 'swipe-delete-btn absolute right-0 top-0 bottom-0 bg-red-500 text-white px-6 flex items-center justify-center font-semibold text-sm z-10';
+            btn.innerHTML = '<i class="fas fa-trash mr-2"></i>Delete';
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                if (!confirm('Delete ' + contactName + '? This cannot be undone.')) { btn.remove(); return; }
+                try {
+                    const resp = await fetch(
+                        CONFIG.API_BASE_URL + '/contact/' + contactId + '?user_id=' + AppState.currentUser.user_id,
+                        { method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    );
+                    if (resp.ok) {
+                        showToast(contactName + ' deleted', 'success');
+                        AppState.contacts = AppState.contacts.filter(c => c.id !== contactId);
+                        renderContacts(AppState.contacts);
+                    } else { showToast('Failed to delete contact', 'error'); }
+                } catch (err) { showToast('Delete failed: ' + err.message, 'error'); }
+            };
+            cardEl.style.position = 'relative';
+            cardEl.style.overflow = 'hidden';
+            cardEl.appendChild(btn);
+            // Auto-hide after 5 seconds
+            setTimeout(() => { if (btn.parentNode) btn.remove(); }, 5000);
         }
 
         const _origRender = renderContacts;

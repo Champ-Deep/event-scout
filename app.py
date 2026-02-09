@@ -3148,8 +3148,8 @@ async def update_user_card(
             raise HTTPException(status_code=400, detail="No fields provided for update")
 
         if card:
-            # Update existing card
-            existing = card.card_data or {}
+            # Update existing card — MUST copy dict to trigger SQLAlchemy change detection
+            existing = dict(card.card_data or {})
             for key, value in update_data.items():
                 # Only store non-None and non-empty strings
                 if value is not None and (not isinstance(value, str) or value.strip()):

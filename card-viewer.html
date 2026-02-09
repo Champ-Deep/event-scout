@@ -311,8 +311,8 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            // Show feedback
-            alert('Contact saved! Check your downloads folder.');
+            // Show toast feedback
+            showCardToast('Contact saved! Opening your contacts app...');
         }
 
         function generateVCard(card) {
@@ -335,6 +335,27 @@
 
             lines.push('END:VCARD');
             return lines.join('\r\n');
+        }
+
+        function showCardToast(message) {
+            let toast = document.getElementById('cardToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'cardToast';
+                toast.className = 'fixed top-4 left-4 right-4 bg-green-600 text-white px-4 py-3 rounded-xl shadow-lg text-center font-medium z-50 transition-all duration-300';
+                toast.style.transform = 'translateY(-100px)';
+                toast.style.opacity = '0';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            requestAnimationFrame(() => {
+                toast.style.transform = 'translateY(0)';
+                toast.style.opacity = '1';
+            });
+            setTimeout(() => {
+                toast.style.transform = 'translateY(-100px)';
+                toast.style.opacity = '0';
+            }, 3000);
         }
     </script>
 </body>
