@@ -20,14 +20,20 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 
 # --- Database URL ---
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+BACKUP_DATABASE_URL = os.environ.get("BACKUP_DATABASE_URL", "")
 
-# Convert postgres:// to postgresql+asyncpg:// for SQLAlchemy async
-if DATABASE_URL.startswith("postgres://"):
-    ASYNC_DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
-elif DATABASE_URL.startswith("postgresql://"):
-    ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
-else:
-    ASYNC_DATABASE_URL = DATABASE_URL
+
+def _to_async_url(url):
+    """Convert a postgres:// URL to postgresql+asyncpg:// for SQLAlchemy async."""
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
+ASYNC_DATABASE_URL = _to_async_url(DATABASE_URL)
+ASYNC_BACKUP_URL = _to_async_url(BACKUP_DATABASE_URL)
 
 # Sync URL for migrations
 if DATABASE_URL.startswith("postgres://"):
@@ -211,6 +217,76 @@ class EventFileDB(Base):
     )
 
 
+class ContactFileDB(Base):
+    """Documents attached to specific contacts by admins (research, pitch decks, briefs)."""
+    __tablename__ = "contact_files"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    contact_id = Column(UUID(as_uuid=True), ForeignKey("contacts.id"), nullable=False)
+    filename = Column(String(500), nullable=False)
+    original_filename = Column(String(500), nullable=False)
+    file_type = Column(String(50), nullable=False)
+    mime_type = Column(String(100), nullable=False)
+    file_size = Column(Integer, nullable=False)
+    file_data = Column(LargeBinary, nullable=False)
+    description = Column(Text, default="")
+    category = Column(String(100), default="research")  # 'research', 'pitch', 'brief', 'other'
+    uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False, server_default="true")
+    download_count = Column(Integer, default=0, nullable=False, server_default="0")
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_contact_files_contact_id", "contact_id"),
+        Index("idx_contact_files_active", "is_active"),
+    )
+
+
+class ContactPipelineDB(Base):
+    """Automated intelligence pipeline state per contact (research → pitch → deck)."""
+    __tablename__ = "contact_pipelines"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    contact_id = Column(UUID(as_uuid=True), ForeignKey("contacts.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+
+    # Pipeline state
+    status = Column(String(50), default="pending", nullable=False)
+    # pending → researching → scoring → pitching → generating_deck → attaching → complete | failed
+    current_step = Column(String(100), default="")
+    error_message = Column(Text, nullable=True)
+
+    # Step 1: Research output
+    research_summary = Column(Text, default="")
+    research_data = Column(JSON, default=dict)
+
+    # Step 2: Score (stored on ContactDB, just track completion)
+    score_completed = Column(Boolean, default=False, nullable=False)
+
+    # Step 3: Pitch output
+    pitch_angle = Column(Text, default="")
+    pitch_email_subject = Column(Text, default="")
+    pitch_email_body = Column(Text, default="")
+    pitch_slides_content = Column(JSON, default=list)
+
+    # Step 4: Deck output
+    deck_file_id = Column(UUID(as_uuid=True), nullable=True)
+    presenton_presentation_id = Column(String(255), nullable=True)
+
+    # Timestamps
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("idx_pipelines_contact_id", "contact_id"),
+        Index("idx_pipelines_user_id", "user_id"),
+        Index("idx_pipelines_status", "status"),
+    )
+
+
 class AdminBroadcastDB(Base):
     """Admin broadcast messages to sales team."""
     __tablename__ = "admin_broadcasts"
@@ -223,22 +299,40 @@ class AdminBroadcastDB(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
-# --- Engine & Session ---
+# --- Engine & Session (Primary) ---
 engine = None
 async_session_factory = None
+
+# --- Engine & Session (Backup) ---
+backup_engine = None
+backup_session_factory = None
+
+
+def _create_engine(url):
+    """Create an async engine with resilience settings."""
+    return create_async_engine(
+        url,
+        echo=False,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+        pool_recycle=1800,   # Recycle connections every 30 min
+        pool_timeout=30,     # Fail after 30s if no connection available
+    )
 
 
 def get_engine():
     global engine
     if engine is None and ASYNC_DATABASE_URL:
-        engine = create_async_engine(
-            ASYNC_DATABASE_URL,
-            echo=False,
-            pool_size=5,
-            max_overflow=10,
-            pool_pre_ping=True,
-        )
+        engine = _create_engine(ASYNC_DATABASE_URL)
     return engine
+
+
+def get_backup_engine():
+    global backup_engine
+    if backup_engine is None and ASYNC_BACKUP_URL:
+        backup_engine = _create_engine(ASYNC_BACKUP_URL)
+    return backup_engine
 
 
 def get_session_factory():
@@ -250,18 +344,21 @@ def get_session_factory():
     return async_session_factory
 
 
-async def init_db():
-    """Create all tables if they don't exist."""
-    eng = get_engine()
-    if eng is None:
-        print("[DB] No DATABASE_URL configured - skipping database init")
-        return False
+def get_backup_session_factory():
+    global backup_session_factory
+    if backup_session_factory is None:
+        eng = get_backup_engine()
+        if eng:
+            backup_session_factory = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
+    return backup_session_factory
 
+
+async def _init_schema(eng, label="Primary"):
+    """Create all tables and run migrations on the given engine."""
     try:
         async with eng.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-            # Migrations: add columns that may not exist on older databases
             migrations = [
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE NOT NULL",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS audio_notes JSONB DEFAULT '[]'::jsonb",
@@ -272,13 +369,48 @@ async def init_db():
                 try:
                     await conn.execute(text(sql))
                 except Exception as mig_err:
-                    print(f"[DB] Migration note: {mig_err}")
+                    print(f"[DB-{label}] Migration note: {mig_err}")
 
-        print("[DB] Database tables created/verified successfully")
+        print(f"[DB-{label}] Tables created/verified successfully")
         return True
     except Exception as e:
-        print(f"[DB] Error initializing database: {e}")
+        print(f"[DB-{label}] Error initializing: {e}")
         return False
+
+
+async def init_db():
+    """Create all tables on primary (and backup if configured)."""
+    eng = get_engine()
+    if eng is None:
+        print("[DB] No DATABASE_URL configured - skipping database init")
+        return False
+
+    result = await _init_schema(eng, "Primary")
+
+    # Initialize backup DB schema if configured
+    beng = get_backup_engine()
+    if beng:
+        await _init_schema(beng, "Backup")
+        print("[DB] Backup database configured and ready")
+    else:
+        print("[DB] No BACKUP_DATABASE_URL configured - backup disabled")
+
+    return result
+
+
+async def dispose_engines():
+    """Gracefully dispose of all database engines."""
+    global engine, backup_engine, async_session_factory, backup_session_factory
+    if engine:
+        await engine.dispose()
+        engine = None
+        async_session_factory = None
+        print("[DB] Primary engine disposed")
+    if backup_engine:
+        await backup_engine.dispose()
+        backup_engine = None
+        backup_session_factory = None
+        print("[DB] Backup engine disposed")
 
 
 async def get_db() -> AsyncSession:

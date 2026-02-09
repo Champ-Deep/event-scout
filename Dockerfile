@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies including Tesseract OCR and zbar for QR scanning
+# Install system dependencies including Tesseract OCR, zbar for QR scanning, and pg tools for backup
 RUN apt-get update && apt-get install -y \
     build-essential \
     libgl1 \
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-eng \
     libzbar0 \
     libpq-dev \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -23,7 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Pre-download the SentenceTransformer model during build
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
-# Copy application code
+# Copy application code (cache bust: 2026-02-10-v2.3.0)
 COPY VERSION .
 COPY database.py .
 COPY app.py .
