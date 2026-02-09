@@ -2262,7 +2262,18 @@
                 console.error('[SCAN] Blob too small:', blob.size);
                 return false;
             }
+
+            // Null guard — if session was cleared mid-scan, fail gracefully
+            if (!AppState.currentUser?.user_id) {
+                showToast('Not logged in. Please log in and try again.', 'error');
+                return false;
+            }
+
             const scanId = addToScanQueue();
+
+            // Scan-specific timeout: 90s (OCR is slow), NO retry (backend may still be processing)
+            const controller = new AbortController();
+            const scanTimeout = setTimeout(() => controller.abort(), 90000);
 
             try {
                 const formData = new FormData();
@@ -2270,11 +2281,13 @@
 
                 const url = `${CONFIG.API_BASE_URL}/add_contact_from_image/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`;
 
-                const response = await resilientFetch(url, {
+                const response = await _nativeFetch(url, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY },
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 });
+                clearTimeout(scanTimeout);
 
                 let data;
                 try {
@@ -2307,14 +2320,14 @@
                 } else {
                     let errMsg = 'Failed to process card';
                     if (response.status === 401) {
-                        errMsg = 'Session expired. Please log in again.';
-                        setTimeout(() => handleLogout(), 2000);
+                        errMsg = 'Auth error. Finish scanning, then re-login.';
+                        // No auto-logout — don't interrupt scanning with confirm() dialog
                     } else if (response.status === 404) {
-                        errMsg = 'User not found. Please log in again.';
+                        errMsg = 'User not found. Finish scanning, then re-login.';
                     } else if (response.status === 500) {
                         errMsg = data.detail || 'Server error. Please try again.';
                     } else if (response.status === 504) {
-                        errMsg = 'AI processing timed out. Please try again.';
+                        errMsg = 'AI processing timed out. Try again.';
                     } else if (data.detail) {
                         errMsg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
                     } else if (data.message) {
@@ -2326,8 +2339,11 @@
                     return false;
                 }
             } catch (error) {
+                clearTimeout(scanTimeout);
                 let errorMessage = 'Network error';
-                if (error.message && error.message.includes('Failed to fetch')) {
+                if (error.name === 'AbortError') {
+                    errorMessage = 'OCR timed out (90s). Card may still process — check contacts later.';
+                } else if (error.message && error.message.includes('Failed to fetch')) {
                     errorMessage = 'Cannot connect to server. Check your internet connection.';
                 } else if (error.message) {
                     errorMessage = error.message;

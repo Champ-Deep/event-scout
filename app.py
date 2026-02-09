@@ -875,9 +875,9 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
             print(f"[GEMINI] Trying model: {model_name}")
             model = genai.GenerativeModel(model_name)
 
-            # CRITICAL FIX: Add 45-second timeout to prevent hanging
+            # 25s timeout — card OCR is simple, if >25s the model is stuck/rate-limited
             import google.generativeai.types as genai_types
-            request_options = genai_types.RequestOptions(timeout=45)
+            request_options = genai_types.RequestOptions(timeout=25)
             response = model.generate_content([prompt, img], request_options=request_options)
             if not response or not response.text:
                 err_msg = f"{model_name}: empty response"
@@ -922,9 +922,14 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
         except Exception as e:
             err_msg = f"{model_name}: {str(e)[:100]}"
             print(f"[GEMINI] {err_msg}")
-            traceback.print_exc()
             model_errors.append(err_msg)
             last_error = e
+            # Fast-fail on rate limit — skip remaining Gemini models, go to OpenRouter
+            err_str = str(e).lower()
+            if "429" in str(e) or "ResourceExhausted" in type(e).__name__ or "quota" in err_str or "rate" in err_str:
+                print(f"[GEMINI] Rate limited — skipping remaining models")
+                break
+            traceback.print_exc()
             continue
 
     print(f"[GEMINI] All models failed. Errors: {model_errors}")
@@ -960,7 +965,7 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
     for or_model in or_models:
         try:
             print(f"[OPENROUTER-OCR] Trying model: {or_model}")
-            async with httpx.AsyncClient(timeout=45.0) as client:
+            async with httpx.AsyncClient(timeout=25.0) as client:
                 resp = await client.post(
                     "https://openrouter.ai/api/v1/chat/completions",
                     headers={
@@ -1263,8 +1268,9 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         print(f"[SCAN] Photo thumbnail creation failed (non-fatal): {photo_err}")
 
     try:
-        # Direct synchronous call — blocking but proven reliable
-        fields = extract_contact_from_image_with_gemini(temp_filename)
+        # Run synchronous Gemini OCR in thread pool to avoid blocking the event loop
+        # (allows multiple cards to be processed concurrently)
+        fields = await asyncio.to_thread(extract_contact_from_image_with_gemini, temp_filename)
         has_info = any(v != "N/A" for k, v in fields.items() if k not in ("linkedin", "_errors", "_source"))
         gemini_errors = fields.pop("_errors", [])
         gemini_source = fields.pop("_source", None)
