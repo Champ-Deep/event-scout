@@ -78,6 +78,7 @@ class ContactDB(Base):
     lead_recommended_actions = Column(JSON, default=list)
     audio_notes = Column(JSON, default=list)  # [{audio_base64, transcript, timestamp}]
     admin_notes = Column(Text, default="")  # Admin-only annotations/intel
+    photo_base64 = Column(Text, nullable=True)  # Compressed JPEG thumbnail from scanned card
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -265,6 +266,7 @@ async def init_db():
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE NOT NULL",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS audio_notes JSONB DEFAULT '[]'::jsonb",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS admin_notes TEXT DEFAULT ''",
+                "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS photo_base64 TEXT",
             ]
             for sql in migrations:
                 try:

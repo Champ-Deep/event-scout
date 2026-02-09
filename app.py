@@ -14,7 +14,7 @@ from io import BytesIO
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 
@@ -960,7 +960,7 @@ async def fire_webhook(contact_data: dict, user_data: dict, contact_id: str):
 
 
 # --- CONTACT LOGIC (now using Postgres) ---
-async def add_contact_logic(contact: Contact, user_id: str, source: str = "manual") -> dict:
+async def add_contact_logic(contact: Contact, user_id: str, source: str = "manual", photo_base64: str = None) -> dict:
     """Add contact to PostgreSQL and FAISS index."""
     session = await get_db_session()
     try:
@@ -978,6 +978,7 @@ async def add_contact_logic(contact: Contact, user_id: str, source: str = "manua
             notes=contact.notes,
             links=contact.links or [],
             source=source,
+            photo_base64=photo_base64,
         )
         session.add(db_contact)
 
@@ -1066,6 +1067,25 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         raise HTTPException(status_code=400, detail="Image file is empty or corrupted. Please try again.")
     with open(temp_filename, "wb") as f:
         f.write(content)
+
+    # Create compressed thumbnail from scanned card for contact photo
+    photo_base64 = None
+    try:
+        thumb_img = Image.open(BytesIO(content))
+        if thumb_img.mode == 'RGBA':
+            bg = Image.new('RGB', thumb_img.size, (255, 255, 255))
+            bg.paste(thumb_img, mask=thumb_img.split()[3])
+            thumb_img = bg
+        elif thumb_img.mode != 'RGB':
+            thumb_img = thumb_img.convert('RGB')
+        thumb_img.thumbnail((200, 200), Image.LANCZOS)
+        thumb_buffer = BytesIO()
+        thumb_img.save(thumb_buffer, format='JPEG', quality=60)
+        photo_base64 = base64.b64encode(thumb_buffer.getvalue()).decode('utf-8')
+        print(f"[SCAN] Photo thumbnail created: {len(photo_base64)} chars")
+    except Exception as photo_err:
+        print(f"[SCAN] Photo thumbnail creation failed (non-fatal): {photo_err}")
+
     try:
         # Direct synchronous call — blocking but proven reliable
         fields = extract_contact_from_image_with_gemini(temp_filename)
@@ -1099,7 +1119,7 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         #         print(f"[LINKEDIN] Auto-detected: {linkedin_url}")
 
         contact_obj = Contact(**{k: v for k, v in fields.items() if k in Contact.model_fields})
-        result = await add_contact_logic(contact_obj, user_id, source="scan")
+        result = await add_contact_logic(contact_obj, user_id, source="scan", photo_base64=photo_base64)
 
         # If LinkedIn was AI-detected, update the source in DB
         if fields.get("linkedin_source") == "ai_detected":
@@ -1120,7 +1140,8 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
             "message": "Contact added from image",
             "extracted_fields": fields,
             "contact_id": result["contact_id"],
-            "qr_base64": result["qr_base64"]
+            "qr_base64": result["qr_base64"],
+            "photo_base64": photo_base64,
         }
     finally:
         if os.path.exists(temp_filename):
@@ -1521,6 +1542,7 @@ async def list_contacts_route(
                 "lead_temperature": c.lead_temperature,
                 "lead_score_reasoning": c.lead_score_reasoning or "",
                 "admin_notes": getattr(c, 'admin_notes', '') or "",
+                "photo_base64": getattr(c, 'photo_base64', None),
                 "qr_base64": get_qr_base64(str(c.id)),
             }
             contact_list.append(contact_data)
@@ -1569,6 +1591,7 @@ async def get_contact_route(
             "lead_score_breakdown": c.lead_score_breakdown or {},
             "lead_recommended_actions": c.lead_recommended_actions or [],
             "admin_notes": getattr(c, 'admin_notes', '') or "",
+            "photo_base64": getattr(c, 'photo_base64', None),
             "qr_base64": get_qr_base64(contact_id),
         }
         return {"status": "success", "contact": contact_data}
@@ -2571,45 +2594,60 @@ async def admin_delete_contact(
 
 @app.post("/admin/webhook/test")
 async def test_webhook_connection(
+    request: Request,
     admin_id: str = Depends(verify_admin),
+    webhook_url: Optional[str] = Query(None, description="Override webhook URL for testing"),
+    save: bool = Query(False, description="Save as new default webhook URL"),
 ):
-    """Test n8n webhook connectivity from admin dashboard."""
-    if not WEBHOOK_URL:
+    """Test n8n webhook connectivity from admin dashboard. Optionally override/save URL."""
+    global WEBHOOK_URL
+
+    target_url = webhook_url or WEBHOOK_URL
+
+    if save and webhook_url:
+        WEBHOOK_URL = webhook_url  # Update in-memory for this instance
+
+    if not target_url:
         return {
             "status": "error",
-            "message": "WEBHOOK_URL not configured. Set the WEBHOOK_URL environment variable."
+            "message": "No webhook URL configured. Enter a URL above and test."
         }
+
+    # Use custom payload if provided in request body, otherwise default test payload
+    try:
+        body = await request.json()
+    except Exception:
+        body = None
+
+    payload = body or {
+        "test": True,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "message": "Test webhook from Event Scout admin dashboard",
+        "source": "admin_test"
+    }
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(
-                WEBHOOK_URL,
-                json={
-                    "test": True,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "message": "Test webhook from Event Scout admin dashboard",
-                    "source": "admin_test"
-                }
-            )
+            response = await client.post(target_url, json=payload)
 
             success = response.status_code == 200
             return {
                 "status": "success" if success else "error",
                 "status_code": response.status_code,
                 "message": "Webhook reachable" if success else f"Webhook returned HTTP {response.status_code}",
-                "webhook_url": WEBHOOK_URL
+                "webhook_url": target_url
             }
     except httpx.TimeoutException:
         return {
             "status": "error",
             "message": "Webhook timeout after 10 seconds",
-            "webhook_url": WEBHOOK_URL
+            "webhook_url": target_url
         }
     except Exception as e:
         return {
             "status": "error",
             "message": f"Webhook error: {str(e)}",
-            "webhook_url": WEBHOOK_URL
+            "webhook_url": target_url
         }
 
 

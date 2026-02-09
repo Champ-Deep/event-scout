@@ -399,7 +399,7 @@
                 </div>
 
                 <!-- Contact List -->
-                <div id="contactsList" class="divide-y divide-gray-200 pt-1">
+                <div id="contactsList" class="divide-y divide-gray-200 pt-2">
                     <!-- Contacts will be rendered here -->
                 </div>
 
@@ -881,20 +881,30 @@
                                 <div id="webhookIndicator" class="w-3 h-3 rounded-full bg-gray-300"></div>
                             </div>
 
-                            <button onclick="testWebhook()"
-                                    class="w-full px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
-                                <i class="fas fa-paper-plane"></i>
-                                Test Webhook (Send Greeting)
-                            </button>
+                            <div>
+                                <label class="text-xs font-medium text-gray-600 mb-1 block">Webhook URL (n8n endpoint)</label>
+                                <input type="url" id="webhookUrlInput"
+                                       placeholder="https://your-n8n.app/webhook/..."
+                                       class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button onclick="testWebhook()"
+                                        class="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
+                                    <i class="fas fa-paper-plane"></i>
+                                    Test
+                                </button>
+                                <button onclick="saveAndTestWebhook()"
+                                        class="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium active:bg-green-700 flex items-center justify-center gap-2">
+                                    <i class="fas fa-save"></i>
+                                    Save & Test
+                                </button>
+                            </div>
 
                             <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <p class="text-xs text-blue-800 mb-1">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    <strong>Configuration:</strong>
-                                </p>
                                 <p class="text-xs text-blue-700">
-                                    Set <code class="bg-blue-100 px-1 rounded">WEBHOOK_URL</code> environment variable in Railway to your n8n webhook endpoint.
-                                    Cards scanned will automatically trigger the webhook for automated greeting emails.
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Enter your n8n webhook URL. Scanned cards will automatically trigger this webhook for greeting emails.
                                 </p>
                             </div>
                         </div>
@@ -992,7 +1002,7 @@
                     <i class="fas fa-address-book text-2xl mb-1"></i>
                     <span class="text-xs">Contacts</span>
                 </button>
-                <button onclick="switchScreen('scan')" class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                <button id="scanNavBtn" onclick="switchScreen('scan')" class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-camera text-2xl mb-1"></i>
                     <span class="text-xs">Scan</span>
                 </button>
@@ -1379,12 +1389,15 @@
             document.getElementById('profileEmail').textContent = AppState.currentUser.email;
             document.getElementById('profileInitial').textContent = AppState.currentUser.name.charAt(0).toUpperCase();
 
-            // Show admin nav button if user is admin
+            // Show/hide nav buttons based on admin status
             const adminBtn = document.getElementById('adminNavBtn');
+            const scanBtn = document.getElementById('scanNavBtn');
             if (AppState.currentUser.is_admin) {
                 adminBtn.classList.remove('hidden');
+                scanBtn.classList.add('hidden');  // Admin at desktop doesn't need scan
             } else {
                 adminBtn.classList.add('hidden');
+                scanBtn.classList.remove('hidden');
             }
 
             loadContacts();
@@ -1393,9 +1406,14 @@
             checkBroadcasts();  // Show any admin broadcasts
             // Poll for broadcasts every 30 seconds
             setInterval(() => { if (AppState.currentUser) checkBroadcasts(); }, 30000);
+
+            // Admin defaults to admin dashboard as home screen
+            if (AppState.currentUser.is_admin) {
+                switchScreen('admin');
+            }
         }
 
-        function switchScreen(screenName) {
+        async function switchScreen(screenName) {
             // Close any open contact detail overlay
             closeContactDetail();
 
@@ -1452,11 +1470,17 @@
                 // Load chat history when entering chat screen
                 loadChatHistory();
             } else if (screenName === 'expo') {
-                // Load exhibitors even if no event set (uses default "WHX Dubai 2026")
-                // If profile is loaded and has event, it will use that; otherwise defaults
+                // Ensure profile is loaded before reading event name (fixes timing issue for regular users)
+                try {
+                    if (!AppState.userProfile || Object.keys(AppState.userProfile).length === 0) {
+                        await loadUserProfile();
+                    }
+                } catch (e) { console.warn('[EXPO] Profile load failed, using defaults:', e); }
                 if (AppState.userProfile && !AppState.userProfile.current_event_name) {
                     showToast('Tip: Set your event in Profile for best results', 'info');
                 }
+                // Always load exhibitors regardless of profile state
+                console.log('[EXPO] Loading exhibitors for user:', AppState.currentUser?.user_id, 'event:', AppState.userProfile?.current_event_name || 'WHX Dubai 2026 (default)');
                 loadExhibitors();
                 refreshEventFiles();
             } else if (screenName === 'admin') {
@@ -1473,12 +1497,14 @@
             contactsList.innerHTML = '<div class="p-12 text-center text-gray-400"><i class="fas fa-spinner fa-spin text-4xl mb-3"></i><p>Loading contacts...</p></div>';
 
             try {
-                const response = await fetch(
-                    `${CONFIG.API_BASE_URL}/list_contacts/?user_id=${AppState.currentUser.user_id}`,
-                    {
-                        headers: { 'X-API-Key': CONFIG.API_KEY }
-                    }
-                );
+                // Admin sees ALL contacts from all team members; regular users see only their own
+                const url = AppState.currentUser.is_admin
+                    ? `${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&limit=500`
+                    : `${CONFIG.API_BASE_URL}/list_contacts/?user_id=${AppState.currentUser.user_id}`;
+
+                const response = await fetch(url, {
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
 
                 const data = await response.json();
 
@@ -1529,18 +1555,21 @@
                     <div class="flex items-start p-4 gap-3">
                         <!-- Avatar with score badge -->
                         <div class="relative flex-shrink-0 mt-0.5">
-                            <div class="w-12 h-12 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white font-bold text-lg">
-                                ${contact.name.charAt(0).toUpperCase()}
-                            </div>
+                            ${contact.photo_base64
+                                ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-12 h-12 rounded-full object-cover" alt="${contact.name}">`
+                                : `<div class="w-12 h-12 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white font-bold text-lg">
+                                    ${contact.name.charAt(0).toUpperCase()}
+                                </div>`}
                             ${score != null ? `<div class="absolute -top-1 -right-1 w-6 h-6 rounded-full ${scoreColor} text-white text-[10px] flex items-center justify-center font-bold shadow-sm">${score}</div>` : ''}
                         </div>
 
                         <!-- Info -->
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <h3 class="font-semibold text-gray-900 truncate">${contact.name}</h3>
                                 ${contact.source === 'scan' ? '<span class="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">scanned</span>' : ''}
                                 ${temp === 'hot' ? '<span class="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">hot</span>' : ''}
+                                ${AppState.currentUser.is_admin && contact.user_name ? `<span class="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">${escapeHtml(contact.user_name)}</span>` : ''}
                             </div>
                             ${company ? `<p class="text-sm font-medium text-gray-600 truncate">${company}</p>` : ''}
                             <div class="flex items-center gap-3 mt-1">
@@ -1583,15 +1612,64 @@
                 <div onclick="openContactDetail('${c.id}')"
                      class="flex-shrink-0 bg-white/20 backdrop-blur-sm rounded-lg p-3 min-w-[140px] cursor-pointer active:bg-white/30">
                     <div class="flex items-center gap-2 mb-1">
-                        <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white text-sm font-bold">
-                            ${c.name.charAt(0)}
-                        </div>
+                        ${c.photo_base64
+                            ? `<img src="data:image/jpeg;base64,${c.photo_base64}" class="w-8 h-8 rounded-full object-cover">`
+                            : `<div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white text-sm font-bold">
+                                ${c.name.charAt(0)}
+                            </div>`}
                         <span class="text-white font-bold text-lg">${c.lead_score || '?'}</span>
                     </div>
                     <p class="text-white text-sm font-medium truncate">${c.name}</p>
                     <p class="text-white/70 text-xs truncate">${c.company_name || 'N/A'}</p>
                 </div>
             `).join('');
+        }
+
+        function findLinkedIn(name, company) {
+            let keywords = name || '';
+            if (company && company !== 'N/A') keywords += ' ' + company;
+            const searchUrl = 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent(keywords);
+            window.open(searchUrl, '_blank');
+            showToast('Opening LinkedIn search...', 'info');
+        }
+
+        function generateContactVCard(contact) {
+            const lines = ['BEGIN:VCARD', 'VERSION:3.0'];
+            if (contact.name && contact.name !== 'N/A') {
+                const parts = contact.name.split(' ');
+                const first = parts[0] || '';
+                const last = parts.slice(1).join(' ') || '';
+                lines.push('N:' + last + ';' + first + ';;;');
+                lines.push('FN:' + contact.name);
+            }
+            if (contact.company_name && contact.company_name !== 'N/A') lines.push('ORG:' + contact.company_name);
+            if (contact.email && contact.email !== 'N/A') lines.push('EMAIL;TYPE=INTERNET:' + contact.email);
+            if (contact.phone && contact.phone !== 'N/A') lines.push('TEL;TYPE=CELL:' + contact.phone);
+            if (contact.linkedin && contact.linkedin !== 'N/A') {
+                const url = contact.linkedin.startsWith('http') ? contact.linkedin : 'https://' + contact.linkedin;
+                lines.push('URL:' + url);
+            }
+            if (contact.photo_base64) {
+                lines.push('PHOTO;ENCODING=b;TYPE=JPEG:' + contact.photo_base64);
+            }
+            lines.push('END:VCARD');
+            return lines.join('\r\n');
+        }
+
+        function saveContactToPhone(contactId) {
+            const contact = AppState.contacts.find(c => c.id === contactId);
+            if (!contact) { showToast('Contact not found', 'error'); return; }
+            const vcard = generateContactVCard(contact);
+            const blob = new Blob([vcard], { type: 'text/vcard' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (contact.name || 'contact').replace(/\s+/g, '_') + '.vcf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Opening contact save dialog...', 'info');
         }
 
         function viewContactQR(contactId) {
@@ -1617,6 +1695,10 @@
                              class="w-full rounded-lg border-2 border-gray-200 mb-4">
                         <p class="text-xs text-gray-500 text-center mb-4">Scan to save contact</p>
                     ` : '<p class="text-center text-gray-500 py-8">QR code not available</p>'}
+                    <button onclick="saveContactToPhone('${contact.id}')"
+                            class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold active:bg-blue-700 mb-2">
+                        <i class="fas fa-address-book mr-2"></i>Save to Phone
+                    </button>
                     <button onclick="this.closest('.fixed').remove()"
                             class="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold active:bg-gray-300">
                         Close
@@ -2290,6 +2372,12 @@
             const contact = AppState.contacts.find(c => c.id === contactId);
             if (!contact) return;
 
+            // Admin viewing another user's contact -> use admin detail overlay with richer features
+            if (AppState.currentUser.is_admin && contact.user_id && contact.user_id !== AppState.currentUser.user_id) {
+                openAdminContactDetail(contactId, contact.user_id);
+                return;
+            }
+
             const detailView = document.getElementById('contactDetailView');
             const detailContent = document.getElementById('contactDetailContent');
             const company = contact.company_name && contact.company_name !== 'N/A' ? contact.company_name : '';
@@ -2306,9 +2394,11 @@
                         <span class="text-sm">Back</span>
                     </button>
                     <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
-                            ${contact.name.charAt(0).toUpperCase()}
-                        </div>
+                        ${contact.photo_base64
+                            ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-white/30" alt="${contact.name}">`
+                            : `<div class="w-16 h-16 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                                ${contact.name.charAt(0).toUpperCase()}
+                            </div>`}
                         <div>
                             <h1 class="text-xl font-bold">${contact.name}</h1>
                             ${company ? `<p class="text-white/70 text-sm">${company}</p>` : ''}
@@ -2333,10 +2423,18 @@
                         <a href="${linkedin.startsWith('http') ? linkedin : 'https://' + linkedin}" target="_blank" class="flex flex-col items-center gap-1 text-blue-700">
                             <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center"><i class="fab fa-linkedin text-sm"></i></div>
                             <span class="text-xs">LinkedIn</span>
-                        </a>` : ''}
+                        </a>` : `
+                        <button onclick="findLinkedIn('${escapedName}', '${(company || '').replace(/'/g, "\\'")}')" class="flex flex-col items-center gap-1 text-blue-700">
+                            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center"><i class="fab fa-linkedin text-sm"></i></div>
+                            <span class="text-xs">Find</span>
+                        </button>`}
                     <button onclick="viewContactQR('${contact.id}')" class="flex flex-col items-center gap-1 text-purple-600">
                         <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center"><i class="fas fa-qrcode text-sm"></i></div>
                         <span class="text-xs">QR Code</span>
+                    </button>
+                    <button onclick="saveContactToPhone('${contact.id}')" class="flex flex-col items-center gap-1 text-emerald-600">
+                        <div class="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center"><i class="fas fa-address-book text-sm"></i></div>
+                        <span class="text-xs">Save</span>
                     </button>
                 </div>
 
@@ -2367,7 +2465,16 @@
                                 <p class="text-sm text-blue-600 truncate">${linkedin}</p>
                                 <p class="text-xs text-gray-400">LinkedIn ${contact.linkedin_source === 'ai_detected' ? '<span class="bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded text-[10px] ml-1">AI found</span>' : ''}</p>
                             </div>
-                        </div>` : ''}
+                        </div>` : `
+                        <div class="flex items-center gap-3">
+                            <i class="fab fa-linkedin text-gray-400 w-5 text-center"></i>
+                            <div class="flex-1">
+                                <button onclick="findLinkedIn('${escapedName}', '${(company || '').replace(/'/g, "\\'")}')" class="text-sm text-blue-600">
+                                    <i class="fas fa-search text-xs mr-1"></i>Find on LinkedIn
+                                </button>
+                                <p class="text-xs text-gray-400">Opens LinkedIn search</p>
+                            </div>
+                        </div>`}
                         ${company ? `
                         <div class="flex items-center gap-3">
                             <i class="fas fa-building text-gray-400 w-5 text-center"></i>
@@ -3209,9 +3316,17 @@
         let exhibitorCategories = [];
 
         async function loadExhibitors() {
-            // Use user's event or default to WHX Dubai 2026
-            const eventName = (AppState.userProfile && AppState.userProfile.current_event_name) || 'WHX Dubai 2026';
-            const eventDesc = (AppState.userProfile && AppState.userProfile.current_event_description) || 'World Health Expo - Dubai 2026';
+            // Use user's event or ALWAYS default to WHX Dubai 2026 (works for all users, not just admin)
+            let eventName = 'WHX Dubai 2026';
+            let eventDesc = 'World Health Expo - Dubai 2026';
+            try {
+                if (AppState.userProfile && AppState.userProfile.current_event_name) {
+                    eventName = AppState.userProfile.current_event_name;
+                }
+                if (AppState.userProfile && AppState.userProfile.current_event_description) {
+                    eventDesc = AppState.userProfile.current_event_description;
+                }
+            } catch (e) { console.warn('[EXPO] Error reading profile event:', e); }
 
             // Update header with event name and description
             document.getElementById('expoEventName').textContent = eventName;
@@ -3236,7 +3351,7 @@
                     document.getElementById('exhibitorList').innerHTML = `<p class="text-center text-gray-500 py-8">${data.detail || 'Failed to load exhibitors'}</p>`;
                 }
             } catch (error) {
-                console.error('Failed to load exhibitors:', error);
+                console.error('Failed to load exhibitors:', error, 'Event:', eventName, 'Profile:', JSON.stringify(AppState.userProfile));
                 document.getElementById('exhibitorList').innerHTML = '<p class="text-center text-gray-500 py-8">No exhibitor data available for this event.</p>';
             }
         }
@@ -3544,18 +3659,25 @@
                     webhookStatus.textContent = 'Configured and active' + (data.webhook_url_preview ? ' (' + data.webhook_url_preview + ')' : '');
                     webhookIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
                 } else {
-                    webhookStatus.textContent = 'Not configured - set WEBHOOK_URL in Railway';
+                    webhookStatus.textContent = 'Not configured';
                     webhookIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
                 }
+
+                // Load saved webhook URL into input
+                const savedUrl = localStorage.getItem('event_scout_webhook_url');
+                const webhookInput = document.getElementById('webhookUrlInput');
+                if (webhookInput && savedUrl) webhookInput.value = savedUrl;
+                else if (webhookInput && data.webhook_url_preview) webhookInput.placeholder = data.webhook_url_preview + '...';
 
                 // Load activity feed
                 loadAdminActivity();
             } catch (err) { console.error('Admin dashboard error:', err); showToast('Failed to load admin data', 'error'); }
         }
 
-        async function testWebhook() {
-            const btn = event?.target || document.querySelector('[onclick="testWebhook()"]');
+        async function testWebhook(customPayload) {
+            const btn = event?.target?.closest('button') || document.querySelector('[onclick="testWebhook()"]');
             const originalHTML = btn?.innerHTML || '';
+            const customUrl = document.getElementById('webhookUrlInput')?.value?.trim();
 
             try {
                 if (btn) {
@@ -3565,35 +3687,74 @@
 
                 showToast('Testing webhook connection...', 'info');
 
-                const response = await fetch(
-                    `${CONFIG.API_BASE_URL}/admin/webhook/test?user_id=${AppState.currentUser.user_id}`,
-                    {
-                        method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY }
-                    }
-                );
+                let url = `${CONFIG.API_BASE_URL}/admin/webhook/test?user_id=${AppState.currentUser.user_id}`;
+                if (customUrl) url += `&webhook_url=${encodeURIComponent(customUrl)}`;
+
+                const fetchOpts = {
+                    method: 'POST',
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                };
+                if (customPayload) {
+                    fetchOpts.headers['Content-Type'] = 'application/json';
+                    fetchOpts.body = JSON.stringify(customPayload);
+                }
+
+                const response = await fetch(url, fetchOpts);
                 const data = await response.json();
 
                 const webhookStatus = document.getElementById('webhookStatus');
                 const webhookIndicator = document.getElementById('webhookIndicator');
 
                 if (data.status === 'success') {
-                    webhookStatus.textContent = '✓ Connected - ' + data.message;
+                    webhookStatus.textContent = 'Connected - ' + data.message;
                     webhookIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
                     showToast(data.message, 'success');
+                    return true;
                 } else {
-                    webhookStatus.textContent = '✗ Error - ' + data.message;
+                    webhookStatus.textContent = 'Error - ' + data.message;
                     webhookIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
                     showToast(data.message, 'error');
+                    return false;
                 }
             } catch (error) {
                 console.error('Test webhook error:', error);
                 showToast('Failed to test webhook - check network connection', 'error');
+                return false;
             } finally {
                 if (btn) {
                     btn.disabled = false;
-                    btn.innerHTML = originalHTML || '<i class="fas fa-paper-plane mr-2"></i>Test Webhook';
+                    btn.innerHTML = originalHTML || '<i class="fas fa-paper-plane"></i> Test';
                 }
+            }
+        }
+
+        async function saveAndTestWebhook() {
+            const customUrl = document.getElementById('webhookUrlInput')?.value?.trim();
+            if (!customUrl) { showToast('Enter a webhook URL first', 'error'); return; }
+            localStorage.setItem('event_scout_webhook_url', customUrl);
+
+            const btn = event?.target?.closest('button');
+            const originalHTML = btn?.innerHTML || '';
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...'; }
+
+            try {
+                let url = `${CONFIG.API_BASE_URL}/admin/webhook/test?user_id=${AppState.currentUser.user_id}&webhook_url=${encodeURIComponent(customUrl)}&save=true`;
+                const response = await fetch(url, { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    showToast('Webhook URL saved and tested!', 'success');
+                    document.getElementById('webhookStatus').textContent = 'Connected - Saved';
+                    document.getElementById('webhookIndicator').className = 'w-3 h-3 rounded-full bg-green-500';
+                } else {
+                    showToast('Saved locally, but test failed: ' + data.message, 'warning');
+                    document.getElementById('webhookStatus').textContent = 'Saved - Test failed';
+                    document.getElementById('webhookIndicator').className = 'w-3 h-3 rounded-full bg-yellow-500';
+                }
+            } catch (err) {
+                localStorage.setItem('event_scout_webhook_url', customUrl);
+                showToast('Saved locally (backend unreachable)', 'warning');
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHTML || '<i class="fas fa-save"></i> Save & Test'; }
             }
         }
 
@@ -3623,7 +3784,7 @@
                     const timeAgo = formatTimestamp(act.timestamp);
 
                     return `
-                        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition">
+                        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 transition cursor-pointer" onclick="openAdminContactDetail('${act.contact_id}', '${act.user_id}')">
                             <div class="w-10 h-10 rounded-full ${tempClass} flex items-center justify-center flex-shrink-0">
                                 <i class="fas fa-user text-sm ${tempIcon}"></i>
                             </div>
@@ -3636,7 +3797,7 @@
                                 ${sourceIcon}
                                 ${act.lead_score != null ? `<span class="text-xs font-bold ${tempIcon}">${act.lead_score}</span>` : '<span class="text-xs text-gray-300">--</span>'}
                             </div>
-                            <button onclick="adminDeleteContact('${act.contact_id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition flex-shrink-0" title="Delete contact">
+                            <button onclick="event.stopPropagation(); adminDeleteContact('${act.contact_id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition flex-shrink-0" title="Delete contact">
                                 <i class="fas fa-trash text-sm"></i>
                             </button>
                         </div>
@@ -3947,9 +4108,17 @@
                     </div>` : ''}
 
                     <!-- Actions -->
-                    <div class="flex gap-2">
-                        <button onclick="adminDeleteContact('${contact.id}'); closeAdminContactDetail();" class="flex-1 px-4 py-2.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
-                            <i class="fas fa-trash"></i> Delete
+                    <div class="space-y-2">
+                        <div class="flex gap-2">
+                            <button onclick="exportSingleContact('${contact.id}')" class="flex-1 px-4 py-2.5 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                                <i class="fas fa-file-export"></i> Export CSV
+                            </button>
+                            <button onclick="triggerContactWebhook('${contact.id}')" class="flex-1 px-4 py-2.5 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                                <i class="fas fa-paper-plane"></i> Send to n8n
+                            </button>
+                        </div>
+                        <button onclick="adminDeleteContact('${contact.id}'); closeAdminContactDetail();" class="w-full px-4 py-2.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                            <i class="fas fa-trash"></i> Delete Contact
                         </button>
                     </div>
                 `;
@@ -3968,6 +4137,63 @@
                 });
                 if (resp.ok) { showToast('Admin note saved', 'success'); }
             } catch (err) { console.error('Save admin note error:', err); }
+        }
+
+        function exportSingleContact(contactId) {
+            const contact = AppState.contacts.find(c => c.id === contactId);
+            if (!contact) { showToast('Contact not found', 'error'); return; }
+            const csvContent = [
+                ['Name', 'Email', 'Phone', 'LinkedIn', 'Company', 'Notes', 'Lead Score', 'Lead Temperature', 'Source', 'Scanned By'],
+                [contact.name || '', contact.email || '', contact.phone || '', contact.linkedin || '',
+                 contact.company_name || '', (contact.notes || '').replace(/\n/g, ' '),
+                 contact.lead_score || '', contact.lead_temperature || '',
+                 contact.source || 'manual', contact.user_name || '']
+            ].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `contact_${(contact.name || 'unknown').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Contact exported as CSV', 'success');
+        }
+
+        async function triggerContactWebhook(contactId) {
+            const contact = AppState.contacts.find(c => c.id === contactId);
+            if (!contact) { showToast('Contact not found', 'error'); return; }
+            const webhookUrl = document.getElementById('webhookUrlInput')?.value?.trim()
+                            || localStorage.getItem('event_scout_webhook_url') || '';
+            if (!webhookUrl) {
+                showToast('No webhook URL configured. Set it in Admin > Webhook Configuration.', 'error');
+                return;
+            }
+            try {
+                const payload = {
+                    event: 'manual_webhook_trigger',
+                    contact_id: contactId,
+                    contact: {
+                        name: contact.name, email: contact.email, phone: contact.phone,
+                        linkedin: contact.linkedin, company_name: contact.company_name,
+                        notes: contact.notes || '', lead_score: contact.lead_score,
+                        lead_temperature: contact.lead_temperature
+                    },
+                    triggered_by: AppState.currentUser.name,
+                    timestamp: new Date().toISOString()
+                };
+                const url = `${CONFIG.API_BASE_URL}/admin/webhook/test?user_id=${AppState.currentUser.user_id}&webhook_url=${encodeURIComponent(webhookUrl)}`;
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                if (data.status === 'success') { showToast('Contact sent to webhook!', 'success'); }
+                else { showToast('Webhook failed: ' + data.message, 'error'); }
+            } catch (err) {
+                console.error('Trigger webhook error:', err);
+                showToast('Failed to trigger webhook', 'error');
+            }
         }
 
         // --- Admin Export ---
