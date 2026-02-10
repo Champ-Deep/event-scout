@@ -2100,7 +2100,7 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    return {"message": "Event Scout Intelligence API", "version": "3.1.0"}
+    return {"message": "Event Scout Intelligence API", "version": "3.2.0"}
 
 
 @app.get("/health/")
@@ -2116,7 +2116,7 @@ async def health_check():
             "gemini_configured": gemini_configured,
             "openrouter_configured": bool(OPENROUTER_API_KEY),
             "webhook_configured": bool(WEBHOOK_URL),
-            "version": "3.1.0",
+            "version": "3.2.0",
         }
     finally:
         await session.close()
