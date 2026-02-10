@@ -1269,9 +1269,17 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         print(f"[SCAN] Photo thumbnail creation failed (non-fatal): {photo_err}")
 
     try:
-        # Run synchronous Gemini OCR in thread pool to avoid blocking the event loop
-        # (allows multiple cards to be processed concurrently)
-        fields = await asyncio.to_thread(extract_contact_from_image_with_gemini, temp_filename)
+        # Run synchronous Gemini OCR in thread pool with hard timeout
+        # Gemini SDK timeout is unreliable — asyncio.wait_for enforces a real deadline
+        try:
+            fields = await asyncio.wait_for(
+                asyncio.to_thread(extract_contact_from_image_with_gemini, temp_filename),
+                timeout=20
+            )
+        except asyncio.TimeoutError:
+            print("[SCAN] Gemini OCR hard timeout (20s) — skipping to OpenRouter")
+            fields = {"name": "N/A", "email": "N/A", "phone": "N/A", "linkedin": "N/A", "company_name": "N/A"}
+            fields["_errors"] = ["Gemini timeout (20s hard limit)"]
         has_info = any(v != "N/A" for k, v in fields.items() if k not in ("linkedin", "_errors", "_source"))
         gemini_errors = fields.pop("_errors", [])
         gemini_source = fields.pop("_source", None)
@@ -1634,7 +1642,14 @@ async def pipeline_step_score(pipeline_id, contact_id: str, user_id: str):
             "notes": contact.notes or "", "source": contact.source or "scan",
         }
 
-        score_result = await asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile)
+        try:
+            score_result = await asyncio.wait_for(
+                asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile),
+                timeout=30
+            )
+        except asyncio.TimeoutError:
+            print("[PIPELINE] Scoring hard timeout (30s) — using default score")
+            score_result = {"score": 50, "temperature": "warm", "reasoning": "Scoring timed out - manual review needed", "breakdown": {}, "recommended_actions": ["Manual review needed"]}
 
         # Save scores to contact
         contact.lead_score = score_result.get("score")
@@ -2915,7 +2930,13 @@ async def score_contact_route(
             "email": c.email or "N/A", "phone": c.phone or "N/A",
             "linkedin": c.linkedin or "N/A", "notes": c.notes or "",
         }
-        score_result = await asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile)
+        try:
+            score_result = await asyncio.wait_for(
+                asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile),
+                timeout=30
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Scoring timed out — Gemini API unresponsive")
 
         # Save score to DB
         c.lead_score = score_result["score"]
@@ -2986,14 +3007,17 @@ async def score_all_contacts_route(
                     "email": c.email or "N/A", "phone": c.phone or "N/A",
                     "linkedin": c.linkedin or "N/A", "notes": c.notes or "",
                 }
-                score_result = await asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile)
+                score_result = await asyncio.wait_for(
+                    asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile),
+                    timeout=30
+                )
                 c.lead_score = score_result["score"]
                 c.lead_temperature = score_result["temperature"]
                 c.lead_score_reasoning = score_result["reasoning"]
                 c.lead_score_breakdown = score_result.get("breakdown", {})
                 c.lead_recommended_actions = score_result.get("recommended_actions", [])
                 scored += 1
-            except Exception as e:
+            except (asyncio.TimeoutError, Exception) as e:
                 print(f"[SCORING] Error scoring {c.id}: {e}")
                 errors += 1
 
@@ -3941,16 +3965,24 @@ async def transcribe_audio(
         audio_b64 = base64.b64encode(audio_data).decode("utf-8")
 
         model = genai.GenerativeModel("gemini-2.5-flash")
-        response = await asyncio.to_thread(
-            model.generate_content,
-            [
-                "Transcribe this audio recording accurately. Return ONLY the transcribed text, nothing else.",
-                {"mime_type": file.content_type or "audio/webm", "data": audio_b64},
-            ]
-        )
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    model.generate_content,
+                    [
+                        "Transcribe this audio recording accurately. Return ONLY the transcribed text, nothing else.",
+                        {"mime_type": file.content_type or "audio/webm", "data": audio_b64},
+                    ]
+                ),
+                timeout=20
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(status_code=504, detail="Transcription timed out — Gemini API unresponsive")
 
         transcript = response.text.strip() if response.text else ""
         return {"status": "success", "transcript": transcript}
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
