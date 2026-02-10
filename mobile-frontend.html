@@ -193,6 +193,22 @@
             animation: spin 1s ease-in-out infinite;
         }
 
+        /* Global processing banner */
+        #globalProcessingBanner {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        #globalProcessingBanner.hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Delete loading overlay */
+        .delete-loading {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
         /* Contact detail view slide-in */
         @keyframes slideInRight {
             from {
@@ -410,6 +426,15 @@
          MAIN APP (Dashboard with Bottom Nav)
     ======================================== -->
     <div id="mainApp" class="screen hidden flex flex-col h-screen bg-gray-50">
+        <!-- Global Processing Banner (visible on ALL screens during active scans) -->
+        <div id="globalProcessingBanner" class="hidden fixed top-0 left-0 right-0 z-[999] bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 safe-area-inset-top flex items-center justify-between shadow-lg">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-spinner fa-spin text-sm"></i>
+                <span id="globalProcessingText" class="text-sm font-medium">Processing cards...</span>
+            </div>
+            <span id="globalProcessingCount" class="text-xs bg-white/20 px-2 py-0.5 rounded-full">0/0</span>
+        </div>
+
         <!-- Content Area (swappable screens) -->
         <div id="contentArea" class="flex-1 overflow-y-auto pb-20" style="scroll-padding-top: 120px">
 
@@ -1771,14 +1796,22 @@
                 loadDashboardStats();
                 loadDigitalCard();
             } else if (screenName === 'scan') {
-                // Initialize camera and reset bulk scan counter
-                scanSessionCount = 0;
-                scanQueue.length = 0;
-                document.getElementById('scanCounter').classList.add('hidden');
-                document.getElementById('bulkScanDone').classList.add('hidden');
-                document.getElementById('pendingScanBadge').classList.add('hidden');
-                const scanFeedEl = document.getElementById('scanFeed');
-                if (scanFeedEl) scanFeedEl.innerHTML = '';
+                // Only reset scan state if no active scans are running
+                const hasActiveScans = activeScanCount > 0 || scanImageQueue.length > 0;
+                if (!hasActiveScans) {
+                    scanSessionCount = 0;
+                    scanQueue.length = 0;
+                    totalScansInBatch = 0;
+                    completedScansInBatch = 0;
+                    document.getElementById('scanCounter').classList.add('hidden');
+                    document.getElementById('bulkScanDone').classList.add('hidden');
+                    document.getElementById('pendingScanBadge').classList.add('hidden');
+                    const scanFeedEl = document.getElementById('scanFeed');
+                    if (scanFeedEl) scanFeedEl.innerHTML = '';
+                } else {
+                    // Restore scan feed UI for active scans
+                    renderScanFeed();
+                }
                 initCamera();
             } else if (screenName === 'chat') {
                 // Load chat history when entering chat screen
@@ -1811,18 +1844,25 @@
         // ==================== CONTACT FUNCTIONS ====================
         async function loadContacts() {
             const contactsList = document.getElementById('contactsList');
-            contactsList.innerHTML = [1, 2, 3, 4, 5].map(() => `
-                <div class="bg-white rounded-xl shadow-sm p-4 mb-2 mx-2 animate-pulse">
-                    <div class="flex gap-3">
-                        <div class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0"></div>
-                        <div class="flex-1 space-y-2 py-1">
-                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-                            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-                            <div class="h-3 bg-gray-100 rounded w-2/3"></div>
+
+            // Show cached contacts immediately if available (instant feel)
+            if (AppState.contacts.length > 0) {
+                renderContacts(AppState.contacts);
+            } else {
+                // Show skeleton shimmer only on first load
+                contactsList.innerHTML = [1, 2, 3, 4, 5].map(() => `
+                    <div class="bg-white rounded-xl shadow-sm p-4 mb-2 mx-2 animate-pulse">
+                        <div class="flex gap-3">
+                            <div class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0"></div>
+                            <div class="flex-1 space-y-2 py-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                <div class="h-3 bg-gray-100 rounded w-2/3"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
 
             try {
                 // Admin sees ALL contacts from all team members; regular users see only their own
@@ -1841,10 +1881,14 @@
                     renderContacts(AppState.contacts);
                     renderHotLeads();
                 } else {
-                    contactsList.innerHTML = `<div class="p-6 text-center text-red-500">Failed to load contacts</div>`;
+                    if (AppState.contacts.length === 0) {
+                        contactsList.innerHTML = `<div class="p-6 text-center text-red-500">Failed to load contacts</div>`;
+                    }
                 }
             } catch (error) {
-                contactsList.innerHTML = `<div class="p-6 text-center text-red-500">${error.userMessage || 'Network error. Please try again.'}</div>`;
+                if (AppState.contacts.length === 0) {
+                    contactsList.innerHTML = `<div class="p-6 text-center text-red-500">${error.userMessage || 'Network error. Please try again.'}</div>`;
+                }
                 console.error('Load contacts error:', error);
             }
         }
@@ -2214,6 +2258,13 @@
                 return;
             }
 
+            // Optimistic removal — remove from UI immediately
+            const backup = [...AppState.contacts];
+            AppState.contacts = AppState.contacts.filter(c => c.id !== contactId);
+            renderContacts(AppState.contacts);
+            closeContactDetail();
+            showToast('Deleting...', 'info');
+
             try {
                 const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/contact/${contactId}?user_id=${AppState.currentUser.user_id}`,
@@ -2226,13 +2277,18 @@
                 const data = await response.json();
 
                 if (response.ok && data.status === 'success') {
-                    showToast('✓ Contact deleted', 'success');
-                    loadContacts();
+                    showToast('Contact deleted', 'success');
                 } else {
+                    // Restore on failure
+                    AppState.contacts = backup;
+                    renderContacts(AppState.contacts);
                     showToast('Failed to delete contact', 'error');
                 }
             } catch (error) {
-                showToast('Network error', 'error');
+                // Restore on network error
+                AppState.contacts = backup;
+                renderContacts(AppState.contacts);
+                showToast('Delete failed — restored contact', 'error');
                 console.error('Delete contact error:', error);
             }
         }
@@ -2404,39 +2460,57 @@
         // ==================== PARALLEL SCAN QUEUE ====================
         const MAX_CONCURRENT_SCANS = 3;
         let activeScanCount = 0;
+        let totalScansInBatch = 0;
+        let completedScansInBatch = 0;
+
+        function updateGlobalProcessingBanner() {
+            const banner = document.getElementById('globalProcessingBanner');
+            if (!banner) return;
+            const active = activeScanCount + scanImageQueue.length;
+            if (active > 0) {
+                banner.classList.remove('hidden');
+                document.getElementById('globalProcessingText').textContent =
+                    activeScanCount > 0 ? `Processing ${activeScanCount} card${activeScanCount > 1 ? 's' : ''}...` : 'Queued...';
+                document.getElementById('globalProcessingCount').textContent =
+                    `${completedScansInBatch}/${totalScansInBatch}`;
+            } else {
+                banner.classList.add('hidden');
+                // Reset batch counters
+                totalScansInBatch = 0;
+                completedScansInBatch = 0;
+            }
+        }
 
         function processNextScan() {
-            // If we have capacity and items in the queue, start the next one
+            updateGlobalProcessingBanner();
             if (activeScanCount < MAX_CONCURRENT_SCANS && scanImageQueue.length > 0) {
                 const item = scanImageQueue.shift();
                 startScanItem(item);
-                // Try to start another one recursively (in case we have more capacity)
                 processNextScan();
             }
         }
 
         async function startScanItem({ blob, filename, scanId }) {
             activeScanCount++;
+            updateGlobalProcessingBanner();
             console.log(`[SCAN] Starting scan #${scanId} (Active: ${activeScanCount}, Queue: ${scanImageQueue.length})`);
 
             try {
-                // Determine if we should refresh contacts after this scan
-                // We only refresh if the queue is empty to avoid UI jumping, 
-                // OR if it's been a while since the last refresh.
-                // For now, let's refresh only when the *entire* batch is done or we have a success.
-
                 const success = await processImageUploadWithId(blob, filename, scanId);
-
-                if (success && scanImageQueue.length === 0 && activeScanCount === 1) {
-                    // This was the last active scan and it succeeded
-                    loadContacts();
-                }
+                completedScansInBatch++;
             } catch (error) {
-                console.error(`[SCAN] Scan #${scanId} failed ungracefully:`, error);
+                console.error(`[SCAN] Scan #${scanId} failed:`, error);
+                completedScansInBatch++;
                 updateScanQueueEntry(scanId, 'error', 'Processing failed');
             } finally {
                 activeScanCount--;
-                // Try to process the next item in the queue
+                updateGlobalProcessingBanner();
+                // Refresh contacts when all scans in batch are done
+                if (scanImageQueue.length === 0 && activeScanCount === 0) {
+                    console.log('[SCAN] Batch complete — refreshing contacts');
+                    loadContacts();
+                    showToast(`${completedScansInBatch} card${completedScansInBatch > 1 ? 's' : ''} processed`, 'success');
+                }
                 processNextScan();
             }
         }
@@ -2444,6 +2518,7 @@
         async function processImageUpload(blob, filename) {
             /** Backward-compatible wrapper for gallery uploads. */
             const scanId = addToScanQueue();
+            totalScansInBatch++;
             scanImageQueue.push({ blob, filename, scanId });
             processNextScan();
         }
@@ -2463,11 +2538,20 @@
 
                 const url = `${CONFIG.API_BASE_URL}/add_contact_from_image/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`;
 
-                const response = await resilientFetch(url, {
-                    method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY },
-                    body: formData
-                });
+                // Use a dedicated 30s timeout for scan uploads (shorter than global 60s)
+                const controller = new AbortController();
+                const scanTimeout = setTimeout(() => controller.abort(), 30000);
+                let response;
+                try {
+                    response = await _nativeFetch(url, {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY },
+                        body: formData,
+                        signal: controller.signal
+                    });
+                } finally {
+                    clearTimeout(scanTimeout);
+                }
 
                 let data;
                 try {
@@ -2517,8 +2601,10 @@
                 }
             } catch (error) {
                 let errorMessage = 'Network error';
-                if (error.message && error.message.includes('Failed to fetch')) {
-                    errorMessage = 'Cannot connect to server. Check your internet connection.';
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Timed out — try again';
+                } else if (error.message && error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Server unreachable';
                 } else if (error.message) {
                     errorMessage = error.message;
                 }
@@ -2574,10 +2660,11 @@
 
                     // Create "Processing..." bubble immediately (instant visual feedback)
                     const scanId = addToScanQueue();
+                    totalScansInBatch++;
 
-                    // Add to sequential queue (processes one at a time)
+                    // Add to parallel queue
                     scanImageQueue.push({ blob: safeBlob, filename: 'business-card.jpg', scanId });
-                    console.log(`[SCAN] Queued image #${scanId} (${scanImageQueue.length} in queue)`);
+                    console.log(`[SCAN] Queued image #${scanId} (${scanImageQueue.length} in queue, batch: ${totalScansInBatch})`);
 
                     // Start processing if we have capacity
                     processNextScan();
@@ -2592,19 +2679,22 @@
         }
 
         function finishBulkScan() {
-            // Stop camera and go to contacts
+            // Stop camera
             if (cameraStream) {
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
             }
+            // Clear visual feed but keep processing running
             scanSessionCount = 0;
-            scanQueue.length = 0; // Clear scan feed
-            scanImageQueue.length = 0; // Clear pending uploads
+            scanQueue.length = 0;
             document.getElementById('scanCounter').classList.add('hidden');
             document.getElementById('bulkScanDone').classList.add('hidden');
             document.getElementById('pendingScanBadge').classList.add('hidden');
             const feed = document.getElementById('scanFeed');
             if (feed) feed.innerHTML = '';
+            // NOTE: Do NOT clear scanImageQueue — let active scans finish in background
+            // The global processing banner will show progress
+            updateGlobalProcessingBanner();
             switchScreen('contacts');
             loadContacts();
         }
@@ -2617,18 +2707,15 @@
             const files = Array.from(event.target.files);
             if (!files.length) return;
 
-            // Process multiple files in sequence
+            // Queue all files at once — parallel queue handles concurrency
             for (const file of files) {
-                await processImageUpload(file, file.name);
+                processImageUpload(file, file.name);
             }
 
-            if (files.length > 1) {
-                showToast(`${scanSessionCount} cards processed!`, 'success');
-            }
+            showToast(`${files.length} card${files.length > 1 ? 's' : ''} queued for processing`, 'info');
 
-            // If not in camera mode, go to contacts
+            // If not in camera mode, go to contacts (scans continue in background via global banner)
             if (!cameraStream) {
-                loadContacts();
                 if (AppState.activeScreen !== 'scan') {
                     switchScreen('contacts');
                 }
@@ -6006,6 +6093,11 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             btn.onclick = async (e) => {
                 e.stopPropagation();
                 if (!confirm('Delete ' + contactName + '? This cannot be undone.')) { btn.remove(); return; }
+                // Optimistic removal
+                const backup = [...AppState.contacts];
+                AppState.contacts = AppState.contacts.filter(c => c.id !== contactId);
+                renderContacts(AppState.contacts);
+                showToast('Deleting...', 'info');
                 try {
                     const resp = await resilientFetch(
                         CONFIG.API_BASE_URL + '/contact/' + contactId + '?user_id=' + AppState.currentUser.user_id,
@@ -6013,10 +6105,16 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     );
                     if (resp.ok) {
                         showToast(contactName + ' deleted', 'success');
-                        AppState.contacts = AppState.contacts.filter(c => c.id !== contactId);
+                    } else {
+                        AppState.contacts = backup;
                         renderContacts(AppState.contacts);
-                    } else { showToast('Failed to delete contact', 'error'); }
-                } catch (err) { showToast('Delete failed: ' + err.message, 'error'); }
+                        showToast('Failed to delete contact', 'error');
+                    }
+                } catch (err) {
+                    AppState.contacts = backup;
+                    renderContacts(AppState.contacts);
+                    showToast('Delete failed — restored', 'error');
+                }
             };
             cardEl.style.position = 'relative';
             cardEl.style.overflow = 'hidden';
