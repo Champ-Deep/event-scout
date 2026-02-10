@@ -46,7 +46,7 @@ ADMIN_EMAILS = [e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "deep@
 # Pipeline config
 PRESENTON_API_URL = os.environ.get("PRESENTON_API_URL", "")  # Self-hosted Presenton instance
 PRESENTON_API_KEY = os.environ.get("PRESENTON_API_KEY", "")
-AUTO_PIPELINE_ENABLED = os.environ.get("AUTO_PIPELINE_ENABLED", "true").lower() == "true"
+AUTO_PIPELINE_ENABLED = os.environ.get("AUTO_PIPELINE_ENABLED", "false").lower() == "true"
 
 # Available AI models for chat (all via OpenRouter)
 AVAILABLE_MODELS = {
@@ -1634,7 +1634,7 @@ async def pipeline_step_score(pipeline_id, contact_id: str, user_id: str):
             "notes": contact.notes or "", "source": contact.source or "scan",
         }
 
-        score_result = score_contact_with_gemini(contact_meta, user_profile)
+        score_result = await asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile)
 
         # Save scores to contact
         contact.lead_score = score_result.get("score")
@@ -2915,7 +2915,7 @@ async def score_contact_route(
             "email": c.email or "N/A", "phone": c.phone or "N/A",
             "linkedin": c.linkedin or "N/A", "notes": c.notes or "",
         }
-        score_result = score_contact_with_gemini(contact_meta, user_profile)
+        score_result = await asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile)
 
         # Save score to DB
         c.lead_score = score_result["score"]
@@ -2986,7 +2986,7 @@ async def score_all_contacts_route(
                     "email": c.email or "N/A", "phone": c.phone or "N/A",
                     "linkedin": c.linkedin or "N/A", "notes": c.notes or "",
                 }
-                score_result = score_contact_with_gemini(contact_meta, user_profile)
+                score_result = await asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile)
                 c.lead_score = score_result["score"]
                 c.lead_temperature = score_result["temperature"]
                 c.lead_score_reasoning = score_result["reasoning"]
@@ -3941,10 +3941,13 @@ async def transcribe_audio(
         audio_b64 = base64.b64encode(audio_data).decode("utf-8")
 
         model = genai.GenerativeModel("gemini-2.5-flash")
-        response = model.generate_content([
-            "Transcribe this audio recording accurately. Return ONLY the transcribed text, nothing else.",
-            {"mime_type": file.content_type or "audio/webm", "data": audio_b64},
-        ])
+        response = await asyncio.to_thread(
+            model.generate_content,
+            [
+                "Transcribe this audio recording accurately. Return ONLY the transcribed text, nothing else.",
+                {"mime_type": file.content_type or "audio/webm", "data": audio_b64},
+            ]
+        )
 
         transcript = response.text.strip() if response.text else ""
         return {"status": "success", "transcript": transcript}
