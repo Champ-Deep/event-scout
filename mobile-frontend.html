@@ -1049,13 +1049,19 @@
 
             <!-- Admin User Drill-Down Overlay -->
             <div id="adminUserDrilldown" class="fixed inset-0 bg-white z-50 hidden overflow-y-auto">
-                <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center gap-3 z-10">
-                    <button onclick="closeUserDrilldown()" class="p-2 rounded-lg hover:bg-gray-100">
-                        <i class="fas fa-arrow-left text-gray-600"></i>
-                    </button>
-                    <div>
-                        <h2 id="drilldownUserName" class="text-lg font-bold text-gray-900"></h2>
-                        <p id="drilldownUserEmail" class="text-xs text-gray-500"></p>
+                <div class="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
+                    <div class="flex items-center gap-3">
+                        <button onclick="closeUserDrilldown()" class="p-2 rounded-lg hover:bg-gray-100">
+                            <i class="fas fa-arrow-left text-gray-600"></i>
+                        </button>
+                        <div class="flex-1 min-w-0">
+                            <h2 id="drilldownUserName" class="text-lg font-bold text-gray-900 truncate"></h2>
+                            <p id="drilldownUserEmail" class="text-xs text-gray-500 truncate"></p>
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button onclick="findDuplicatesInDrilldown()" class="px-2.5 py-1.5 bg-orange-100 text-orange-600 rounded-lg text-[10px] font-medium"><i class="fas fa-clone mr-1"></i>Dupes</button>
+                            <button id="drilldownSelectBtn" onclick="toggleDrilldownSelectMode()" class="px-2.5 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-medium"><i class="fas fa-check-square mr-1"></i>Select</button>
+                        </div>
                     </div>
                 </div>
                 <div class="p-4">
@@ -1063,6 +1069,10 @@
                     <div id="drilldownContactList" class="space-y-2">
                         <p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading contacts...</p>
                     </div>
+                </div>
+                <div id="drilldownBulkActions" class="hidden sticky bottom-0 bg-white border-t border-gray-200 p-3 flex gap-2 shadow-lg">
+                    <button onclick="deleteSelectedDrilldown()" class="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium active:bg-red-600"><i class="fas fa-trash mr-1"></i>Delete Selected (<span id="drilldownSelectedCount">0</span>)</button>
+                    <button onclick="toggleDrilldownSelectMode()" class="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">Cancel</button>
                 </div>
             </div>
 
@@ -1361,29 +1371,35 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            // API connectivity pre-check
-            try {
-                await resilientFetch(`${CONFIG.API_BASE_URL}/health/`, { method: 'GET' });
-                console.log('[INIT] API connectivity confirmed');
-            } catch (err) {
-                console.error('[INIT] API connectivity check failed:', err);
-                showAlert('authAlert', 'Cannot connect to Event Scout server. Please check your internet connection and try refreshing.', 'error');
-            }
-
+            // Check for saved session FIRST (instant, no network call)
             const savedUser = localStorage.getItem('eventScoutUser');
             if (savedUser) {
                 AppState.currentUser = JSON.parse(savedUser);
 
-                // CRITICAL FIX: Validate user_id exists in database
-                const isValid = await validateUserSession();
-                if (!isValid) {
-                    console.log('[INIT] User session invalid, forcing re-login');
-                    handleLogout();
-                    showAlert('authAlert', 'Your session has expired. Please log in again.', 'error');
-                    return;
-                }
-
+                // Show dashboard IMMEDIATELY — don't block on network
                 showDashboard();
+
+                // Validate in background — only force re-login if user truly doesn't exist
+                validateUserSession().then(isValid => {
+                    if (!isValid) {
+                        console.log('[INIT] User not found in DB, forcing re-login');
+                        AppState.currentUser = null;
+                        localStorage.removeItem('eventScoutUser');
+                        AppState.contacts = [];
+                        document.getElementById('mainApp').classList.add('hidden');
+                        document.getElementById('authScreen').classList.remove('hidden');
+                        showAlert('authAlert', 'Your session has expired. Please log in again.', 'error');
+                    }
+                });
+            } else {
+                // No saved user — check connectivity for login screen
+                try {
+                    await resilientFetch(`${CONFIG.API_BASE_URL}/health/`, { method: 'GET' });
+                    console.log('[INIT] API connectivity confirmed');
+                } catch (err) {
+                    console.error('[INIT] API connectivity check failed:', err);
+                    showAlert('authAlert', 'Cannot connect to server. Check internet and refresh.', 'error');
+                }
             }
 
             // Unregister stale service workers that may interfere with requests
@@ -2176,6 +2192,8 @@
 
         const scanQueue = []; // { id, status: 'uploading'|'done'|'error'|'duplicate', name, ts }
         let scanQueueIdCounter = 0;
+        let scanImageQueue = []; // Sequential processing queue: { blob, filename, scanId }
+        let isDrainingScanQueue = false;
 
         function addToScanQueue() {
             const id = ++scanQueueIdCounter;
@@ -2242,15 +2260,42 @@
             }).join('');
         }
 
+        async function drainScanQueue() {
+            if (isDrainingScanQueue) return;
+            isDrainingScanQueue = true;
+
+            while (scanImageQueue.length > 0) {
+                const { blob, filename, scanId } = scanImageQueue.shift();
+                console.log(`[SCAN] Processing queued image #${scanId} (${scanImageQueue.length} remaining)`);
+                try {
+                    await processImageUploadWithId(blob, filename, scanId);
+                } catch (error) {
+                    console.error(`[SCAN] Queue item #${scanId} failed:`, error);
+                    updateScanQueueEntry(scanId, 'error', 'Processing failed');
+                }
+            }
+
+            isDrainingScanQueue = false;
+            // Refresh contacts ONCE after all scans complete
+            if (scanSessionCount > 0) {
+                loadContacts();
+            }
+        }
+
         async function processImageUpload(blob, filename) {
-            /** Core upload function - runs in background, non-blocking. */
+            /** Backward-compatible wrapper for gallery uploads. */
+            const scanId = addToScanQueue();
+            return processImageUploadWithId(blob, filename, scanId);
+        }
+
+        async function processImageUploadWithId(blob, filename, scanId) {
+            /** Core upload function - processes one image with pre-created scan bubble. */
             console.log('[SCAN] Blob size:', blob.size, 'bytes, type:', blob.type);
             if (!blob || blob.size < 1000) {
-                showToast('Image capture failed - please try again', 'error');
+                updateScanQueueEntry(scanId, 'error', 'Image too small');
                 console.error('[SCAN] Blob too small:', blob.size);
                 return false;
             }
-            const scanId = addToScanQueue();
 
             try {
                 const formData = new FormData();
@@ -2289,8 +2334,6 @@
                         triggerCardAcceptedWebhook(contactId, name);
                     }
 
-                    // Auto-refresh contact list in background
-                    loadContacts();
                     return true;
                 } else {
                     let errMsg = 'Failed to process card';
@@ -2369,10 +2412,16 @@
                     const flash = document.getElementById('shutterFlash');
                     if (flash) { flash.style.opacity = '0.6'; setTimeout(() => flash.style.opacity = '0', 150); }
 
-                    // Fire-and-forget: process in background, allow next capture immediately
-                    processImageUpload(safeBlob, 'business-card.jpg').catch(error => {
-                        console.error('Background scan error:', error);
-                    });
+                    // Create "Processing..." bubble immediately (instant visual feedback)
+                    const scanId = addToScanQueue();
+
+                    // Add to sequential queue (processes one at a time)
+                    scanImageQueue.push({ blob: safeBlob, filename: 'business-card.jpg', scanId });
+                    console.log(`[SCAN] Queued image #${scanId} (${scanImageQueue.length} in queue)`);
+
+                    // Start processing if not already running
+                    if (!isDrainingScanQueue) drainScanQueue();
+
                     scanProcessing = false;
                 }, 'image/jpeg', 0.92);
             } catch (error) {
@@ -4339,6 +4388,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 document.getElementById('adminStatContacts').textContent = data.total_contacts;
                 document.getElementById('adminStatHot').textContent = data.by_temperature.hot;
                 document.getElementById('adminStatWarm').textContent = data.by_temperature.warm;
+                window._adminUsers = data.per_user; // Cache for merge picker
                 document.getElementById('adminTeamList').innerHTML = data.per_user.map(u => {
                     // Activity status based on last scan time
                     const lastScan = u.last_scan_at ? new Date(u.last_scan_at) : null;
@@ -4372,7 +4422,10 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                             </div>
                         </div>
                         ${total > 0 ? `<div class="flex h-1.5 rounded-full overflow-hidden mt-2 bg-gray-100"><div class="bg-red-500" style="width:${hotPct}%"></div><div class="bg-orange-400" style="width:${warmPct}%"></div><div class="bg-gray-300" style="width:${coldPct}%"></div></div>` : ''}
-                        ${!u.is_admin ? `<button onclick="event.stopPropagation(); adminDeleteUser('${u.user_id}', '${escapeHtml(u.name)}')" class="mt-2 text-xs text-red-400 hover:text-red-600"><i class="fas fa-trash mr-1"></i>Remove user</button>` : ''}
+                        ${!u.is_admin ? `<div class="flex gap-3 mt-2">
+                            <button onclick="event.stopPropagation(); startUserMerge('${u.user_id}', '${escapeHtml(u.name)}')" class="text-xs text-purple-400 hover:text-purple-600"><i class="fas fa-code-branch mr-1"></i>Merge into...</button>
+                            <button onclick="event.stopPropagation(); adminDeleteUser('${u.user_id}', '${escapeHtml(u.name)}')" class="text-xs text-red-400 hover:text-red-600"><i class="fas fa-trash mr-1"></i>Remove user</button>
+                        </div>` : ''}
                     </div>`;
                 }).join('');
 
@@ -4713,12 +4766,18 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
 
         // --- User Drill-Down ---
         async function openUserDrilldown(userId, userName, userEmail) {
+            currentDrilldownUserId = userId;
+            drilldownSelectMode = false;
+            drilldownSelectedIds.clear();
             const overlay = document.getElementById('adminUserDrilldown');
             overlay.classList.remove('hidden');
             document.getElementById('drilldownUserName').textContent = userName;
             document.getElementById('drilldownUserEmail').textContent = userEmail;
             document.getElementById('drilldownContactList').innerHTML = '<p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading contacts...</p>';
             document.getElementById('drilldownStats').innerHTML = '';
+            document.getElementById('drilldownBulkActions').classList.add('hidden');
+            const selectBtn = document.getElementById('drilldownSelectBtn');
+            if (selectBtn) { selectBtn.classList.replace('bg-blue-500', 'bg-gray-100'); selectBtn.classList.replace('text-white', 'text-gray-600'); }
 
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&filter_user=${userId}&limit=500`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
@@ -4746,7 +4805,8 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 document.getElementById('drilldownContactList').innerHTML = contacts.map(c => {
                     const tempClass = c.lead_temperature === 'hot' ? 'bg-red-100 text-red-600' : c.lead_temperature === 'warm' ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500';
                     const sourceIcon = c.source === 'scan' ? 'fa-camera text-blue-500' : 'fa-user-plus text-gray-400';
-                    return `<div onclick="openAdminContactDetail('${c.id}', '${c.user_id}')" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+                    return `<div class="drilldown-contact-card flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition" onclick="if(drilldownSelectMode){this.querySelector('.drilldown-cb').click();event.stopPropagation();}else{openAdminContactDetail('${c.id}', '${c.user_id}')}">
+                        <input type="checkbox" class="drilldown-cb hidden w-4 h-4 accent-blue-500 flex-shrink-0" onchange="toggleDrilldownContact('${c.id}', this)" onclick="event.stopPropagation()">
                         <div class="w-9 h-9 rounded-full ${tempClass} flex items-center justify-center flex-shrink-0"><i class="fas fa-user text-sm"></i></div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(c.name)}</p>
@@ -5230,6 +5290,184 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                     loadAdminActivity();
                 } else { showToast(data.detail || 'Failed to delete user', 'error'); }
             } catch (err) { console.error('Delete user error:', err); showToast('Failed to delete user', 'error'); }
+        }
+
+        // ==================== ADMIN MERGE & DEDUP ====================
+        let currentDrilldownUserId = null;
+        let drilldownSelectMode = false;
+        let drilldownSelectedIds = new Set();
+
+        async function startUserMerge(secondaryId, secondaryName) {
+            const users = (window._adminUsers || []).filter(u => u.user_id !== secondaryId && !u.is_admin);
+            if (!users.length) { showToast('No other users to merge into', 'error'); return; }
+
+            const options = users.map(u => `${u.name} (${u.contact_count} contacts)`).join('\n');
+            const picked = prompt(`Merge "${secondaryName}" INTO which user?\n\n${users.map((u, i) => `${i + 1}. ${u.name} (${u.contact_count} contacts)`).join('\n')}\n\nEnter number:`);
+            if (!picked) return;
+
+            const idx = parseInt(picked) - 1;
+            if (isNaN(idx) || idx < 0 || idx >= users.length) { showToast('Invalid selection', 'error'); return; }
+
+            const primary = users[idx];
+            if (!confirm(`Move ALL contacts from "${secondaryName}" into "${primary.name}"?\n\n"${secondaryName}" account will be deleted.\nThis cannot be undone!`)) return;
+
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/users/merge?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'POST',
+                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ primary_user_id: primary.user_id, secondary_user_id: secondaryId })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.status === 'success') {
+                    showToast(data.message, 'success');
+                    loadAdminDashboard();
+                    loadAdminActivity();
+                } else { showToast(data.detail || 'Merge failed', 'error'); }
+            } catch (err) { console.error('User merge error:', err); showToast('Failed to merge users', 'error'); }
+        }
+
+        async function findDuplicatesInDrilldown() {
+            if (!currentDrilldownUserId) return;
+            const list = document.getElementById('drilldownContactList');
+            list.innerHTML = '<p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Scanning for duplicates...</p>';
+
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts/duplicates?target_user_id=${currentDrilldownUserId}&user_id=${AppState.currentUser.user_id}`, {
+                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                });
+                const data = await resp.json();
+                if (!resp.ok) { showToast(data.detail || 'Failed to find duplicates', 'error'); return; }
+
+                if (!data.duplicate_groups.length) {
+                    list.innerHTML = '<div class="text-center py-8"><i class="fas fa-check-circle text-green-500 text-3xl mb-3"></i><p class="text-sm text-gray-500">No duplicates found!</p></div>';
+                    return;
+                }
+
+                list.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-sm font-semibold text-orange-600"><i class="fas fa-clone mr-1"></i>${data.total_groups} duplicate group${data.total_groups > 1 ? 's' : ''} (${data.total_duplicate_contacts} contacts)</p>
+                        <button onclick="openUserDrilldown(currentDrilldownUserId, document.getElementById('drilldownUserName').textContent, document.getElementById('drilldownUserEmail').textContent)" class="text-xs text-blue-500">Back to All</button>
+                    </div>
+                    ${data.duplicate_groups.map(g => `
+                        <div class="bg-orange-50 rounded-xl p-3 border border-orange-200 mb-3">
+                            <p class="text-[10px] text-orange-500 font-medium mb-2"><i class="fas fa-link mr-1"></i>${g.match_reasons.join(', ')}</p>
+                            <div class="space-y-2">
+                                ${g.contacts.map((c, i) => `
+                                    <div class="flex items-center justify-between bg-white rounded-lg p-2 ${i === 0 ? 'ring-2 ring-orange-300' : ''}">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(c.name)}${i === 0 ? ' <span class="text-[9px] bg-orange-100 text-orange-600 px-1 rounded">PRIMARY</span>' : ''}</p>
+                                            <p class="text-[10px] text-gray-400 truncate">${c.email !== 'n/a' ? c.email : ''} ${c.phone || ''}</p>
+                                            <p class="text-[10px] text-gray-400">${c.company_name !== 'n/a' ? c.company_name : ''} · ${c.source} · ${c.lead_temperature || 'unscored'}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            ${g.contacts.length === 2 ? `
+                                <button onclick="mergeDuplicateGroup('${g.contacts[0].id}', '${g.contacts[1].id}')" class="mt-2 w-full py-2 bg-orange-500 text-white rounded-lg text-xs font-medium active:bg-orange-600">
+                                    <i class="fas fa-code-branch mr-1"></i>Merge (keep first)
+                                </button>
+                            ` : `
+                                <button onclick="mergeAllInGroup([${g.contacts.map(c => `'${c.id}'`).join(',')}])" class="mt-2 w-full py-2 bg-orange-500 text-white rounded-lg text-xs font-medium active:bg-orange-600">
+                                    <i class="fas fa-code-branch mr-1"></i>Merge all into first
+                                </button>
+                            `}
+                        </div>
+                    `).join('')}
+                `;
+            } catch (err) { console.error('Find dupes error:', err); showToast('Failed to scan for duplicates', 'error'); }
+        }
+
+        async function mergeDuplicateGroup(primaryId, secondaryId) {
+            if (!confirm('Merge these contacts? The duplicate will be absorbed into the primary.')) return;
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts/merge?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'POST',
+                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ primary_id: primaryId, secondary_id: secondaryId })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.status === 'success') {
+                    showToast(data.message, 'success');
+                    findDuplicatesInDrilldown(); // Refresh
+                } else { showToast(data.detail || 'Merge failed', 'error'); }
+            } catch (err) { console.error('Contact merge error:', err); showToast('Failed to merge contacts', 'error'); }
+        }
+
+        async function mergeAllInGroup(ids) {
+            if (!confirm(`Merge ${ids.length} contacts into one? All duplicates will be absorbed.`)) return;
+            const primaryId = ids[0];
+            for (let i = 1; i < ids.length; i++) {
+                try {
+                    const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts/merge?user_id=${AppState.currentUser.user_id}`, {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ primary_id: primaryId, secondary_id: ids[i] })
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok) { showToast(data.detail || `Failed to merge contact ${i}`, 'error'); }
+                } catch (err) { console.error('Merge error:', err); }
+            }
+            showToast('All duplicates merged', 'success');
+            findDuplicatesInDrilldown();
+        }
+
+        function toggleDrilldownSelectMode() {
+            drilldownSelectMode = !drilldownSelectMode;
+            drilldownSelectedIds.clear();
+            const btn = document.getElementById('drilldownSelectBtn');
+            const bulkBar = document.getElementById('drilldownBulkActions');
+            if (drilldownSelectMode) {
+                btn.classList.replace('bg-gray-100', 'bg-blue-500');
+                btn.classList.replace('text-gray-600', 'text-white');
+                bulkBar.classList.remove('hidden');
+            } else {
+                btn.classList.replace('bg-blue-500', 'bg-gray-100');
+                btn.classList.replace('text-white', 'text-gray-600');
+                bulkBar.classList.add('hidden');
+            }
+            // Re-render with checkboxes
+            document.querySelectorAll('.drilldown-contact-card').forEach(card => {
+                const cb = card.querySelector('.drilldown-cb');
+                if (drilldownSelectMode) {
+                    cb?.classList.remove('hidden');
+                } else {
+                    cb?.classList.add('hidden');
+                    cb && (cb.checked = false);
+                }
+            });
+            updateDrilldownSelectionCount();
+        }
+
+        function toggleDrilldownContact(contactId, checkbox) {
+            if (checkbox.checked) drilldownSelectedIds.add(contactId);
+            else drilldownSelectedIds.delete(contactId);
+            updateDrilldownSelectionCount();
+        }
+
+        function updateDrilldownSelectionCount() {
+            const el = document.getElementById('drilldownSelectedCount');
+            if (el) el.textContent = drilldownSelectedIds.size;
+        }
+
+        async function deleteSelectedDrilldown() {
+            if (!drilldownSelectedIds.size) { showToast('No contacts selected', 'error'); return; }
+            if (!confirm(`Delete ${drilldownSelectedIds.size} contacts? This cannot be undone!`)) return;
+
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts/batch_delete?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'POST',
+                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contact_ids: [...drilldownSelectedIds] })
+                });
+                const data = await resp.json();
+                if (resp.ok && data.status === 'success') {
+                    showToast(data.message, 'success');
+                    drilldownSelectedIds.clear();
+                    drilldownSelectMode = false;
+                    // Refresh drilldown
+                    openUserDrilldown(currentDrilldownUserId, document.getElementById('drilldownUserName').textContent, document.getElementById('drilldownUserEmail').textContent);
+                } else { showToast(data.detail || 'Delete failed', 'error'); }
+            } catch (err) { console.error('Batch delete error:', err); showToast('Failed to delete contacts', 'error'); }
         }
 
         // ==================== EVENT FILES (Admin Upload + User Download) ====================

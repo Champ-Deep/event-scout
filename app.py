@@ -2100,7 +2100,7 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    return {"message": "Event Scout Intelligence API", "version": "3.2.0"}
+    return {"message": "Event Scout Intelligence API", "version": "3.3.0"}
 
 
 @app.get("/health/")
@@ -2116,7 +2116,7 @@ async def health_check():
             "gemini_configured": gemini_configured,
             "openrouter_configured": bool(OPENROUTER_API_KEY),
             "webhook_configured": bool(WEBHOOK_URL),
-            "version": "3.2.0",
+            "version": "3.3.0",
         }
     finally:
         await session.close()
@@ -3475,6 +3475,410 @@ async def admin_delete_contact(
         await session.commit()
 
         return {"status": "success", "message": "Contact deleted", "contact_id": contact_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+# ==================== ADMIN MERGE & DEDUP ENDPOINTS ====================
+
+class MergeUsersRequest(BaseModel):
+    primary_user_id: str
+    secondary_user_id: str
+
+class MergeContactsRequest(BaseModel):
+    primary_id: str
+    secondary_id: str
+
+class BatchDeleteRequest(BaseModel):
+    contact_ids: List[str]
+
+
+@app.post("/admin/users/merge")
+async def admin_merge_users(req: MergeUsersRequest, admin_id: str = Depends(verify_admin)):
+    """Merge two user accounts: move all contacts from secondary to primary, delete secondary."""
+    if req.primary_user_id == req.secondary_user_id:
+        raise HTTPException(status_code=400, detail="Cannot merge a user with themselves")
+
+    session = await get_db_session()
+    try:
+        # Load both users
+        p_result = await session.execute(select(UserDB).where(UserDB.id == uuid.UUID(req.primary_user_id)))
+        primary = p_result.scalar_one_or_none()
+        if not primary:
+            raise HTTPException(status_code=404, detail="Primary user not found")
+
+        s_result = await session.execute(select(UserDB).where(UserDB.id == uuid.UUID(req.secondary_user_id)))
+        secondary = s_result.scalar_one_or_none()
+        if not secondary:
+            raise HTTPException(status_code=404, detail="Secondary user not found")
+
+        primary_uuid = uuid.UUID(req.primary_user_id)
+        secondary_uuid = uuid.UUID(req.secondary_user_id)
+
+        # Count contacts being transferred
+        count_result = await session.execute(
+            select(func.count(ContactDB.id)).where(ContactDB.user_id == secondary_uuid)
+        )
+        contacts_transferred = count_result.scalar() or 0
+
+        # Move all contacts from secondary to primary
+        await session.execute(
+            update(ContactDB).where(ContactDB.user_id == secondary_uuid).values(user_id=primary_uuid)
+        )
+
+        # Move conversations
+        await session.execute(
+            update(ConversationDB).where(ConversationDB.user_id == secondary_uuid).values(user_id=primary_uuid)
+        )
+
+        # Move contact pipelines (has user_id column)
+        try:
+            await session.execute(
+                update(ContactPipelineDB).where(ContactPipelineDB.user_id == secondary_uuid).values(user_id=primary_uuid)
+            )
+        except Exception:
+            pass  # Pipeline table may not have user_id FK
+
+        # Delete secondary user's profile and card (non-critical)
+        try:
+            await session.execute(delete(UserProfileDB).where(UserProfileDB.user_id == secondary_uuid))
+        except Exception:
+            pass
+        try:
+            await session.execute(delete(UserCardDB).where(UserCardDB.user_id == secondary_uuid))
+        except Exception:
+            pass
+
+        # Delete the secondary user
+        await session.delete(secondary)
+        await session.commit()
+
+        # Rebuild FAISS for primary user with all their contacts (including transferred ones)
+        try:
+            result = await session.execute(
+                select(ContactDB).where(ContactDB.user_id == primary_uuid)
+            )
+            all_contacts = result.scalars().all()
+            contact_dicts = []
+            for c in all_contacts:
+                contact_dicts.append({
+                    "id": str(c.id),
+                    "name": c.name or "N/A",
+                    "email": c.email or "N/A",
+                    "phone": c.phone or "N/A",
+                    "company_name": c.company_name or "N/A",
+                    "notes": c.notes or "",
+                })
+            faiss_index.build_for_user(req.primary_user_id, contact_dicts)
+            faiss_index.delete_user(req.secondary_user_id)
+        except Exception as faiss_err:
+            print(f"[FAISS] Error rebuilding after user merge: {faiss_err}")
+
+        return {
+            "status": "success",
+            "message": f"User '{secondary.name}' merged into '{primary.name}'. {contacts_transferred} contacts transferred.",
+            "primary_user_id": req.primary_user_id,
+            "deleted_user_id": req.secondary_user_id,
+            "contacts_transferred": contacts_transferred,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.post("/admin/contacts/merge")
+async def admin_merge_contacts(req: MergeContactsRequest, admin_id: str = Depends(verify_admin)):
+    """Merge two duplicate contacts: absorb secondary into primary, delete secondary."""
+    if req.primary_id == req.secondary_id:
+        raise HTTPException(status_code=400, detail="Cannot merge a contact with itself")
+
+    session = await get_db_session()
+    try:
+        p_result = await session.execute(select(ContactDB).where(ContactDB.id == uuid.UUID(req.primary_id)))
+        primary = p_result.scalar_one_or_none()
+        if not primary:
+            raise HTTPException(status_code=404, detail="Primary contact not found")
+
+        s_result = await session.execute(select(ContactDB).where(ContactDB.id == uuid.UUID(req.secondary_id)))
+        secondary = s_result.scalar_one_or_none()
+        if not secondary:
+            raise HTTPException(status_code=404, detail="Secondary contact not found")
+
+        # Merge fields: keep primary's value unless it's "N/A" or empty
+        def pick(a, b):
+            if a and a != "N/A" and a.strip():
+                return a
+            return b if b and b != "N/A" and b.strip() else a
+
+        primary.name = pick(primary.name, secondary.name)
+        primary.email = pick(primary.email, secondary.email)
+        primary.phone = pick(primary.phone, secondary.phone)
+        primary.linkedin = pick(primary.linkedin, secondary.linkedin)
+        primary.company_name = pick(primary.company_name, secondary.company_name)
+
+        # Concatenate notes
+        if secondary.notes and secondary.notes.strip():
+            existing = primary.notes or ""
+            primary.notes = (existing + "\n---\n" + secondary.notes).strip() if existing.strip() else secondary.notes
+
+        if secondary.admin_notes and secondary.admin_notes.strip():
+            existing = primary.admin_notes or ""
+            primary.admin_notes = (existing + "\n---\n" + secondary.admin_notes).strip() if existing.strip() else secondary.admin_notes
+
+        # Combine JSON lists (copy to avoid mutation bug)
+        merged_links = list(primary.links or [])
+        existing_urls = {l.get("url") for l in merged_links if isinstance(l, dict)}
+        for link in (secondary.links or []):
+            if isinstance(link, dict) and link.get("url") not in existing_urls:
+                merged_links.append(link)
+        primary.links = merged_links
+
+        merged_audio = list(primary.audio_notes or [])
+        merged_audio.extend(secondary.audio_notes or [])
+        primary.audio_notes = merged_audio
+
+        merged_actions = list(primary.lead_recommended_actions or [])
+        for action in (secondary.lead_recommended_actions or []):
+            if action not in merged_actions:
+                merged_actions.append(action)
+        primary.lead_recommended_actions = merged_actions
+
+        # Keep higher score
+        p_score = primary.lead_score or 0
+        s_score = secondary.lead_score or 0
+        if s_score > p_score:
+            primary.lead_score = secondary.lead_score
+            primary.lead_temperature = secondary.lead_temperature
+            primary.lead_score_reasoning = secondary.lead_score_reasoning
+            primary.lead_score_breakdown = dict(secondary.lead_score_breakdown or {})
+
+        # Keep photo
+        if not primary.photo_base64 and secondary.photo_base64:
+            primary.photo_base64 = secondary.photo_base64
+
+        # Keep earlier created_at
+        if secondary.created_at and (not primary.created_at or secondary.created_at < primary.created_at):
+            primary.created_at = secondary.created_at
+
+        # Reassign secondary's files and pipelines to primary
+        try:
+            await session.execute(
+                update(ContactFileDB).where(ContactFileDB.contact_id == uuid.UUID(req.secondary_id)).values(contact_id=uuid.UUID(req.primary_id))
+            )
+        except Exception:
+            pass
+        try:
+            await session.execute(
+                update(ContactPipelineDB).where(ContactPipelineDB.contact_id == uuid.UUID(req.secondary_id)).values(contact_id=uuid.UUID(req.primary_id))
+            )
+        except Exception:
+            pass
+
+        # Delete secondary contact
+        user_id_str = str(primary.user_id)
+        await session.delete(secondary)
+        await session.commit()
+
+        # Update FAISS
+        try:
+            faiss_index.delete_contact(user_id_str, req.secondary_id)
+        except Exception as faiss_err:
+            print(f"[FAISS] Error deleting merged contact: {faiss_err}")
+
+        return {
+            "status": "success",
+            "message": f"Contacts merged: '{primary.name}' kept, duplicate deleted",
+            "merged_contact_id": req.primary_id,
+            "deleted_contact_id": req.secondary_id,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+def normalize_phone(phone: str) -> str:
+    """Strip non-digit chars for phone comparison."""
+    if not phone or phone == "N/A":
+        return ""
+    return re.sub(r'[^\d+]', '', phone)
+
+
+@app.get("/admin/contacts/duplicates")
+async def admin_find_duplicates(
+    target_user_id: str = Query(..., description="User ID to check for duplicates"),
+    admin_id: str = Depends(verify_admin),
+):
+    """Find duplicate contacts within a user's contact list."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactDB).where(ContactDB.user_id == uuid.UUID(target_user_id)).order_by(ContactDB.created_at.asc())
+        )
+        contacts = result.scalars().all()
+
+        if not contacts:
+            return {"status": "success", "duplicate_groups": [], "total_groups": 0, "total_duplicate_contacts": 0}
+
+        # Build contact info list
+        contact_list = []
+        for c in contacts:
+            contact_list.append({
+                "id": str(c.id),
+                "name": c.name or "N/A",
+                "email": (c.email or "N/A").strip().lower(),
+                "phone": normalize_phone(c.phone or "N/A"),
+                "company_name": (c.company_name or "N/A").strip().lower(),
+                "lead_score": c.lead_score,
+                "lead_temperature": c.lead_temperature,
+                "source": c.source or "unknown",
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+                "photo_base64": bool(c.photo_base64),
+            })
+
+        # Find groups by matching criteria
+        # Use union-find to merge overlapping groups
+        parent = {c["id"]: c["id"] for c in contact_list}
+        match_reasons = {}  # contact_id -> set of reasons
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(a, b, reason):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[ra] = rb
+            match_reasons.setdefault(a, set()).add(reason)
+            match_reasons.setdefault(b, set()).add(reason)
+
+        # Group by email
+        email_map = {}
+        for c in contact_list:
+            if c["email"] and c["email"] != "n/a":
+                email_map.setdefault(c["email"], []).append(c["id"])
+        for email, ids in email_map.items():
+            for i in range(1, len(ids)):
+                union(ids[0], ids[i], f"email: {email}")
+
+        # Group by phone
+        phone_map = {}
+        for c in contact_list:
+            if c["phone"] and len(c["phone"]) >= 7:
+                phone_map.setdefault(c["phone"], []).append(c["id"])
+        for phone, ids in phone_map.items():
+            for i in range(1, len(ids)):
+                union(ids[0], ids[i], f"phone: {phone}")
+
+        # Group by name + company
+        name_co_map = {}
+        for c in contact_list:
+            if c["name"] != "n/a" and c["company_name"] != "n/a":
+                key = (c["name"].strip().lower(), c["company_name"].strip().lower())
+                name_co_map.setdefault(key, []).append(c["id"])
+        for (name, co), ids in name_co_map.items():
+            for i in range(1, len(ids)):
+                union(ids[0], ids[i], f"name+company: {name} @ {co}")
+
+        # Collect groups
+        groups_map = {}
+        contact_by_id = {c["id"]: c for c in contact_list}
+        for c in contact_list:
+            root = find(c["id"])
+            groups_map.setdefault(root, []).append(c["id"])
+
+        # Filter to groups with 2+ members
+        duplicate_groups = []
+        for group_id, (root, member_ids) in enumerate(groups_map.items(), 1):
+            if len(member_ids) < 2:
+                continue
+            all_reasons = set()
+            for mid in member_ids:
+                all_reasons.update(match_reasons.get(mid, set()))
+            duplicate_groups.append({
+                "group_id": group_id,
+                "match_reasons": sorted(all_reasons),
+                "contacts": [contact_by_id[mid] for mid in member_ids],
+            })
+
+        total_dupes = sum(len(g["contacts"]) for g in duplicate_groups)
+        return {
+            "status": "success",
+            "duplicate_groups": duplicate_groups,
+            "total_groups": len(duplicate_groups),
+            "total_duplicate_contacts": total_dupes,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.post("/admin/contacts/batch_delete")
+async def admin_batch_delete_contacts(req: BatchDeleteRequest, admin_id: str = Depends(verify_admin)):
+    """Delete multiple contacts at once."""
+    if not req.contact_ids:
+        raise HTTPException(status_code=400, detail="No contact IDs provided")
+
+    session = await get_db_session()
+    try:
+        uuids = [uuid.UUID(cid) for cid in req.contact_ids]
+
+        # Load contacts to get user_ids for FAISS cleanup
+        result = await session.execute(select(ContactDB).where(ContactDB.id.in_(uuids)))
+        contacts = result.scalars().all()
+
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No contacts found")
+
+        # Delete related records first
+        await session.execute(delete(ContactFileDB).where(ContactFileDB.contact_id.in_(uuids)))
+        await session.execute(delete(ContactPipelineDB).where(ContactPipelineDB.contact_id.in_(uuids)))
+
+        # Track user_ids for FAISS cleanup
+        user_contact_map = {}
+        for c in contacts:
+            uid = str(c.user_id)
+            user_contact_map.setdefault(uid, []).append(str(c.id))
+
+        # Delete contacts
+        await session.execute(delete(ContactDB).where(ContactDB.id.in_(uuids)))
+        await session.commit()
+
+        # Clean FAISS
+        for uid, cids in user_contact_map.items():
+            for cid in cids:
+                try:
+                    faiss_index.delete_contact(uid, cid)
+                except Exception:
+                    pass
+
+        return {
+            "status": "success",
+            "deleted_count": len(contacts),
+            "deleted_ids": [str(c.id) for c in contacts],
+            "message": f"{len(contacts)} contacts deleted",
+        }
     except HTTPException:
         raise
     except Exception as e:

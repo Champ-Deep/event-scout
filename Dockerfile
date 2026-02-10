@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Pre-download the SentenceTransformer model during build
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
-# Copy application code (cache bust: 2026-02-10-v3.2.0-hard-timeouts)
+# Copy application code (cache bust: 2026-02-10-v3.3.0-admin-merge-dedup)
 COPY VERSION .
 COPY database.py .
 COPY app.py .
