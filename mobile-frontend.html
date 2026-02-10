@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -55,6 +56,7 @@
             from {
                 transform: translateY(100%);
             }
+
             to {
                 transform: translateY(0);
             }
@@ -64,6 +66,7 @@
             from {
                 opacity: 0;
             }
+
             to {
                 opacity: 1;
             }
@@ -97,6 +100,7 @@
             position: relative;
             transition: all 0.2s ease;
         }
+
         .nav-btn.active::before {
             content: '';
             position: absolute;
@@ -108,15 +112,24 @@
             background: #2563eb;
             border-radius: 0 0 4px 4px;
         }
+
         .nav-btn:active {
             transform: scale(0.9);
         }
 
         /* Voice recording pulse */
         @keyframes recordingPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+            }
         }
+
         .recording-pulse {
             animation: recordingPulse 1.5s ease-in-out infinite;
         }
@@ -138,10 +151,12 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
+
         .contact-card {
             position: relative;
             overflow: hidden;
         }
+
         .contact-card-inner {
             transition: transform 0.2s ease;
         }
@@ -172,7 +187,7 @@
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
+            border: 3px solid rgba(255, 255, 255, .3);
             border-radius: 50%;
             border-top-color: #fff;
             animation: spin 1s ease-in-out infinite;
@@ -180,29 +195,65 @@
 
         /* Contact detail view slide-in */
         @keyframes slideInRight {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
         }
+
         @keyframes slideOutRight {
-            from { transform: translateX(0); }
-            to { transform: translateX(100%); }
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(100%);
+            }
         }
+
         .slide-in-right {
             animation: slideInRight 0.25s ease-out forwards;
         }
+
         .slide-out-right {
             animation: slideOutRight 0.25s ease-in forwards;
         }
 
         /* Avatar color generation */
-        .avatar-gradient-0 { background: linear-gradient(135deg, #667eea, #764ba2); }
-        .avatar-gradient-1 { background: linear-gradient(135deg, #f093fb, #f5576c); }
-        .avatar-gradient-2 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-        .avatar-gradient-3 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-        .avatar-gradient-4 { background: linear-gradient(135deg, #fa709a, #fee140); }
-        .avatar-gradient-5 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
-        .avatar-gradient-6 { background: linear-gradient(135deg, #fccb90, #d57eeb); }
-        .avatar-gradient-7 { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
+        .avatar-gradient-0 {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .avatar-gradient-1 {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .avatar-gradient-2 {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        .avatar-gradient-3 {
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+        }
+
+        .avatar-gradient-4 {
+            background: linear-gradient(135deg, #fa709a, #fee140);
+        }
+
+        .avatar-gradient-5 {
+            background: linear-gradient(135deg, #a18cd1, #fbc2eb);
+        }
+
+        .avatar-gradient-6 {
+            background: linear-gradient(135deg, #fccb90, #d57eeb);
+        }
+
+        .avatar-gradient-7 {
+            background: linear-gradient(135deg, #e0c3fc, #8ec5fc);
+        }
 
         /* Link chip */
         .link-chip {
@@ -221,6 +272,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
         .link-chip.auto {
             background: #f0fdf4;
             color: #16a34a;
@@ -228,12 +280,14 @@
         }
     </style>
 </head>
+
 <body class="bg-gray-50">
 
     <!-- ========================================
          AUTH SCREEN (Login/Register)
     ======================================== -->
-    <div id="authScreen" class="screen min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center p-4">
+    <div id="authScreen"
+        class="screen min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center p-4">
         <div class="w-full max-w-md">
             <!-- Logo/Header -->
             <div class="text-center mb-8">
@@ -241,30 +295,33 @@
                     <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <defs>
                             <linearGradient id="logoGrad" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse">
-                                <stop offset="0%" stop-color="#a78bfa"/>
-                                <stop offset="100%" stop-color="#60a5fa"/>
+                                <stop offset="0%" stop-color="#a78bfa" />
+                                <stop offset="100%" stop-color="#60a5fa" />
                             </linearGradient>
                         </defs>
                         <!-- Outer ring -->
-                        <circle cx="40" cy="40" r="38" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.3"/>
+                        <circle cx="40" cy="40" r="38" stroke="url(#logoGrad)" stroke-width="2" fill="none"
+                            opacity="0.3" />
                         <!-- Middle ring -->
-                        <circle cx="40" cy="40" r="28" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.5"/>
+                        <circle cx="40" cy="40" r="28" stroke="url(#logoGrad)" stroke-width="2" fill="none"
+                            opacity="0.5" />
                         <!-- Inner ring -->
-                        <circle cx="40" cy="40" r="18" stroke="url(#logoGrad)" stroke-width="2" fill="none" opacity="0.7"/>
+                        <circle cx="40" cy="40" r="18" stroke="url(#logoGrad)" stroke-width="2" fill="none"
+                            opacity="0.7" />
                         <!-- Center dot -->
-                        <circle cx="40" cy="40" r="4" fill="url(#logoGrad)"/>
+                        <circle cx="40" cy="40" r="4" fill="url(#logoGrad)" />
                         <!-- Radar sweep -->
-                        <path d="M40 40 L40 2 A38 38 0 0 1 72 22 Z" fill="url(#logoGrad)" opacity="0.15"/>
+                        <path d="M40 40 L40 2 A38 38 0 0 1 72 22 Z" fill="url(#logoGrad)" opacity="0.15" />
                         <!-- Contact nodes -->
-                        <circle cx="58" cy="18" r="4" fill="#a78bfa" opacity="0.9"/>
-                        <circle cx="65" cy="38" r="3" fill="#818cf8" opacity="0.7"/>
-                        <circle cx="22" cy="56" r="3.5" fill="#60a5fa" opacity="0.8"/>
-                        <circle cx="50" cy="60" r="3" fill="#93c5fd" opacity="0.6"/>
+                        <circle cx="58" cy="18" r="4" fill="#a78bfa" opacity="0.9" />
+                        <circle cx="65" cy="38" r="3" fill="#818cf8" opacity="0.7" />
+                        <circle cx="22" cy="56" r="3.5" fill="#60a5fa" opacity="0.8" />
+                        <circle cx="50" cy="60" r="3" fill="#93c5fd" opacity="0.6" />
                         <!-- Crosshair lines -->
-                        <line x1="40" y1="8" x2="40" y2="16" stroke="white" stroke-width="1" opacity="0.4"/>
-                        <line x1="40" y1="64" x2="40" y2="72" stroke="white" stroke-width="1" opacity="0.4"/>
-                        <line x1="8" y1="40" x2="16" y2="40" stroke="white" stroke-width="1" opacity="0.4"/>
-                        <line x1="64" y1="40" x2="72" y2="40" stroke="white" stroke-width="1" opacity="0.4"/>
+                        <line x1="40" y1="8" x2="40" y2="16" stroke="white" stroke-width="1" opacity="0.4" />
+                        <line x1="40" y1="64" x2="40" y2="72" stroke="white" stroke-width="1" opacity="0.4" />
+                        <line x1="8" y1="40" x2="16" y2="40" stroke="white" stroke-width="1" opacity="0.4" />
+                        <line x1="64" y1="40" x2="72" y2="40" stroke="white" stroke-width="1" opacity="0.4" />
                     </svg>
                 </div>
                 <h1 class="text-3xl font-bold text-white">Event Scout</h1>
@@ -275,10 +332,12 @@
             <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
                 <!-- Tabs -->
                 <div class="flex border-b border-gray-200">
-                    <button onclick="switchAuthTab('login')" class="auth-tab active flex-1 py-4 text-center font-semibold text-gray-600 border-b-2 border-transparent transition-all">
+                    <button onclick="switchAuthTab('login')"
+                        class="auth-tab active flex-1 py-4 text-center font-semibold text-gray-600 border-b-2 border-transparent transition-all">
                         Login
                     </button>
-                    <button onclick="switchAuthTab('register')" class="auth-tab flex-1 py-4 text-center font-semibold text-gray-600 border-b-2 border-transparent transition-all">
+                    <button onclick="switchAuthTab('register')"
+                        class="auth-tab flex-1 py-4 text-center font-semibold text-gray-600 border-b-2 border-transparent transition-all">
                         Register
                     </button>
                 </div>
@@ -290,31 +349,24 @@
                 <form id="loginForm" class="p-6 space-y-4" onsubmit="handleLogin(event)">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input id="loginEmail"
-                               type="email"
-                               autocomplete="email"
-                               inputmode="email"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                               placeholder="you@example.com"
-                               required>
+                        <input id="loginEmail" type="email" autocomplete="email" inputmode="email"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            placeholder="you@example.com" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
                         <div class="relative">
-                            <input id="loginPassword"
-                                   type="password"
-                                   autocomplete="current-password"
-                                   class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                   placeholder="••••••••"
-                                   required>
-                            <button type="button"
-                                    onclick="togglePassword('loginPassword')"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                            <input id="loginPassword" type="password" autocomplete="current-password"
+                                class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                placeholder="••••••••" required>
+                            <button type="button" onclick="togglePassword('loginPassword')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
                     </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold active:bg-blue-700 transition touch-feedback">
+                    <button type="submit"
+                        class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold active:bg-blue-700 transition touch-feedback">
                         Sign In
                     </button>
                 </form>
@@ -323,41 +375,30 @@
                 <form id="registerForm" class="p-6 space-y-4 hidden" onsubmit="handleRegister(event)">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                        <input id="registerName"
-                               type="text"
-                               autocomplete="name"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                               placeholder="John Doe"
-                               required>
+                        <input id="registerName" type="text" autocomplete="name"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            placeholder="John Doe" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input id="registerEmail"
-                               type="email"
-                               autocomplete="email"
-                               inputmode="email"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                               placeholder="you@example.com"
-                               required>
+                        <input id="registerEmail" type="email" autocomplete="email" inputmode="email"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            placeholder="you@example.com" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
                         <div class="relative">
-                            <input id="registerPassword"
-                                   type="password"
-                                   autocomplete="new-password"
-                                   class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                                   placeholder="••••••••"
-                                   minlength="6"
-                                   required>
-                            <button type="button"
-                                    onclick="togglePassword('registerPassword')"
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                            <input id="registerPassword" type="password" autocomplete="new-password"
+                                class="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                                placeholder="••••••••" minlength="6" required>
+                            <button type="button" onclick="togglePassword('registerPassword')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </div>
                     </div>
-                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold active:bg-blue-700 transition touch-feedback">
+                    <button type="submit"
+                        class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold active:bg-blue-700 transition touch-feedback">
                         Create Account
                     </button>
                 </form>
@@ -379,15 +420,26 @@
                     <div class="px-4 pt-3 pb-2">
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center gap-2">
-                                <svg width="24" height="24" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <defs><linearGradient id="logoGradSm" x1="0" y1="0" x2="80" y2="80" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#2563eb"/></linearGradient></defs>
-                                    <circle cx="40" cy="40" r="38" stroke="url(#logoGradSm)" stroke-width="3" fill="none" opacity="0.3"/>
-                                    <circle cx="40" cy="40" r="28" stroke="url(#logoGradSm)" stroke-width="3" fill="none" opacity="0.5"/>
-                                    <circle cx="40" cy="40" r="18" stroke="url(#logoGradSm)" stroke-width="3" fill="none" opacity="0.7"/>
-                                    <circle cx="40" cy="40" r="5" fill="url(#logoGradSm)"/>
-                                    <path d="M40 40 L40 2 A38 38 0 0 1 72 22 Z" fill="url(#logoGradSm)" opacity="0.15"/>
-                                    <circle cx="58" cy="18" r="5" fill="#7c3aed" opacity="0.9"/>
-                                    <circle cx="22" cy="56" r="4" fill="#2563eb" opacity="0.8"/>
+                                <svg width="24" height="24" viewBox="0 0 80 80" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <linearGradient id="logoGradSm" x1="0" y1="0" x2="80" y2="80"
+                                            gradientUnits="userSpaceOnUse">
+                                            <stop offset="0%" stop-color="#7c3aed" />
+                                            <stop offset="100%" stop-color="#2563eb" />
+                                        </linearGradient>
+                                    </defs>
+                                    <circle cx="40" cy="40" r="38" stroke="url(#logoGradSm)" stroke-width="3"
+                                        fill="none" opacity="0.3" />
+                                    <circle cx="40" cy="40" r="28" stroke="url(#logoGradSm)" stroke-width="3"
+                                        fill="none" opacity="0.5" />
+                                    <circle cx="40" cy="40" r="18" stroke="url(#logoGradSm)" stroke-width="3"
+                                        fill="none" opacity="0.7" />
+                                    <circle cx="40" cy="40" r="5" fill="url(#logoGradSm)" />
+                                    <path d="M40 40 L40 2 A38 38 0 0 1 72 22 Z" fill="url(#logoGradSm)"
+                                        opacity="0.15" />
+                                    <circle cx="58" cy="18" r="5" fill="#7c3aed" opacity="0.9" />
+                                    <circle cx="22" cy="56" r="4" fill="#2563eb" opacity="0.8" />
                                 </svg>
                                 <div>
                                     <h2 class="text-lg font-bold text-gray-900">Contacts</h2>
@@ -396,11 +448,9 @@
                             <p class="text-xs text-gray-500">Hi, <span id="userName"></span>!</p>
                         </div>
                         <div class="relative">
-                            <input type="search"
-                                   id="searchInput"
-                                   placeholder="Search contacts..."
-                                   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
-                                   oninput="handleSearch()">
+                            <input type="search" id="searchInput" placeholder="Search contacts..."
+                                class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                                oninput="handleSearch()">
                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                         </div>
                     </div>
@@ -410,7 +460,8 @@
                 <div id="hotLeadsBanner" class="hidden px-4 pt-3">
                     <div class="bg-gradient-to-r from-red-500 to-orange-500 rounded-xl p-4 shadow-sm">
                         <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-white font-bold text-sm"><i class="fas fa-fire mr-1"></i>Your Hottest Leads</h3>
+                            <h3 class="text-white font-bold text-sm"><i class="fas fa-fire mr-1"></i>Your Hottest Leads
+                            </h3>
                         </div>
                         <div id="hotLeadsScroll" class="flex gap-3 overflow-x-auto pb-1">
                             <!-- Hot leads cards injected here -->
@@ -425,7 +476,7 @@
 
                 <!-- Floating Action Button -->
                 <button id="contactsFab" onclick="openAddContactSheet()"
-                        class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg active:scale-95 transition z-30 touch-feedback">
+                    class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg active:scale-95 transition z-30 touch-feedback">
                     <i class="fas fa-plus text-xl"></i>
                 </button>
             </div>
@@ -436,13 +487,16 @@
                     <!-- Camera View - fills available space -->
                     <div id="cameraView" class="flex-1 relative overflow-hidden" style="min-height:0;">
                         <!-- Video Stream -->
-                        <video id="cameraStream" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
+                        <video id="cameraStream" class="absolute inset-0 w-full h-full object-cover" autoplay
+                            playsinline></video>
 
                         <!-- Overlay Guide -->
                         <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div class="border-4 border-white/80 rounded-2xl shadow-2xl relative" style="width:85%;max-width:340px;aspect-ratio:1.7/1;">
+                            <div class="border-4 border-white/80 rounded-2xl shadow-2xl relative"
+                                style="width:85%;max-width:340px;aspect-ratio:1.7/1;">
                                 <div class="absolute -top-10 left-0 right-0 text-center">
-                                    <p class="text-white text-xs font-medium bg-black/60 px-3 py-1.5 rounded-full inline-block">
+                                    <p
+                                        class="text-white text-xs font-medium bg-black/60 px-3 py-1.5 rounded-full inline-block">
                                         Align card within frame
                                     </p>
                                 </div>
@@ -450,24 +504,28 @@
                         </div>
 
                         <!-- Bulk scan counter toast -->
-                        <div id="scanCounter" class="hidden absolute top-4 right-4 bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg z-10">
+                        <div id="scanCounter"
+                            class="hidden absolute top-4 right-4 bg-green-500 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg z-10">
                             <i class="fas fa-check mr-1"></i><span id="scanCountText">0 scanned</span>
                         </div>
 
                         <!-- Pending scans badge (non-blocking) -->
-                        <div id="pendingScanBadge" class="hidden absolute top-4 left-4 bg-blue-500 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg z-10 animate-pulse">
+                        <div id="pendingScanBadge"
+                            class="hidden absolute top-4 left-4 bg-blue-500 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-lg z-10 animate-pulse">
                             <i class="fas fa-spinner fa-spin mr-1"></i><span id="pendingScanText">Processing...</span>
                         </div>
 
                         <!-- Camera Error State -->
-                        <div id="cameraError" class="hidden absolute inset-0 flex items-center justify-center bg-gray-900 p-8 text-center">
+                        <div id="cameraError"
+                            class="hidden absolute inset-0 flex items-center justify-center bg-gray-900 p-8 text-center">
                             <div>
                                 <i class="fas fa-camera-slash text-6xl text-gray-400 mb-4"></i>
                                 <h3 class="text-xl font-semibold text-white mb-2">Camera Not Available</h3>
                                 <p class="text-sm text-gray-300 mb-6">
                                     Please allow camera access or upload an image
                                 </p>
-                                <button onclick="uploadFromGallery()" class="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold">
+                                <button onclick="uploadFromGallery()"
+                                    class="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold">
                                     Upload from Gallery
                                 </button>
                             </div>
@@ -475,41 +533,50 @@
                     </div>
 
                     <!-- Controls - fixed at bottom, always visible -->
-                    <div class="bg-gray-900/95 backdrop-blur-sm px-4 pt-3 pb-20 safe-area-inset-bottom" style="flex-shrink:0;">
+                    <div class="bg-gray-900/95 backdrop-blur-sm px-4 pt-3 pb-20 safe-area-inset-bottom"
+                        style="flex-shrink:0;">
                         <div class="flex justify-center gap-5 items-center">
-                            <button onclick="uploadFromGallery()" class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
+                            <button onclick="uploadFromGallery()"
+                                class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
                                 <i class="fas fa-image text-sm"></i>
                             </button>
 
-                            <button id="captureBtn" onclick="captureBusinessCard()" class="w-16 h-16 bg-white rounded-full shadow-lg active:scale-95 transition flex items-center justify-center border-4 border-gray-300">
+                            <button id="captureBtn" onclick="captureBusinessCard()"
+                                class="w-16 h-16 bg-white rounded-full shadow-lg active:scale-95 transition flex items-center justify-center border-4 border-gray-300">
                                 <div class="w-12 h-12 bg-white rounded-full border-2 border-gray-400"></div>
                             </button>
 
-                            <button onclick="switchCamera()" class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
+                            <button onclick="switchCamera()"
+                                class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
                                 <i class="fas fa-sync-alt text-sm"></i>
                             </button>
                         </div>
                         <!-- Done button for bulk scan mode -->
                         <div id="bulkScanDone" class="hidden mt-2">
-                            <button onclick="finishBulkScan()" class="w-full py-2 bg-green-500 text-white rounded-lg font-semibold text-sm active:bg-green-600">
+                            <button onclick="finishBulkScan()"
+                                class="w-full py-2 bg-green-500 text-white rounded-lg font-semibold text-sm active:bg-green-600">
                                 <i class="fas fa-check mr-1"></i>Done - View Contacts
                             </button>
                         </div>
                     </div>
 
                     <!-- Scan Feed - per-card processing status -->
-                    <div id="scanFeed" class="absolute bottom-28 left-2 right-2 z-20 space-y-1.5 pointer-events-none flex flex-col items-start">
+                    <div id="scanFeed"
+                        class="absolute bottom-28 left-2 right-2 z-20 space-y-1.5 pointer-events-none flex flex-col items-start">
                         <!-- Dynamically populated with scan status pills -->
                     </div>
 
                     <!-- Shutter flash overlay -->
-                    <div id="shutterFlash" class="absolute inset-0 bg-white z-30 pointer-events-none opacity-0" style="transition: opacity 0.15s"></div>
+                    <div id="shutterFlash" class="absolute inset-0 bg-white z-30 pointer-events-none opacity-0"
+                        style="transition: opacity 0.15s"></div>
 
                     <!-- Hidden file input (supports multiple) -->
-                    <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(event)">
+                    <input type="file" id="galleryInput" accept="image/*" multiple class="hidden"
+                        onchange="handleGalleryUpload(event)">
 
                     <!-- Processing Overlay - multi-step -->
-                    <div id="processingOverlay" class="hidden absolute inset-0 bg-black/90 flex-col items-center justify-center z-50">
+                    <div id="processingOverlay"
+                        class="hidden absolute inset-0 bg-black/90 flex-col items-center justify-center z-50">
                         <div class="text-center px-8">
                             <div id="processStep1" class="flex items-center gap-3 text-white mb-3">
                                 <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
@@ -543,13 +610,15 @@
             <!-- CHAT SCREEN -->
             <div id="chatScreen" class="content-screen hidden flex flex-col h-screen bg-gray-50">
                 <!-- Chat Header -->
-                <div class="bg-gradient-to-r from-purple-600 to-blue-500 text-white p-4 flex items-center justify-between safe-area-inset-top">
+                <div
+                    class="bg-gradient-to-r from-purple-600 to-blue-500 text-white p-4 flex items-center justify-between safe-area-inset-top">
                     <div>
                         <h2 class="font-semibold text-lg">AI Assistant</h2>
                         <p class="text-xs text-purple-100" id="chatModelLabel">Powered by Claude Opus 4.6</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="toggleTeamMode()" id="teamModeBtn" class="hidden px-2.5 py-1 rounded-full text-[10px] font-medium bg-white/20 text-white/80 active:bg-white/30 transition-all">
+                        <button onclick="toggleTeamMode()" id="teamModeBtn"
+                            class="hidden px-2.5 py-1 rounded-full text-[10px] font-medium bg-white/20 text-white/80 active:bg-white/30 transition-all">
                             <i class="fas fa-users mr-1"></i>Team Mode
                         </button>
                         <button onclick="clearChatHistory()" class="p-2 text-white/80 active:bg-white/20 rounded-lg">
@@ -561,16 +630,20 @@
                 <!-- Suggested Queries (shown when empty) -->
                 <div id="chatSuggestions" class="p-4 space-y-2">
                     <p class="text-sm text-gray-600 mb-3">Try asking:</p>
-                    <button onclick="askAI('Who are my hottest leads right now?')" class="block w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm text-gray-700 active:bg-blue-200">
+                    <button onclick="askAI('Who are my hottest leads right now?')"
+                        class="block w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm text-gray-700 active:bg-blue-200">
                         "Who are my hottest leads right now?"
                     </button>
-                    <button onclick="askAI('Which exhibitors should I visit today?')" class="block w-full text-left px-4 py-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm text-gray-700 active:bg-purple-200">
+                    <button onclick="askAI('Which exhibitors should I visit today?')"
+                        class="block w-full text-left px-4 py-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm text-gray-700 active:bg-purple-200">
                         "Which exhibitors should I visit today?"
                     </button>
-                    <button onclick="askAI('Brief me on my top 3 contacts')" class="block w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg text-sm text-gray-700 active:bg-green-200">
+                    <button onclick="askAI('Brief me on my top 3 contacts')"
+                        class="block w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 rounded-lg text-sm text-gray-700 active:bg-green-200">
                         "Brief me on my top 3 contacts"
                     </button>
-                    <button onclick="askAI('Suggest pitch angles for my warm leads')" class="block w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-sm text-gray-700 active:bg-orange-200">
+                    <button onclick="askAI('Suggest pitch angles for my warm leads')"
+                        class="block w-full text-left px-4 py-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-sm text-gray-700 active:bg-orange-200">
                         "Suggest pitch angles for my warm leads"
                     </button>
                 </div>
@@ -583,19 +656,17 @@
                 <!-- Input Area (fixed at bottom) -->
                 <div class="border-t border-gray-200 bg-white p-4 pb-safe-area fixed bottom-16 left-0 right-0">
                     <form onsubmit="sendChatMessage(event)" class="flex gap-2">
-                        <textarea id="chatInput"
-                               rows="1"
-                               placeholder="Ask about your contacts..."
-                               class="flex-1 px-4 py-3 text-base border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none resize-none max-h-24 overflow-y-auto"
-                               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,96)+'px'"
-                               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.closest('form').dispatchEvent(new Event('submit',{cancelable:true}))}"
-                               required></textarea>
+                        <textarea id="chatInput" rows="1" placeholder="Ask about your contacts..."
+                            class="flex-1 px-4 py-3 text-base border border-gray-300 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none resize-none max-h-24 overflow-y-auto"
+                            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,96)+'px'"
+                            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.closest('form').dispatchEvent(new Event('submit',{cancelable:true}))}"
+                            required></textarea>
                         <button type="button" onclick="toggleChatVoice()" id="chatMicBtn"
-                                class="w-12 h-12 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center active:bg-purple-100 flex-shrink-0 transition">
+                            class="w-12 h-12 bg-gray-100 text-gray-500 rounded-full flex items-center justify-center active:bg-purple-100 flex-shrink-0 transition">
                             <i class="fas fa-microphone"></i>
                         </button>
                         <button type="submit"
-                                class="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center active:bg-blue-700 flex-shrink-0">
+                            class="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center active:bg-blue-700 flex-shrink-0">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </form>
@@ -608,16 +679,18 @@
                     <!-- Expo Header -->
                     <div class="bg-gradient-to-r from-emerald-600 to-teal-500 text-white p-4">
                         <h2 id="expoEventName" class="font-semibold text-lg">Select Event in Profile</h2>
-                        <p id="expoEventDetails" class="text-xs text-emerald-100">Set your current event to see exhibitors</p>
+                        <p id="expoEventDetails" class="text-xs text-emerald-100">Set your current event to see
+                            exhibitors</p>
                     </div>
 
                     <!-- Search & Filter -->
                     <div class="p-4 bg-white border-b border-gray-200">
                         <input type="search" id="expoSearchInput" placeholder="Search exhibitors..."
-                               class="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-emerald-500 outline-none mb-2"
-                               oninput="filterExhibitors()">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-emerald-500 outline-none mb-2"
+                            oninput="filterExhibitors()">
                         <div id="categoryFilter" class="flex gap-2 overflow-x-auto pb-1 text-sm">
-                            <button onclick="filterByCategory('')" class="category-btn px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full whitespace-nowrap text-xs font-medium">All</button>
+                            <button onclick="filterByCategory('')"
+                                class="category-btn px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full whitespace-nowrap text-xs font-medium">All</button>
                         </div>
                     </div>
 
@@ -633,10 +706,14 @@
                             </button>
                         </div>
                         <div class="flex gap-2 overflow-x-auto pb-1 mb-3">
-                            <button onclick="filterFilesByCategory('')" class="file-cat-btn px-3 py-1 bg-blue-600 text-white rounded-full whitespace-nowrap text-xs font-medium">All</button>
-                            <button onclick="filterFilesByCategory('catalog')" class="file-cat-btn px-3 py-1 bg-white text-gray-700 rounded-full whitespace-nowrap text-xs font-medium">Catalogs</button>
-                            <button onclick="filterFilesByCategory('brochure')" class="file-cat-btn px-3 py-1 bg-white text-gray-700 rounded-full whitespace-nowrap text-xs font-medium">Brochures</button>
-                            <button onclick="filterFilesByCategory('pricing')" class="file-cat-btn px-3 py-1 bg-white text-gray-700 rounded-full whitespace-nowrap text-xs font-medium">Pricing</button>
+                            <button onclick="filterFilesByCategory('')"
+                                class="file-cat-btn px-3 py-1 bg-blue-600 text-white rounded-full whitespace-nowrap text-xs font-medium">All</button>
+                            <button onclick="filterFilesByCategory('catalog')"
+                                class="file-cat-btn px-3 py-1 bg-white text-gray-700 rounded-full whitespace-nowrap text-xs font-medium">Catalogs</button>
+                            <button onclick="filterFilesByCategory('brochure')"
+                                class="file-cat-btn px-3 py-1 bg-white text-gray-700 rounded-full whitespace-nowrap text-xs font-medium">Brochures</button>
+                            <button onclick="filterFilesByCategory('pricing')"
+                                class="file-cat-btn px-3 py-1 bg-white text-gray-700 rounded-full whitespace-nowrap text-xs font-medium">Pricing</button>
                         </div>
                         <div id="eventFilesList" class="space-y-2">
                             <p class="text-sm text-gray-400 text-center py-2">No files available</p>
@@ -660,7 +737,8 @@
 
                     <div class="bg-white rounded-xl p-6 shadow-sm">
                         <div class="flex items-center gap-4 mb-6">
-                            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold">
+                            <div
+                                class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold">
                                 <span id="profileInitial"></span>
                             </div>
                             <div>
@@ -681,28 +759,32 @@
                     <div class="bg-white rounded-xl p-6 shadow-sm space-y-3">
                         <h3 class="font-semibold text-gray-900">Personalization</h3>
                         <p class="text-xs text-gray-500">Help AI personalize scoring, pitches, and advice</p>
-                        <button onclick="openSettingsSheet('products')" class="w-full flex items-center justify-between py-3 px-4 bg-purple-50 rounded-lg active:bg-purple-100 transition">
+                        <button onclick="openSettingsSheet('products')"
+                            class="w-full flex items-center justify-between py-3 px-4 bg-purple-50 rounded-lg active:bg-purple-100 transition">
                             <div class="flex items-center gap-3">
                                 <i class="fas fa-box text-purple-600 text-lg w-6 text-center"></i>
                                 <span class="text-gray-700">Products & Services</span>
                             </div>
                             <i class="fas fa-chevron-right text-gray-400"></i>
                         </button>
-                        <button onclick="openSettingsSheet('targeting')" class="w-full flex items-center justify-between py-3 px-4 bg-blue-50 rounded-lg active:bg-blue-100 transition">
+                        <button onclick="openSettingsSheet('targeting')"
+                            class="w-full flex items-center justify-between py-3 px-4 bg-blue-50 rounded-lg active:bg-blue-100 transition">
                             <div class="flex items-center gap-3">
                                 <i class="fas fa-crosshairs text-blue-600 text-lg w-6 text-center"></i>
                                 <span class="text-gray-700">Target Market</span>
                             </div>
                             <i class="fas fa-chevron-right text-gray-400"></i>
                         </button>
-                        <button onclick="openSettingsSheet('pitch')" class="w-full flex items-center justify-between py-3 px-4 bg-green-50 rounded-lg active:bg-green-100 transition">
+                        <button onclick="openSettingsSheet('pitch')"
+                            class="w-full flex items-center justify-between py-3 px-4 bg-green-50 rounded-lg active:bg-green-100 transition">
                             <div class="flex items-center gap-3">
                                 <i class="fas fa-bullseye text-green-600 text-lg w-6 text-center"></i>
                                 <span class="text-gray-700">Pitch & Value Props</span>
                             </div>
                             <i class="fas fa-chevron-right text-gray-400"></i>
                         </button>
-                        <button onclick="openSettingsSheet('event')" class="w-full flex items-center justify-between py-3 px-4 bg-orange-50 rounded-lg active:bg-orange-100 transition">
+                        <button onclick="openSettingsSheet('event')"
+                            class="w-full flex items-center justify-between py-3 px-4 bg-orange-50 rounded-lg active:bg-orange-100 transition">
                             <div class="flex items-center gap-3">
                                 <i class="fas fa-calendar-check text-orange-600 text-lg w-6 text-center"></i>
                                 <span class="text-gray-700">Current Event</span>
@@ -714,7 +796,7 @@
                         <div class="mt-4 pt-4 border-t border-gray-100">
                             <h4 class="text-sm font-medium text-gray-700 mb-2">AI Assistant Model</h4>
                             <select id="aiModelSelect" onchange="saveAIModel()"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-700">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-700">
                                 <option value="claude-opus">Claude Opus 4.6 (Recommended)</option>
                                 <option value="gpt-5">GPT-5.2</option>
                                 <option value="gemini-pro">Gemini 2.5 Pro</option>
@@ -740,7 +822,8 @@
                                 <p class="text-xs text-gray-500">Cold</p>
                             </div>
                         </div>
-                        <button onclick="scoreAllContacts()" id="scoreAllBtn" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg font-semibold active:opacity-90 transition">
+                        <button onclick="scoreAllContacts()" id="scoreAllBtn"
+                            class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg font-semibold active:opacity-90 transition">
                             <i class="fas fa-bolt"></i>
                             <span>Score All Contacts</span>
                         </button>
@@ -758,35 +841,48 @@
                         <div class="space-y-2">
                             <!-- Profile Photo Upload -->
                             <div class="flex items-center gap-3 py-2">
-                                <div id="cardPhotoPreview" class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-2xl overflow-hidden flex-shrink-0 border-2 border-dashed border-gray-300">
+                                <div id="cardPhotoPreview"
+                                    class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-2xl overflow-hidden flex-shrink-0 border-2 border-dashed border-gray-300">
                                     <i class="fas fa-camera"></i>
                                 </div>
                                 <div class="flex-1">
                                     <label class="block text-xs text-gray-500 mb-1">Profile Photo</label>
-                                    <input type="file" id="cardPhotoInput" accept="image/*" class="hidden" onchange="handleCardPhotoUpload(event)">
-                                    <button onclick="document.getElementById('cardPhotoInput').click()" class="text-sm text-blue-600 font-medium">
+                                    <input type="file" id="cardPhotoInput" accept="image/*" class="hidden"
+                                        onchange="handleCardPhotoUpload(event)">
+                                    <button onclick="document.getElementById('cardPhotoInput').click()"
+                                        class="text-sm text-blue-600 font-medium">
                                         <i class="fas fa-upload mr-1"></i>Upload Photo
                                     </button>
                                 </div>
                             </div>
-                            <input type="text" id="cardFullName" placeholder="Full Name" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="text" id="cardJobTitle" placeholder="Job Title" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="text" id="cardCompanyName" placeholder="Company" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="email" id="cardEmail" placeholder="Email" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="tel" id="cardPhone" placeholder="Phone Number" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="url" id="cardLinkedIn" placeholder="LinkedIn URL (encouraged)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="tel" id="cardZoom" placeholder="Zoom Number (optional)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                            <input type="url" id="cardWebsite" placeholder="Website (optional)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="cardFullName" placeholder="Full Name"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="cardJobTitle" placeholder="Job Title"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="text" id="cardCompanyName" placeholder="Company"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="email" id="cardEmail" placeholder="Email"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="tel" id="cardPhone" placeholder="Phone Number"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="url" id="cardLinkedIn" placeholder="LinkedIn URL (encouraged)"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="tel" id="cardZoom" placeholder="Zoom Number (optional)"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="url" id="cardWebsite" placeholder="Website (optional)"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
 
                         <!-- Save Card Button -->
-                        <button onclick="saveDigitalCard()" id="saveCardBtn" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg font-semibold active:opacity-90 transition">
+                        <button onclick="saveDigitalCard()" id="saveCardBtn"
+                            class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-lg font-semibold active:opacity-90 transition">
                             <i class="fas fa-save"></i>
                             <span>Save Card</span>
                         </button>
 
                         <!-- Generate QR Button -->
-                        <button onclick="generateCardQR()" id="generateQRBtn" class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold active:opacity-90 transition">
+                        <button onclick="generateCardQR()" id="generateQRBtn"
+                            class="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-semibold active:opacity-90 transition">
                             <i class="fas fa-qrcode"></i>
                             <span>Generate QR Code</span>
                         </button>
@@ -794,10 +890,12 @@
                         <!-- QR Code Display -->
                         <div id="cardQRContainer" class="hidden mt-3">
                             <div class="bg-gray-50 rounded-lg p-4 text-center">
-                                <img id="cardQRImage" src="" alt="QR Code" class="mx-auto max-w-full" style="max-width: 250px;">
+                                <img id="cardQRImage" src="" alt="QR Code" class="mx-auto max-w-full"
+                                    style="max-width: 250px;">
                                 <p class="text-xs text-gray-600 mt-2">Share this QR code with people you meet!</p>
                                 <p id="cardShareableURL" class="text-xs text-blue-600 mt-1 break-all"></p>
-                                <button onclick="saveMyCardToPhone()" class="mt-3 w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white rounded-lg font-semibold active:bg-blue-700 transition">
+                                <button onclick="saveMyCardToPhone()"
+                                    class="mt-3 w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 text-white rounded-lg font-semibold active:bg-blue-700 transition">
                                     <i class="fas fa-address-book"></i>
                                     <span>Save My Card to Phone</span>
                                 </button>
@@ -808,14 +906,16 @@
                     <!-- Export Section -->
                     <div class="bg-white rounded-xl p-6 shadow-sm space-y-3">
                         <h3 class="font-semibold text-gray-900">Data Export</h3>
-                        <button onclick="exportContacts('csv')" class="w-full flex items-center justify-between py-3 px-4 bg-green-50 rounded-lg active:bg-green-100 transition">
+                        <button onclick="exportContacts('csv')"
+                            class="w-full flex items-center justify-between py-3 px-4 bg-green-50 rounded-lg active:bg-green-100 transition">
                             <div class="flex items-center gap-3">
                                 <i class="fas fa-file-csv text-green-600 text-lg"></i>
                                 <span class="text-gray-700">Export as CSV</span>
                             </div>
                             <i class="fas fa-download text-gray-400"></i>
                         </button>
-                        <button onclick="exportContacts('json')" class="w-full flex items-center justify-between py-3 px-4 bg-blue-50 rounded-lg active:bg-blue-100 transition">
+                        <button onclick="exportContacts('json')"
+                            class="w-full flex items-center justify-between py-3 px-4 bg-blue-50 rounded-lg active:bg-blue-100 transition">
                             <div class="flex items-center gap-3">
                                 <i class="fas fa-file-code text-blue-600 text-lg"></i>
                                 <span class="text-gray-700">Export as JSON</span>
@@ -824,7 +924,8 @@
                         </button>
                     </div>
 
-                    <button onclick="handleLogout()" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold active:bg-red-600 transition touch-feedback">
+                    <button onclick="handleLogout()"
+                        class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold active:bg-red-600 transition touch-feedback">
                         <i class="fas fa-sign-out-alt mr-2"></i>
                         Logout
                     </button>
@@ -832,288 +933,318 @@
             </div>
         </div>
 
-            <!-- ADMIN SCREEN (hidden by default, shown only for admins) -->
-            <div id="adminScreen" class="content-screen hidden">
-                <div class="p-4 space-y-4">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-shield-alt text-purple-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-900">Admin Dashboard</h2>
-                    </div>
+        <!-- ADMIN SCREEN (hidden by default, shown only for admins) -->
+        <div id="adminScreen" class="content-screen hidden">
+            <div class="p-4 space-y-4">
+                <div class="flex items-center gap-3 mb-2">
+                    <i class="fas fa-shield-alt text-purple-600 text-xl"></i>
+                    <h2 class="text-xl font-bold text-gray-900">Admin Dashboard</h2>
+                </div>
 
-                    <!-- Global Stats -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-gradient-to-br from-purple-500 to-blue-500 text-white rounded-xl p-4">
-                            <p class="text-3xl font-bold" id="adminStatUsers">-</p>
-                            <p class="text-sm opacity-80">Total Users</p>
-                        </div>
-                        <div class="bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl p-4">
-                            <p class="text-3xl font-bold" id="adminStatContacts">-</p>
-                            <p class="text-sm opacity-80">Total Contacts</p>
-                        </div>
-                        <div class="bg-red-50 rounded-xl p-4">
-                            <p class="text-2xl font-bold text-red-600" id="adminStatHot">-</p>
-                            <p class="text-xs text-gray-500">Hot Leads</p>
-                        </div>
-                        <div class="bg-orange-50 rounded-xl p-4">
-                            <p class="text-2xl font-bold text-orange-500" id="adminStatWarm">-</p>
-                            <p class="text-xs text-gray-500">Warm Leads</p>
-                        </div>
+                <!-- Global Stats -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-gradient-to-br from-purple-500 to-blue-500 text-white rounded-xl p-4">
+                        <p class="text-3xl font-bold" id="adminStatUsers">-</p>
+                        <p class="text-sm opacity-80">Total Users</p>
                     </div>
+                    <div class="bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl p-4">
+                        <p class="text-3xl font-bold" id="adminStatContacts">-</p>
+                        <p class="text-sm opacity-80">Total Contacts</p>
+                    </div>
+                    <div class="bg-red-50 rounded-xl p-4">
+                        <p class="text-2xl font-bold text-red-600" id="adminStatHot">-</p>
+                        <p class="text-xs text-gray-500">Hot Leads</p>
+                    </div>
+                    <div class="bg-orange-50 rounded-xl p-4">
+                        <p class="text-2xl font-bold text-orange-500" id="adminStatWarm">-</p>
+                        <p class="text-xs text-gray-500">Warm Leads</p>
+                    </div>
+                </div>
 
-                    <!-- Quick Actions Row -->
+                <!-- Quick Actions Row -->
+                <div class="flex gap-2">
+                    <button onclick="adminExportAll()"
+                        class="flex-1 px-3 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                        <i class="fas fa-file-csv"></i> Export All CSV
+                    </button>
+                    <button onclick="loadAdminDashboard()"
+                        class="px-3 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+
+                <!-- Admin Search -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="adminSearchInput"
+                            placeholder="Search all contacts (name, email, company)..."
+                            class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
+                            oninput="debounceAdminSearch()">
+                    </div>
+                    <div id="adminSearchResults" class="mt-3 hidden space-y-2 max-h-80 overflow-y-auto"></div>
+                </div>
+
+                <!-- Broadcast to Team -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                        <i class="fas fa-bullhorn mr-1"></i>Broadcast to Team
+                    </h3>
+                    <textarea id="broadcastMessage" rows="2" placeholder="Send a message to your entire team..."
+                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-purple-300"></textarea>
                     <div class="flex gap-2">
-                        <button onclick="adminExportAll()" class="flex-1 px-3 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2">
-                            <i class="fas fa-file-csv"></i> Export All CSV
+                        <select id="broadcastPriority" class="px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                            <option value="normal">Normal</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                        <button onclick="sendBroadcast()"
+                            class="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
+                            <i class="fas fa-paper-plane"></i> Send
                         </button>
-                        <button onclick="loadAdminDashboard()" class="px-3 py-2.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium flex items-center justify-center gap-2">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
                     </div>
+                    <div id="broadcastHistory" class="mt-3 space-y-2 hidden"></div>
+                </div>
 
-                    <!-- Admin Search -->
-                    <div class="bg-white rounded-xl p-4 shadow-sm">
-                        <div class="relative">
-                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                            <input type="text" id="adminSearchInput" placeholder="Search all contacts (name, email, company)..."
-                                   class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-300 focus:border-purple-400"
-                                   oninput="debounceAdminSearch()">
-                        </div>
-                        <div id="adminSearchResults" class="mt-3 hidden space-y-2 max-h-80 overflow-y-auto"></div>
+                <!-- Team Members -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Team Members</h3>
+                    <div id="adminTeamList" class="space-y-3">
+                        <p class="text-sm text-gray-400 text-center py-4">Loading...</p>
                     </div>
+                </div>
 
-                    <!-- Broadcast to Team -->
-                    <div class="bg-white rounded-xl p-4 shadow-sm">
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                            <i class="fas fa-bullhorn mr-1"></i>Broadcast to Team
-                        </h3>
-                        <textarea id="broadcastMessage" rows="2" placeholder="Send a message to your entire team..."
-                                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-purple-300"></textarea>
-                        <div class="flex gap-2">
-                            <select id="broadcastPriority" class="px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                <option value="normal">Normal</option>
-                                <option value="urgent">Urgent</option>
-                            </select>
-                            <button onclick="sendBroadcast()" class="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
-                                <i class="fas fa-paper-plane"></i> Send
-                            </button>
-                        </div>
-                        <div id="broadcastHistory" class="mt-3 space-y-2 hidden"></div>
-                    </div>
-
-                    <!-- Team Members -->
-                    <div class="bg-white rounded-xl p-4 shadow-sm">
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Team Members</h3>
-                        <div id="adminTeamList" class="space-y-3">
-                            <p class="text-sm text-gray-400 text-center py-4">Loading...</p>
-                        </div>
-                    </div>
-
-                    <!-- Webhook Configuration -->
-                    <div class="bg-white rounded-xl p-4 shadow-sm">
-                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Webhook Configuration</h3>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">Webhook Status</p>
-                                    <p id="webhookStatus" class="text-xs text-gray-500">Checking...</p>
-                                </div>
-                                <div id="webhookIndicator" class="w-3 h-3 rounded-full bg-gray-300"></div>
-                            </div>
-
+                <!-- Webhook Configuration -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Webhook Configuration
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
-                                <label class="text-xs font-medium text-gray-600 mb-1 block">Webhook URL (n8n endpoint)</label>
-                                <input type="url" id="webhookUrlInput"
-                                       placeholder="https://your-n8n.app/webhook/..."
-                                       class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                                <p class="text-sm font-medium text-gray-900">Webhook Status</p>
+                                <p id="webhookStatus" class="text-xs text-gray-500">Checking...</p>
                             </div>
-
-                            <div class="flex gap-2">
-                                <button onclick="testWebhook()"
-                                        class="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
-                                    <i class="fas fa-paper-plane"></i>
-                                    Test
-                                </button>
-                                <button onclick="saveAndTestWebhook()"
-                                        class="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium active:bg-green-700 flex items-center justify-center gap-2">
-                                    <i class="fas fa-save"></i>
-                                    Save & Test
-                                </button>
-                            </div>
-
-                            <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                <p class="text-xs text-blue-700">
-                                    <i class="fas fa-info-circle mr-1"></i>
-                                    Enter your n8n webhook URL. Scanned cards will automatically trigger this webhook for greeting emails.
-                                </p>
-                            </div>
+                            <div id="webhookIndicator" class="w-3 h-3 rounded-full bg-gray-300"></div>
                         </div>
-                    </div>
 
-                    <!-- Real-Time Activity Feed -->
-                    <div class="bg-white rounded-xl p-4 shadow-sm">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Real-Time Activity Feed</h3>
-                            <button onclick="loadAdminActivity()" class="text-xs text-blue-600 hover:text-blue-700">
-                                <i class="fas fa-sync-alt mr-1"></i>Refresh
+                        <div>
+                            <label class="text-xs font-medium text-gray-600 mb-1 block">Webhook URL (n8n
+                                endpoint)</label>
+                            <input type="url" id="webhookUrlInput" placeholder="https://your-n8n.app/webhook/..."
+                                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="testWebhook()"
+                                class="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
+                                <i class="fas fa-paper-plane"></i>
+                                Test
                             </button>
-                        </div>
-                        <div id="adminActivityFeed" class="space-y-2 max-h-96 overflow-y-auto">
-                            <p class="text-sm text-gray-400 text-center py-4">Loading...</p>
-                        </div>
-                    </div>
-
-                    <!-- Event Files Management -->
-                    <div class="bg-white rounded-xl p-4 shadow-sm">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                                <i class="fas fa-file-upload mr-1"></i>Event Files
-                            </h3>
-                            <button onclick="refreshAdminFiles()" class="text-xs text-blue-600 hover:text-blue-700">
-                                <i class="fas fa-sync-alt mr-1"></i>Refresh
+                            <button onclick="saveAndTestWebhook()"
+                                class="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium active:bg-green-700 flex items-center justify-center gap-2">
+                                <i class="fas fa-save"></i>
+                                Save & Test
                             </button>
                         </div>
 
-                        <!-- Upload Form -->
-                        <div class="mb-4 p-3 bg-purple-50 rounded-lg">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Upload New File</label>
-                            <input type="file" id="adminFileInput" accept=".pdf,.ppt,.pptx"
-                                   class="w-full text-sm text-gray-600 mb-2 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white">
-                            <input type="text" id="adminFileDescription" placeholder="Description (optional)"
-                                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2">
-                            <select id="adminFileCategory" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2">
-                                <option value="general">General</option>
-                                <option value="catalog">Product Catalog</option>
-                                <option value="brochure">Brochure</option>
-                                <option value="pricing">Pricing</option>
-                            </select>
-                            <button onclick="uploadAdminFile()"
-                                    class="w-full px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
-                                <i class="fas fa-cloud-upload-alt"></i> Upload File
-                            </button>
-                            <p class="text-xs text-gray-500 mt-2">PDF, PPT, PPTX only. Max 20MB.</p>
-                        </div>
-
-                        <!-- Uploaded Files List -->
-                        <div id="adminFilesList" class="space-y-2">
-                            <p class="text-sm text-gray-400 text-center py-4">No files uploaded yet</p>
+                        <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p class="text-xs text-blue-700">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Enter your n8n webhook URL. Scanned cards will automatically trigger this webhook for
+                                greeting emails.
+                            </p>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Pipeline Monitor -->
-                    <div class="bg-white rounded-xl p-4 shadow-sm">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                                <i class="fas fa-robot mr-1"></i>AI Pipeline Monitor
-                            </h3>
-                            <button onclick="loadPipelineMonitor()" class="text-xs text-blue-600 active:text-blue-800"><i class="fas fa-sync-alt"></i></button>
-                        </div>
-                        <div id="pipelineMonitorStats" class="flex gap-2 mb-3">
-                            <span class="px-2 py-1 bg-blue-100 text-blue-600 rounded-full text-[10px] font-medium">Active: <span id="pipelineActiveCount">-</span></span>
-                            <span class="px-2 py-1 bg-green-100 text-green-600 rounded-full text-[10px] font-medium">Done: <span id="pipelineDoneCount">-</span></span>
-                            <span class="px-2 py-1 bg-red-100 text-red-600 rounded-full text-[10px] font-medium">Failed: <span id="pipelineFailedCount">-</span></span>
-                        </div>
-                        <div id="pipelineMonitorList" class="space-y-2 max-h-48 overflow-y-auto">
-                            <p class="text-xs text-gray-400 text-center py-2">Loading pipelines...</p>
-                        </div>
-                        <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
-                            <span class="text-xs text-gray-500">Auto-pipeline on scan</span>
-                            <button onclick="toggleAutoPipeline()" id="autoPipelineToggle" class="px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
-                                Loading...
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Database Backup -->
-                    <div class="bg-white rounded-xl p-4 shadow-sm">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                                <i class="fas fa-database mr-1"></i>Database Backup
-                            </h3>
-                            <span id="backupStatusDot" class="w-2.5 h-2.5 rounded-full bg-gray-300" title="No backup yet"></span>
-                        </div>
-                        <div id="backupStatusInfo" class="text-xs text-gray-500 mb-3">
-                            <p>Click below to sync data to backup database.</p>
-                        </div>
-                        <button onclick="triggerBackup()" id="backupBtn"
-                                class="w-full px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium active:bg-emerald-700 flex items-center justify-center gap-2 transition-all">
-                            <i class="fas fa-shield-alt"></i> Backup Now
+                <!-- Real-Time Activity Feed -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Real-Time Activity Feed
+                        </h3>
+                        <button onclick="loadAdminActivity()" class="text-xs text-blue-600 hover:text-blue-700">
+                            <i class="fas fa-sync-alt mr-1"></i>Refresh
                         </button>
-                        <button onclick="checkBackupStatus()"
-                                class="w-full mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium active:bg-gray-200 flex items-center justify-center gap-2">
-                            <i class="fas fa-info-circle"></i> Check Status
-                        </button>
-                        <div id="backupDetails" class="hidden mt-3 p-3 bg-gray-50 rounded-lg text-xs space-y-1"></div>
                     </div>
+                    <div id="adminActivityFeed" class="space-y-2 max-h-96 overflow-y-auto">
+                        <p class="text-sm text-gray-400 text-center py-4">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Event Files Management -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            <i class="fas fa-file-upload mr-1"></i>Event Files
+                        </h3>
+                        <button onclick="refreshAdminFiles()" class="text-xs text-blue-600 hover:text-blue-700">
+                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                        </button>
+                    </div>
+
+                    <!-- Upload Form -->
+                    <div class="mb-4 p-3 bg-purple-50 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Upload New File</label>
+                        <input type="file" id="adminFileInput" accept=".pdf,.ppt,.pptx"
+                            class="w-full text-sm text-gray-600 mb-2 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white">
+                        <input type="text" id="adminFileDescription" placeholder="Description (optional)"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2">
+                        <select id="adminFileCategory"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2">
+                            <option value="general">General</option>
+                            <option value="catalog">Product Catalog</option>
+                            <option value="brochure">Brochure</option>
+                            <option value="pricing">Pricing</option>
+                        </select>
+                        <button onclick="uploadAdminFile()"
+                            class="w-full px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload File
+                        </button>
+                        <p class="text-xs text-gray-500 mt-2">PDF, PPT, PPTX only. Max 20MB.</p>
+                    </div>
+
+                    <!-- Uploaded Files List -->
+                    <div id="adminFilesList" class="space-y-2">
+                        <p class="text-sm text-gray-400 text-center py-4">No files uploaded yet</p>
+                    </div>
+                </div>
+
+                <!-- Pipeline Monitor -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            <i class="fas fa-robot mr-1"></i>AI Pipeline Monitor
+                        </h3>
+                        <button onclick="loadPipelineMonitor()" class="text-xs text-blue-600 active:text-blue-800"><i
+                                class="fas fa-sync-alt"></i></button>
+                    </div>
+                    <div id="pipelineMonitorStats" class="flex gap-2 mb-3">
+                        <span class="px-2 py-1 bg-blue-100 text-blue-600 rounded-full text-[10px] font-medium">Active:
+                            <span id="pipelineActiveCount">-</span></span>
+                        <span class="px-2 py-1 bg-green-100 text-green-600 rounded-full text-[10px] font-medium">Done:
+                            <span id="pipelineDoneCount">-</span></span>
+                        <span class="px-2 py-1 bg-red-100 text-red-600 rounded-full text-[10px] font-medium">Failed:
+                            <span id="pipelineFailedCount">-</span></span>
+                    </div>
+                    <div id="pipelineMonitorList" class="space-y-2 max-h-48 overflow-y-auto">
+                        <p class="text-xs text-gray-400 text-center py-2">Loading pipelines...</p>
+                    </div>
+                    <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                        <span class="text-xs text-gray-500">Auto-pipeline on scan</span>
+                        <button onclick="toggleAutoPipeline()" id="autoPipelineToggle"
+                            class="px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
+                            Loading...
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Database Backup -->
+                <div class="bg-white rounded-xl p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            <i class="fas fa-database mr-1"></i>Database Backup
+                        </h3>
+                        <span id="backupStatusDot" class="w-2.5 h-2.5 rounded-full bg-gray-300"
+                            title="No backup yet"></span>
+                    </div>
+                    <div id="backupStatusInfo" class="text-xs text-gray-500 mb-3">
+                        <p>Click below to sync data to backup database.</p>
+                    </div>
+                    <button onclick="triggerBackup()" id="backupBtn"
+                        class="w-full px-4 py-2.5 bg-emerald-600 text-white rounded-lg text-sm font-medium active:bg-emerald-700 flex items-center justify-center gap-2 transition-all">
+                        <i class="fas fa-shield-alt"></i> Backup Now
+                    </button>
+                    <button onclick="checkBackupStatus()"
+                        class="w-full mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium active:bg-gray-200 flex items-center justify-center gap-2">
+                        <i class="fas fa-info-circle"></i> Check Status
+                    </button>
+                    <div id="backupDetails" class="hidden mt-3 p-3 bg-gray-50 rounded-lg text-xs space-y-1"></div>
                 </div>
             </div>
+        </div>
 
-            <!-- Admin User Drill-Down Overlay -->
-            <div id="adminUserDrilldown" class="fixed inset-0 bg-white z-50 hidden overflow-y-auto">
-                <div class="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
-                    <div class="flex items-center gap-3">
-                        <button onclick="closeUserDrilldown()" class="p-2 rounded-lg hover:bg-gray-100">
-                            <i class="fas fa-arrow-left text-gray-600"></i>
-                        </button>
-                        <div class="flex-1 min-w-0">
-                            <h2 id="drilldownUserName" class="text-lg font-bold text-gray-900 truncate"></h2>
-                            <p id="drilldownUserEmail" class="text-xs text-gray-500 truncate"></p>
-                        </div>
-                        <div class="flex gap-1.5">
-                            <button onclick="findDuplicatesInDrilldown()" class="px-2.5 py-1.5 bg-orange-100 text-orange-600 rounded-lg text-[10px] font-medium"><i class="fas fa-clone mr-1"></i>Dupes</button>
-                            <button id="drilldownSelectBtn" onclick="toggleDrilldownSelectMode()" class="px-2.5 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-medium"><i class="fas fa-check-square mr-1"></i>Select</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-4">
-                    <div id="drilldownStats" class="grid grid-cols-4 gap-2 mb-4"></div>
-                    <div id="drilldownContactList" class="space-y-2">
-                        <p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading contacts...</p>
-                    </div>
-                </div>
-                <div id="drilldownBulkActions" class="hidden sticky bottom-0 bg-white border-t border-gray-200 p-3 flex gap-2 shadow-lg">
-                    <button onclick="deleteSelectedDrilldown()" class="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium active:bg-red-600"><i class="fas fa-trash mr-1"></i>Delete Selected (<span id="drilldownSelectedCount">0</span>)</button>
-                    <button onclick="toggleDrilldownSelectMode()" class="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">Cancel</button>
-                </div>
-            </div>
-
-            <!-- Admin Contact Detail Overlay -->
-            <div id="adminContactDetail" class="fixed inset-0 bg-white z-50 hidden overflow-y-auto">
-                <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center gap-3 z-10">
-                    <button onclick="closeAdminContactDetail()" class="p-2 rounded-lg hover:bg-gray-100">
+        <!-- Admin User Drill-Down Overlay -->
+        <div id="adminUserDrilldown" class="fixed inset-0 bg-white z-50 hidden overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
+                <div class="flex items-center gap-3">
+                    <button onclick="closeUserDrilldown()" class="p-2 rounded-lg hover:bg-gray-100">
                         <i class="fas fa-arrow-left text-gray-600"></i>
                     </button>
-                    <h2 class="text-lg font-bold text-gray-900">Contact Detail</h2>
+                    <div class="flex-1 min-w-0">
+                        <h2 id="drilldownUserName" class="text-lg font-bold text-gray-900 truncate"></h2>
+                        <p id="drilldownUserEmail" class="text-xs text-gray-500 truncate"></p>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <button onclick="findDuplicatesInDrilldown()"
+                            class="px-2.5 py-1.5 bg-orange-100 text-orange-600 rounded-lg text-[10px] font-medium"><i
+                                class="fas fa-clone mr-1"></i>Dupes</button>
+                        <button id="drilldownSelectBtn" onclick="toggleDrilldownSelectMode()"
+                            class="px-2.5 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-medium"><i
+                                class="fas fa-check-square mr-1"></i>Select</button>
+                    </div>
                 </div>
-                <div id="adminContactDetailContent" class="p-4 space-y-4"></div>
             </div>
+            <div class="p-4">
+                <div id="drilldownStats" class="grid grid-cols-4 gap-2 mb-4"></div>
+                <div id="drilldownContactList" class="space-y-2">
+                    <p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading
+                        contacts...</p>
+                </div>
+            </div>
+            <div id="drilldownBulkActions"
+                class="hidden sticky bottom-0 bg-white border-t border-gray-200 p-3 flex gap-2 shadow-lg">
+                <button onclick="deleteSelectedDrilldown()"
+                    class="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium active:bg-red-600"><i
+                        class="fas fa-trash mr-1"></i>Delete Selected (<span
+                        id="drilldownSelectedCount">0</span>)</button>
+                <button onclick="toggleDrilldownSelectMode()"
+                    class="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">Cancel</button>
+            </div>
+        </div>
 
-            <!-- Broadcast Banner (shown to all users at top) -->
-            <div id="broadcastBanner" class="fixed top-0 left-0 right-0 z-50 hidden"></div>
+        <!-- Admin Contact Detail Overlay -->
+        <div id="adminContactDetail" class="fixed inset-0 bg-white z-50 hidden overflow-y-auto">
+            <div class="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center gap-3 z-10">
+                <button onclick="closeAdminContactDetail()" class="p-2 rounded-lg hover:bg-gray-100">
+                    <i class="fas fa-arrow-left text-gray-600"></i>
+                </button>
+                <h2 class="text-lg font-bold text-gray-900">Contact Detail</h2>
+            </div>
+            <div id="adminContactDetailContent" class="p-4 space-y-4"></div>
+        </div>
+
+        <!-- Broadcast Banner (shown to all users at top) -->
+        <div id="broadcastBanner" class="fixed top-0 left-0 right-0 z-50 hidden"></div>
 
         <!-- Bottom Navigation -->
         <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-inset-bottom z-40">
             <div class="flex justify-around items-center h-16">
-                <button onclick="switchScreen('contacts')" class="nav-btn active flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                <button onclick="switchScreen('contacts')"
+                    class="nav-btn active flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-address-book text-2xl mb-1"></i>
                     <span class="text-xs">Contacts</span>
                 </button>
-                <button id="scanNavBtn" onclick="switchScreen('scan')" class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                <button id="scanNavBtn" onclick="switchScreen('scan')"
+                    class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-camera text-2xl mb-1"></i>
                     <span class="text-xs">Scan</span>
                 </button>
-                <button onclick="switchScreen('chat')" class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                <button onclick="switchScreen('chat')"
+                    class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-comments text-2xl mb-1"></i>
                     <span class="text-xs">AI Chat</span>
                 </button>
-                <button onclick="switchScreen('expo')" class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                <button onclick="switchScreen('expo')"
+                    class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-calendar-check text-2xl mb-1"></i>
                     <span class="text-xs">Expo</span>
                 </button>
-                <button id="adminNavBtn" onclick="switchScreen('admin')" class="nav-btn hidden flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                <button id="adminNavBtn" onclick="switchScreen('admin')"
+                    class="nav-btn hidden flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-shield-alt text-2xl mb-1"></i>
                     <span class="text-xs">Admin</span>
                 </button>
-                <button onclick="switchScreen('profile')" class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                <button onclick="switchScreen('profile')"
+                    class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-user text-2xl mb-1"></i>
                     <span class="text-xs">Profile</span>
                 </button>
@@ -1124,23 +1255,29 @@
     <!-- ========================================
          VOICE RECORDING OVERLAY
     ======================================== -->
-    <div id="voiceRecordingOverlay" class="fixed inset-0 z-60 hidden" style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);">
+    <div id="voiceRecordingOverlay" class="fixed inset-0 z-60 hidden"
+        style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);">
         <div class="flex flex-col items-center justify-center h-full px-6">
             <div class="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
                 <div id="voiceContactName" class="text-sm text-gray-500 mb-2">Recording for...</div>
                 <div class="mb-4">
-                    <button id="voiceRecordBtn" onclick="toggleVoiceRecording()" class="w-20 h-20 rounded-full bg-red-500 text-white text-3xl flex items-center justify-center mx-auto recording-pulse">
+                    <button id="voiceRecordBtn" onclick="toggleVoiceRecording()"
+                        class="w-20 h-20 rounded-full bg-red-500 text-white text-3xl flex items-center justify-center mx-auto recording-pulse">
                         <i class="fas fa-microphone"></i>
                     </button>
                 </div>
                 <div id="voiceTimer" class="text-2xl font-mono text-gray-700 mb-2">0:00</div>
                 <div id="voiceStatus" class="text-sm text-gray-500 mb-3">Tap to start recording</div>
-                <div id="voiceTranscript" class="text-sm text-gray-800 bg-gray-50 rounded-lg p-3 min-h-[60px] max-h-[120px] overflow-y-auto text-left mb-4 hidden">
+                <div id="voiceTranscript"
+                    class="text-sm text-gray-800 bg-gray-50 rounded-lg p-3 min-h-[60px] max-h-[120px] overflow-y-auto text-left mb-4 hidden">
                     <span class="text-gray-400 italic">Listening...</span>
                 </div>
                 <div class="flex gap-3">
-                    <button onclick="cancelVoiceRecording()" class="flex-1 py-3 rounded-lg bg-gray-100 text-gray-600 font-medium active:bg-gray-200">Cancel</button>
-                    <button id="voiceSaveBtn" onclick="saveVoiceNote()" class="flex-1 py-3 rounded-lg bg-purple-600 text-white font-medium active:bg-purple-700 hidden">Save Note</button>
+                    <button onclick="cancelVoiceRecording()"
+                        class="flex-1 py-3 rounded-lg bg-gray-100 text-gray-600 font-medium active:bg-gray-200">Cancel</button>
+                    <button id="voiceSaveBtn" onclick="saveVoiceNote()"
+                        class="flex-1 py-3 rounded-lg bg-purple-600 text-white font-medium active:bg-purple-700 hidden">Save
+                        Note</button>
                 </div>
             </div>
         </div>
@@ -1163,7 +1300,8 @@
         <div class="backdrop absolute inset-0 bg-black/50" onclick="closeContactSheet()"></div>
 
         <!-- Sheet Content -->
-        <div class="sheet-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[90vh] flex flex-col transform translate-y-full transition-transform duration-300 slide-up">
+        <div
+            class="sheet-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[90vh] flex flex-col transform translate-y-full transition-transform duration-300 slide-up">
             <!-- Handle (for visual affordance) -->
             <div class="flex justify-center py-3 border-b border-gray-200">
                 <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
@@ -1172,7 +1310,8 @@
             <!-- Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <h2 id="sheetTitle" class="text-xl font-semibold">Add Contact</h2>
-                <button onclick="closeContactSheet()" class="p-2 text-gray-400 active:bg-gray-100 rounded-lg transition">
+                <button onclick="closeContactSheet()"
+                    class="p-2 text-gray-400 active:bg-gray-100 rounded-lg transition">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -1190,17 +1329,17 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                         <input type="text" id="contactName" required
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                         <input type="email" id="contactEmail" inputmode="email" autocomplete="email" required
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
                         <input type="tel" id="contactPhone" inputmode="tel" autocomplete="tel" required
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition">
                     </div>
                 </div>
 
@@ -1210,13 +1349,13 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
                         <input type="text" id="contactCompany" autocomplete="organization"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">LinkedIn</label>
                         <input type="url" id="contactLinkedin" inputmode="url"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition"
-                               placeholder="https://linkedin.com/in/username">
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition"
+                            placeholder="https://linkedin.com/in/username">
                     </div>
                 </div>
 
@@ -1225,14 +1364,15 @@
                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Notes</p>
                     <div>
                         <textarea id="contactNotes" rows="3"
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition resize-none"
-                                  placeholder="Add notes about this contact..."></textarea>
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 focus:bg-white transition resize-none"
+                            placeholder="Add notes about this contact..."></textarea>
                     </div>
                 </div>
 
                 <!-- Submit Button (sticky at bottom) -->
                 <div class="sticky bottom-0 bg-white pt-4 pb-safe-area">
-                    <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold active:bg-blue-700 transition touch-feedback">
+                    <button type="submit"
+                        class="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold active:bg-blue-700 transition touch-feedback">
                         Save Contact
                     </button>
                 </div>
@@ -1245,13 +1385,15 @@
     ======================================== -->
     <div id="settingsSheet" class="fixed inset-0 z-50 hidden">
         <div class="backdrop absolute inset-0 bg-black/50" onclick="closeSettingsSheet()"></div>
-        <div class="sheet-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[90vh] flex flex-col transform translate-y-full transition-transform duration-300 slide-up">
+        <div
+            class="sheet-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[90vh] flex flex-col transform translate-y-full transition-transform duration-300 slide-up">
             <div class="flex justify-center py-3 border-b border-gray-200">
                 <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
             </div>
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <h2 id="settingsSheetTitle" class="text-xl font-semibold">Settings</h2>
-                <button onclick="closeSettingsSheet()" class="p-2 text-gray-400 active:bg-gray-100 rounded-lg transition">
+                <button onclick="closeSettingsSheet()"
+                    class="p-2 text-gray-400 active:bg-gray-100 rounded-lg transition">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -1669,7 +1811,7 @@
         // ==================== CONTACT FUNCTIONS ====================
         async function loadContacts() {
             const contactsList = document.getElementById('contactsList');
-            contactsList.innerHTML = [1,2,3,4,5].map(() => `
+            contactsList.innerHTML = [1, 2, 3, 4, 5].map(() => `
                 <div class="bg-white rounded-xl shadow-sm p-4 mb-2 mx-2 animate-pulse">
                     <div class="flex gap-3">
                         <div class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0"></div>
@@ -1742,8 +1884,8 @@
                         <!-- Avatar with score badge -->
                         <div class="relative flex-shrink-0 mt-0.5">
                             ${contact.photo_base64
-                                ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-12 h-12 rounded-full object-cover" alt="${contact.name}">`
-                                : `<div class="w-12 h-12 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white font-bold text-lg">
+                        ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-12 h-12 rounded-full object-cover" alt="${contact.name}">`
+                        : `<div class="w-12 h-12 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white font-bold text-lg">
                                     ${contact.name.charAt(0).toUpperCase()}
                                 </div>`}
                             ${score != null ? `<div class="absolute -top-1 -right-1 w-6 h-6 rounded-full ${scoreColor} text-white text-[10px] flex items-center justify-center font-bold shadow-sm">${score}</div>` : ''}
@@ -1799,8 +1941,8 @@
                      class="flex-shrink-0 bg-white/20 backdrop-blur-sm rounded-lg p-3 min-w-[140px] cursor-pointer active:bg-white/30">
                     <div class="flex items-center gap-2 mb-1">
                         ${c.photo_base64
-                            ? `<img src="data:image/jpeg;base64,${c.photo_base64}" class="w-8 h-8 rounded-full object-cover">`
-                            : `<div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white text-sm font-bold">
+                    ? `<img src="data:image/jpeg;base64,${c.photo_base64}" class="w-8 h-8 rounded-full object-cover">`
+                    : `<div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-white text-sm font-bold">
                                 ${c.name.charAt(0)}
                             </div>`}
                         <span class="text-white font-bold text-lg">${c.lead_score || '?'}</span>
@@ -1923,9 +2065,9 @@
 
                     return { contact, score };
                 })
-                .filter(r => r.score > 0)
-                .sort((a, b) => b.score - a.score)
-                .map(r => r.contact);
+                    .filter(r => r.score > 0)
+                    .sort((a, b) => b.score - a.score)
+                    .map(r => r.contact);
 
                 renderContacts(results);
 
@@ -2192,8 +2334,7 @@
 
         const scanQueue = []; // { id, status: 'uploading'|'done'|'error'|'duplicate', name, ts }
         let scanQueueIdCounter = 0;
-        let scanImageQueue = []; // Sequential processing queue: { blob, filename, scanId }
-        let isDrainingScanQueue = false;
+        let scanImageQueue = []; // Parallel processing queue: { blob, filename, scanId }
 
         function addToScanQueue() {
             const id = ++scanQueueIdCounter;
@@ -2260,32 +2401,51 @@
             }).join('');
         }
 
-        async function drainScanQueue() {
-            if (isDrainingScanQueue) return;
-            isDrainingScanQueue = true;
+        // ==================== PARALLEL SCAN QUEUE ====================
+        const MAX_CONCURRENT_SCANS = 3;
+        let activeScanCount = 0;
 
-            while (scanImageQueue.length > 0) {
-                const { blob, filename, scanId } = scanImageQueue.shift();
-                console.log(`[SCAN] Processing queued image #${scanId} (${scanImageQueue.length} remaining)`);
-                try {
-                    await processImageUploadWithId(blob, filename, scanId);
-                } catch (error) {
-                    console.error(`[SCAN] Queue item #${scanId} failed:`, error);
-                    updateScanQueueEntry(scanId, 'error', 'Processing failed');
-                }
+        function processNextScan() {
+            // If we have capacity and items in the queue, start the next one
+            if (activeScanCount < MAX_CONCURRENT_SCANS && scanImageQueue.length > 0) {
+                const item = scanImageQueue.shift();
+                startScanItem(item);
+                // Try to start another one recursively (in case we have more capacity)
+                processNextScan();
             }
+        }
 
-            isDrainingScanQueue = false;
-            // Refresh contacts ONCE after all scans complete
-            if (scanSessionCount > 0) {
-                loadContacts();
+        async function startScanItem({ blob, filename, scanId }) {
+            activeScanCount++;
+            console.log(`[SCAN] Starting scan #${scanId} (Active: ${activeScanCount}, Queue: ${scanImageQueue.length})`);
+
+            try {
+                // Determine if we should refresh contacts after this scan
+                // We only refresh if the queue is empty to avoid UI jumping, 
+                // OR if it's been a while since the last refresh.
+                // For now, let's refresh only when the *entire* batch is done or we have a success.
+
+                const success = await processImageUploadWithId(blob, filename, scanId);
+
+                if (success && scanImageQueue.length === 0 && activeScanCount === 1) {
+                    // This was the last active scan and it succeeded
+                    loadContacts();
+                }
+            } catch (error) {
+                console.error(`[SCAN] Scan #${scanId} failed ungracefully:`, error);
+                updateScanQueueEntry(scanId, 'error', 'Processing failed');
+            } finally {
+                activeScanCount--;
+                // Try to process the next item in the queue
+                processNextScan();
             }
         }
 
         async function processImageUpload(blob, filename) {
             /** Backward-compatible wrapper for gallery uploads. */
             const scanId = addToScanQueue();
-            return processImageUploadWithId(blob, filename, scanId);
+            scanImageQueue.push({ blob, filename, scanId });
+            processNextScan();
         }
 
         async function processImageUploadWithId(blob, filename, scanId) {
@@ -2419,8 +2579,8 @@
                     scanImageQueue.push({ blob: safeBlob, filename: 'business-card.jpg', scanId });
                     console.log(`[SCAN] Queued image #${scanId} (${scanImageQueue.length} in queue)`);
 
-                    // Start processing if not already running
-                    if (!isDrainingScanQueue) drainScanQueue();
+                    // Start processing if we have capacity
+                    processNextScan();
 
                     scanProcessing = false;
                 }, 'image/jpeg', 0.92);
@@ -2439,6 +2599,7 @@
             }
             scanSessionCount = 0;
             scanQueue.length = 0; // Clear scan feed
+            scanImageQueue.length = 0; // Clear pending uploads
             document.getElementById('scanCounter').classList.add('hidden');
             document.getElementById('bulkScanDone').classList.add('hidden');
             document.getElementById('pendingScanBadge').classList.add('hidden');
@@ -2518,7 +2679,7 @@
         }
 
         function renderChatMessage(message) {
-            const timeStr = message.timestamp ? new Date(message.timestamp).toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit'}) : '';
+            const timeStr = message.timestamp ? new Date(message.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
             if (message.role === 'user') {
                 return `
                     <div class="flex justify-end">
@@ -2721,7 +2882,7 @@
             if (!contacts || !contacts.length) return '';
             return '<div class="space-y-2">' + contacts.map(c => {
                 const scoreColor = c.lead_temperature === 'hot' ? 'bg-red-500' :
-                                   c.lead_temperature === 'warm' ? 'bg-orange-400' : 'bg-gray-400';
+                    c.lead_temperature === 'warm' ? 'bg-orange-400' : 'bg-gray-400';
                 const avatar = c.photo_base64
                     ? `<img src="data:image/jpeg;base64,${c.photo_base64}" class="w-11 h-11 rounded-full object-cover">`
                     : `<span class="text-white font-bold text-lg">${(c.name || '?').charAt(0).toUpperCase()}</span>`;
@@ -2971,12 +3132,12 @@
 @media print{.slide{min-height:auto;page-break-after:always;padding:2rem}}
 </style></head><body>
 <div class="slide hero"><h1>${escapeHtml(profile.company_name || 'Our Company')}</h1><p class="subtitle">A Personalized Presentation for ${escapeHtml(contact.name || 'You')}</p><p class="subtitle" style="font-size:0.9rem;margin-top:0.5rem">${escapeHtml(contact.company_name || '')}</p><div class="divider"></div></div>
-${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
-    const lines = slide.trim().split('\\n');
-    const title = lines[0].replace(/^#+\s*/, '').replace(/\*\*/g, '');
-    const body = lines.slice(1).join('\\n');
-    return '<div class="slide"><h2>' + escapeHtml(title) + '</h2>' + formatAIResponse(body) + '</div>';
-}).join('')}
+${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
+                const lines = slide.trim().split('\\n');
+                const title = lines[0].replace(/^#+\s*/, '').replace(/\*\*/g, '');
+                const body = lines.slice(1).join('\\n');
+                return '<div class="slide"><h2>' + escapeHtml(title) + '</h2>' + formatAIResponse(body) + '</div>';
+            }).join('')}
 <div class="slide cta"><h2>Let's Connect</h2><p>Generated by Event Scout AI</p><p style="font-size:0.9rem;color:#64748b;margin-top:1rem">${new Date().toLocaleDateString()}</p></div>
 </body></html>`;
 
@@ -3021,8 +3182,8 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                     </button>
                     <div class="flex items-center gap-4">
                         ${contact.photo_base64
-                            ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-white/30" alt="${contact.name}">`
-                            : `<div class="w-16 h-16 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                    ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-white/30" alt="${contact.name}">`
+                    : `<div class="w-16 h-16 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
                                 ${contact.name.charAt(0).toUpperCase()}
                             </div>`}
                         <div>
@@ -3118,9 +3279,9 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                             <button onclick="editContact('${contact.id}')" class="text-xs text-blue-600">Edit</button>
                         </div>
                         ${hasNotes
-                            ? `<p class="text-sm text-gray-700 whitespace-pre-wrap">${contact.notes}</p>`
-                            : `<p class="text-sm text-gray-400 italic">No notes yet. Tap Edit to add notes about this contact.</p>`
-                        }
+                    ? `<p class="text-sm text-gray-700 whitespace-pre-wrap">${contact.notes}</p>`
+                    : `<p class="text-sm text-gray-400 italic">No notes yet. Tap Edit to add notes about this contact.</p>`
+                }
                     </div>
 
                     <!-- Links -->
@@ -3355,10 +3516,10 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             }
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 // Resize to 200x200 max
                 const img = new Image();
-                img.onload = function() {
+                img.onload = function () {
                     const canvas = document.createElement('canvas');
                     const size = Math.min(img.width, img.height, 400);
                     canvas.width = size;
@@ -4074,7 +4235,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         }
 
         // Close dropdown when clicking outside
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', function (e) {
             const dropdown = document.getElementById('eventSuggestionsDropdown');
             const input = document.getElementById('settEventName');
             if (dropdown && input && !dropdown.contains(e.target) && !input.contains(e.target)) {
@@ -4321,7 +4482,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         // ==================== ENHANCED CONTACT DETAIL ====================
         // Override openContactDetail to include lead score section
         const _originalOpenContactDetail = openContactDetail;
-        openContactDetail = function(contactId) {
+        openContactDetail = function (contactId) {
             const contact = AppState.contacts.find(c => c.id === contactId);
             if (!contact) return;
 
@@ -4556,9 +4717,9 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
 
                 feedContainer.innerHTML = data.activities.map(act => {
                     const tempClass = act.lead_temperature === 'hot' ? 'bg-red-100 text-red-600' :
-                                     act.lead_temperature === 'warm' ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600';
+                        act.lead_temperature === 'warm' ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600';
                     const tempIcon = act.lead_temperature === 'hot' ? 'text-red-600' :
-                                    act.lead_temperature === 'warm' ? 'text-orange-600' : 'text-gray-600';
+                        act.lead_temperature === 'warm' ? 'text-orange-600' : 'text-gray-600';
 
                     const sourceIcon = act.source === 'scan' ? '<i class="fas fa-camera text-blue-500"></i>' : '<i class="fas fa-user-plus text-gray-500"></i>';
                     const timeAgo = formatTimestamp(act.timestamp);
@@ -4679,8 +4840,8 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 }
                 resultsDiv.innerHTML = `<p class="text-xs text-gray-400 mb-2">${data.total} result${data.total !== 1 ? 's' : ''}</p>` + data.contacts.map(c => {
                     const tempBadge = c.lead_temperature === 'hot' ? '<span class="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded">Hot</span>' :
-                                      c.lead_temperature === 'warm' ? '<span class="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded">Warm</span>' :
-                                      c.lead_temperature === 'cold' ? '<span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">Cold</span>' : '';
+                        c.lead_temperature === 'warm' ? '<span class="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded">Warm</span>' :
+                            c.lead_temperature === 'cold' ? '<span class="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">Cold</span>' : '';
                     return `<div onclick="openAdminContactDetail('${c.id}', '${c.user_id}')" class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(c.name)} ${tempBadge}</p>
@@ -4839,9 +5000,9 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 if (!contact) { content.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Contact not found</p>'; return; }
 
                 const tempBadge = contact.lead_temperature === 'hot' ? '<span class="px-2 py-1 bg-red-100 text-red-600 rounded-full text-xs font-semibold">Hot</span>' :
-                                  contact.lead_temperature === 'warm' ? '<span class="px-2 py-1 bg-orange-100 text-orange-600 rounded-full text-xs font-semibold">Warm</span>' :
-                                  contact.lead_temperature === 'cold' ? '<span class="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-semibold">Cold</span>' :
-                                  '<span class="px-2 py-1 bg-gray-100 text-gray-400 rounded-full text-xs">Unscored</span>';
+                    contact.lead_temperature === 'warm' ? '<span class="px-2 py-1 bg-orange-100 text-orange-600 rounded-full text-xs font-semibold">Warm</span>' :
+                        contact.lead_temperature === 'cold' ? '<span class="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-semibold">Cold</span>' :
+                            '<span class="px-2 py-1 bg-gray-100 text-gray-400 rounded-full text-xs">Unscored</span>';
 
                 const linkedinLink = contact.linkedin && contact.linkedin !== 'N/A' ? `<a href="${contact.linkedin.startsWith('http') ? contact.linkedin : 'https://linkedin.com/in/' + contact.linkedin}" target="_blank" class="text-blue-600 hover:underline text-sm"><i class="fab fa-linkedin mr-1"></i>${escapeHtml(contact.linkedin)}</a>` : '';
 
@@ -5159,8 +5320,8 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                         runBtn.innerHTML = data.status === 'failed'
                             ? '<i class="fas fa-redo mr-1"></i>Retry Pipeline'
                             : data.status.startsWith('complete')
-                            ? '<i class="fas fa-redo mr-1"></i>Re-run Pipeline'
-                            : '<i class="fas fa-play mr-1"></i>Run Pipeline';
+                                ? '<i class="fas fa-redo mr-1"></i>Re-run Pipeline'
+                                : '<i class="fas fa-play mr-1"></i>Run Pipeline';
                     } else {
                         runBtn.disabled = true;
                         runBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Running...';
@@ -5207,9 +5368,9 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             const csvContent = [
                 ['Name', 'Email', 'Phone', 'LinkedIn', 'Company', 'Notes', 'Lead Score', 'Lead Temperature', 'Source', 'Scanned By'],
                 [contact.name || '', contact.email || '', contact.phone || '', contact.linkedin || '',
-                 contact.company_name || '', (contact.notes || '').replace(/\n/g, ' '),
-                 contact.lead_score || '', contact.lead_temperature || '',
-                 contact.source || 'manual', contact.user_name || '']
+                contact.company_name || '', (contact.notes || '').replace(/\n/g, ' '),
+                contact.lead_score || '', contact.lead_temperature || '',
+                contact.source || 'manual', contact.user_name || '']
             ].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
@@ -5225,7 +5386,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             const contact = AppState.contacts.find(c => c.id === contactId);
             if (!contact) { showToast('Contact not found', 'error'); return; }
             const webhookUrl = document.getElementById('webhookUrlInput')?.value?.trim()
-                            || localStorage.getItem('event_scout_webhook_url') || '';
+                || localStorage.getItem('event_scout_webhook_url') || '';
             if (!webhookUrl) {
                 showToast('No webhook URL configured. Set it in Admin > Webhook Configuration.', 'error');
                 return;
@@ -5267,7 +5428,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 .then(blob => {
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = `event_scout_contacts_${new Date().toISOString().slice(0,10)}.csv`;
+                    a.download = `event_scout_contacts_${new Date().toISOString().slice(0, 10)}.csv`;
                     a.click();
                     URL.revokeObjectURL(a.href);
                     showToast('Contacts exported!', 'success');
@@ -5759,7 +5920,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             currentFileCategory = cat;
             document.querySelectorAll('.file-cat-btn').forEach(btn => {
                 const isActive = (cat === '' && btn.textContent.trim() === 'All') ||
-                                 (cat && btn.getAttribute('onclick').includes("'" + cat + "'"));
+                    (cat && btn.getAttribute('onclick').includes("'" + cat + "'"));
                 btn.className = 'file-cat-btn px-3 py-1 rounded-full whitespace-nowrap text-xs font-medium ' +
                     (isActive ? 'bg-blue-600 text-white' : 'bg-white text-gray-700');
             });
@@ -5806,12 +5967,12 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 // Right swipe → voice recording indicator
                 if (dx > 20 && dx < 120) {
                     sc.style.transform = 'translateX(' + Math.min(dx * 0.3, 30) + 'px)';
-                    sc.style.background = 'linear-gradient(90deg, rgba(124,58,237,' + (dx/300) + ') 0%, transparent 40%)';
+                    sc.style.background = 'linear-gradient(90deg, rgba(124,58,237,' + (dx / 300) + ') 0%, transparent 40%)';
                 }
                 // Left swipe → delete indicator (red from right)
                 if (dx < -20 && dx > -120) {
                     sc.style.transform = 'translateX(' + Math.max(dx * 0.3, -30) + 'px)';
-                    sc.style.background = 'linear-gradient(270deg, rgba(239,68,68,' + (Math.abs(dx)/300) + ') 0%, transparent 40%)';
+                    sc.style.background = 'linear-gradient(270deg, rgba(239,68,68,' + (Math.abs(dx) / 300) + ') 0%, transparent 40%)';
                 }
             }, { passive: true });
             cl.addEventListener('touchend', e => {
@@ -5865,7 +6026,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         }
 
         const _origRender = renderContacts;
-        renderContacts = function(contacts) { _origRender(contacts); setTimeout(initSwipeHandlers, 100); };
+        renderContacts = function (contacts) { _origRender(contacts); setTimeout(initSwipeHandlers, 100); };
 
         function openVoiceRecordingOverlay(contactId, contactName) {
             AppState._voiceContactId = contactId; AppState._voiceTranscript = ''; AppState._voiceAudioBlob = null;
@@ -5876,7 +6037,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             document.getElementById('voiceSaveBtn').classList.add('hidden');
             var btn = document.getElementById('voiceRecordBtn'); btn.innerHTML = '<i class="fas fa-microphone"></i>'; btn.classList.remove('bg-gray-500'); btn.classList.add('bg-red-500', 'recording-pulse');
             document.getElementById('voiceRecordingOverlay').classList.remove('hidden');
-            setTimeout(function() { toggleVoiceRecording(); }, 300);
+            setTimeout(function () { toggleVoiceRecording(); }, 300);
         }
 
         function toggleVoiceRecording() { voiceIsRecording ? stopVoiceRecording() : startVoiceRecording(); }
@@ -5887,10 +6048,10 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             document.getElementById('voiceStatus').textContent = 'Recording...';
             document.getElementById('voiceTranscript').classList.remove('hidden');
             document.getElementById('voiceTranscript').innerHTML = '<span class="text-gray-400 italic">Listening...</span>';
-            voiceTimerInterval = setInterval(function() { voiceSeconds++; var m = Math.floor(voiceSeconds/60), s = voiceSeconds%60; document.getElementById('voiceTimer').textContent = m + ':' + s.toString().padStart(2,'0'); if (voiceSeconds >= 60) stopVoiceRecording(); }, 1000);
-            try { var stream = await navigator.mediaDevices.getUserMedia({audio:true}); voiceMediaRecorder = new MediaRecorder(stream, {mimeType:'audio/webm;codecs=opus'}); voiceMediaRecorder.ondataavailable = function(e) { if (e.data.size > 0) voiceAudioChunks.push(e.data); }; voiceMediaRecorder.onstop = function() { stream.getTracks().forEach(function(t){t.stop();}); if (voiceAudioChunks.length > 0) AppState._voiceAudioBlob = new Blob(voiceAudioChunks, {type:'audio/webm'}); }; voiceMediaRecorder.start(1000); } catch(err) { console.warn('[Voice] MediaRecorder unavailable:', err); }
+            voiceTimerInterval = setInterval(function () { voiceSeconds++; var m = Math.floor(voiceSeconds / 60), s = voiceSeconds % 60; document.getElementById('voiceTimer').textContent = m + ':' + s.toString().padStart(2, '0'); if (voiceSeconds >= 60) stopVoiceRecording(); }, 1000);
+            try { var stream = await navigator.mediaDevices.getUserMedia({ audio: true }); voiceMediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' }); voiceMediaRecorder.ondataavailable = function (e) { if (e.data.size > 0) voiceAudioChunks.push(e.data); }; voiceMediaRecorder.onstop = function () { stream.getTracks().forEach(function (t) { t.stop(); }); if (voiceAudioChunks.length > 0) AppState._voiceAudioBlob = new Blob(voiceAudioChunks, { type: 'audio/webm' }); }; voiceMediaRecorder.start(1000); } catch (err) { console.warn('[Voice] MediaRecorder unavailable:', err); }
             var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (SR) { voiceRecognition = new SR(); voiceRecognition.continuous = true; voiceRecognition.interimResults = true; voiceRecognition.lang = 'en-US'; var finalT = ''; voiceRecognition.onresult = function(evt) { var interim = ''; for (var i = evt.resultIndex; i < evt.results.length; i++) { if (evt.results[i].isFinal) finalT += evt.results[i][0].transcript + ' '; else interim += evt.results[i][0].transcript; } AppState._voiceTranscript = finalT.trim(); document.getElementById('voiceTranscript').innerHTML = finalT + '<span class="text-gray-400">' + interim + '</span>'; }; voiceRecognition.onerror = function(e) { console.warn('[Voice] Recognition error:', e.error); }; voiceRecognition.onend = function() { if (voiceIsRecording) try { voiceRecognition.start(); } catch(e) {} }; voiceRecognition.start(); }
+            if (SR) { voiceRecognition = new SR(); voiceRecognition.continuous = true; voiceRecognition.interimResults = true; voiceRecognition.lang = 'en-US'; var finalT = ''; voiceRecognition.onresult = function (evt) { var interim = ''; for (var i = evt.resultIndex; i < evt.results.length; i++) { if (evt.results[i].isFinal) finalT += evt.results[i][0].transcript + ' '; else interim += evt.results[i][0].transcript; } AppState._voiceTranscript = finalT.trim(); document.getElementById('voiceTranscript').innerHTML = finalT + '<span class="text-gray-400">' + interim + '</span>'; }; voiceRecognition.onerror = function (e) { console.warn('[Voice] Recognition error:', e.error); }; voiceRecognition.onend = function () { if (voiceIsRecording) try { voiceRecognition.start(); } catch (e) { } }; voiceRecognition.start(); }
             else { document.getElementById('voiceTranscript').innerHTML = '<span class="text-gray-400 italic">Live transcription unavailable. Audio sent for AI transcription on save.</span>'; }
         }
 
@@ -5904,7 +6065,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                     AppState._voiceTranscript = displayedText;
                 }
             }
-            if (voiceRecognition) { voiceRecognition.onend = null; try { voiceRecognition.stop(); } catch(e) {} voiceRecognition = null; }
+            if (voiceRecognition) { voiceRecognition.onend = null; try { voiceRecognition.stop(); } catch (e) { } voiceRecognition = null; }
             if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') voiceMediaRecorder.stop();
             var btn = document.getElementById('voiceRecordBtn'); btn.innerHTML = '<i class="fas fa-microphone"></i>'; btn.classList.remove('bg-gray-500'); btn.classList.add('bg-red-500');
             document.getElementById('voiceStatus').textContent = 'Recording complete';
@@ -5918,10 +6079,10 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             var contactId = AppState._voiceContactId, transcript = AppState._voiceTranscript, audioBlob = AppState._voiceAudioBlob;
             if (!contactId) return;
             document.getElementById('voiceStatus').textContent = 'Saving...'; document.getElementById('voiceSaveBtn').disabled = true;
-            if (!transcript && audioBlob) { try { var fd = new FormData(); fd.append('file', audioBlob, 'voice_note.webm'); var r = await resilientFetch(CONFIG.API_BASE_URL + '/transcribe_audio/?user_id=' + AppState.currentUser.user_id, {method:'POST', headers:{'X-API-Key':CONFIG.API_KEY}, body:fd}); var d = await r.json(); if (r.ok && d.transcript) transcript = d.transcript; } catch(err) { console.error('[Voice] Gemini transcription failed:', err); } }
+            if (!transcript && audioBlob) { try { var fd = new FormData(); fd.append('file', audioBlob, 'voice_note.webm'); var r = await resilientFetch(CONFIG.API_BASE_URL + '/transcribe_audio/?user_id=' + AppState.currentUser.user_id, { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }, body: fd }); var d = await r.json(); if (r.ok && d.transcript) transcript = d.transcript; } catch (err) { console.error('[Voice] Gemini transcription failed:', err); } }
             var audioBase64 = '';
-            if (audioBlob) { try { var buf = await audioBlob.arrayBuffer(); var bytes = new Uint8Array(buf); var bin = ''; bytes.forEach(function(b){ bin += String.fromCharCode(b); }); audioBase64 = btoa(bin); } catch(err) { console.warn('[Voice] Audio encode failed:', err); } }
-            try { var response = await resilientFetch(CONFIG.API_BASE_URL + '/contact/' + contactId + '/audio_note?user_id=' + AppState.currentUser.user_id, { method:'POST', headers:{'Content-Type':'application/json','X-API-Key':CONFIG.API_KEY}, body:JSON.stringify({contact_id:contactId, transcript:transcript||'(no transcription)', audio_base64:audioBase64}) }); if (response.ok) { showToast('Voice note saved!', 'success'); loadContacts(); } else showToast('Failed to save voice note', 'error'); } catch(err) { showToast('Network error saving voice note', 'error'); }
+            if (audioBlob) { try { var buf = await audioBlob.arrayBuffer(); var bytes = new Uint8Array(buf); var bin = ''; bytes.forEach(function (b) { bin += String.fromCharCode(b); }); audioBase64 = btoa(bin); } catch (err) { console.warn('[Voice] Audio encode failed:', err); } }
+            try { var response = await resilientFetch(CONFIG.API_BASE_URL + '/contact/' + contactId + '/audio_note?user_id=' + AppState.currentUser.user_id, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': CONFIG.API_KEY }, body: JSON.stringify({ contact_id: contactId, transcript: transcript || '(no transcription)', audio_base64: audioBase64 }) }); if (response.ok) { showToast('Voice note saved!', 'success'); loadContacts(); } else showToast('Failed to save voice note', 'error'); } catch (err) { showToast('Network error saving voice note', 'error'); }
             AppState._voiceContactId = null; AppState._voiceTranscript = ''; AppState._voiceAudioBlob = null;
             document.getElementById('voiceRecordingOverlay').classList.add('hidden'); document.getElementById('voiceSaveBtn').disabled = false;
         }
@@ -5934,8 +6095,8 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             if (!SR) { showToast('Voice input not supported', 'error'); return; }
             chatVoiceActive = true;
             var btn = document.getElementById('chatMicBtn');
-            btn.classList.remove('bg-gray-100','text-gray-500');
-            btn.classList.add('bg-red-500','text-white','recording-pulse');
+            btn.classList.remove('bg-gray-100', 'text-gray-500');
+            btn.classList.add('bg-red-500', 'text-white', 'recording-pulse');
             var chatInput = document.getElementById('chatInput');
             chatInput.placeholder = 'Listening... speak now';
             chatVoiceRecognition = new SR();
@@ -5943,7 +6104,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
             chatVoiceRecognition.interimResults = true;
             chatVoiceRecognition.lang = 'en-US';
             var finalText = chatInput.value ? chatInput.value + ' ' : '';
-            chatVoiceRecognition.onresult = function(evt) {
+            chatVoiceRecognition.onresult = function (evt) {
                 var interim = '';
                 for (var i = evt.resultIndex; i < evt.results.length; i++) {
                     if (evt.results[i].isFinal) finalText += evt.results[i][0].transcript + ' ';
@@ -5951,14 +6112,14 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
                 }
                 chatInput.value = (finalText + interim).trim();
             };
-            chatVoiceRecognition.onerror = function(e) {
+            chatVoiceRecognition.onerror = function (e) {
                 console.warn('[Chat Voice] Error:', e.error);
                 if (e.error !== 'no-speech') stopChatVoice();
             };
-            chatVoiceRecognition.onend = function() {
+            chatVoiceRecognition.onend = function () {
                 if (chatVoiceActive) {
                     try { finalText = chatInput.value ? chatInput.value + ' ' : ''; chatVoiceRecognition.start(); }
-                    catch(e) { stopChatVoice(); }
+                    catch (e) { stopChatVoice(); }
                 }
             };
             chatVoiceRecognition.start();
@@ -5966,11 +6127,12 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s=>s.trim()).map(slide => {
         function stopChatVoice() {
             chatVoiceActive = false;
             var btn = document.getElementById('chatMicBtn');
-            btn.classList.remove('bg-red-500','text-white','recording-pulse');
-            btn.classList.add('bg-gray-100','text-gray-500');
-            if (chatVoiceRecognition) { chatVoiceRecognition.onend = null; try { chatVoiceRecognition.stop(); } catch(e) {} chatVoiceRecognition = null; }
+            btn.classList.remove('bg-red-500', 'text-white', 'recording-pulse');
+            btn.classList.add('bg-gray-100', 'text-gray-500');
+            if (chatVoiceRecognition) { chatVoiceRecognition.onend = null; try { chatVoiceRecognition.stop(); } catch (e) { } chatVoiceRecognition = null; }
             document.getElementById('chatInput').placeholder = 'Ask about your contacts...';
         }
     </script>
 </body>
+
 </html>

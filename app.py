@@ -4,7 +4,12 @@ import json
 import uuid
 import asyncio
 import qrcode
-from pyzbar.pyzbar import decode as decode_qr
+try:
+    from pyzbar.pyzbar import decode as decode_qr
+except ImportError:
+    print("[WARNING] pyzbar not found. QR scanning will be disabled.")
+    def decode_qr(image):
+        return []
 from PIL import Image
 import base64
 import traceback
@@ -837,8 +842,8 @@ def extract_contact_from_image_with_gemini(image_path: str) -> dict:
         print("[GEMINI] API key not configured")
         return fields
 
-    # Only try ONE model — all 3 share the same free-tier quota, so cascade is pointless
-    model_names = ['gemini-2.5-flash']
+    # Use stable model for better reliability
+    model_names = ['gemini-2.0-flash', 'gemini-1.5-flash']
     img = Image.open(image_path)
     print(f"[GEMINI] Image opened: {img.size}, mode={img.mode}")
 
@@ -876,9 +881,9 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
             print(f"[GEMINI] Trying model: {model_name}")
             model = genai.GenerativeModel(model_name)
 
-            # 15s timeout — card OCR is simple, if model can't respond in 15s it's stuck
+            # 20s timeout — card OCR is simple, but network latency can be high
             import google.generativeai.types as genai_types
-            request_options = genai_types.RequestOptions(timeout=15)
+            request_options = genai_types.RequestOptions(timeout=20)
             response = model.generate_content([prompt, img], request_options=request_options)
             if not response or not response.text:
                 err_msg = f"{model_name}: empty response"
@@ -889,23 +894,23 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
             response_text = response.text.strip()
             print(f"[GEMINI] Raw response from {model_name}: {response_text[:500]}")
 
-            if response_text.startswith("```"):
-                parts = response_text.split("```")
-                if len(parts) >= 3:
-                    response_text = parts[1]
+            # ROBUST JSON PARSING
+            try:
+                # 1. Try direct parse
+                extracted = json.loads(response_text)
+            except json.JSONDecodeError:
+                # 2. Try to find JSON block block
+                match = re.search(r"\{.*\}", response_text, re.DOTALL)
+                if match:
+                    try:
+                        extracted = json.loads(match.group(0))
+                    except:
+                        # 3. Clean common markdown garbage
+                        clean_text = response_text.replace("```json", "").replace("```", "").strip()
+                        extracted = json.loads(clean_text)
                 else:
-                    response_text = parts[1] if len(parts) > 1 else response_text
-                if response_text.startswith("json"):
-                    response_text = response_text[4:]
-                response_text = response_text.strip()
+                    raise Exception("No JSON object found in response")
 
-            if not response_text.startswith("{"):
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                if json_start != -1 and json_end > json_start:
-                    response_text = response_text[json_start:json_end]
-
-            extracted = json.loads(response_text)
             for key in fields:
                 if key in extracted and extracted[key] and str(extracted[key]).strip() and extracted[key] != "N/A":
                     fields[key] = str(extracted[key]).strip()
@@ -2100,7 +2105,7 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    return {"message": "Event Scout Intelligence API", "version": "3.3.0"}
+    return {"message": "Event Scout Intelligence API", "version": "3.4.0"}
 
 
 @app.get("/health/")
@@ -2116,7 +2121,7 @@ async def health_check():
             "gemini_configured": gemini_configured,
             "openrouter_configured": bool(OPENROUTER_API_KEY),
             "webhook_configured": bool(WEBHOOK_URL),
-            "version": "3.3.0",
+            "version": "3.4.0",
         }
     finally:
         await session.close()
