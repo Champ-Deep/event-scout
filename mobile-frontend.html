@@ -1441,7 +1441,13 @@
         };
 
         // ==================== NETWORK RESILIENCE ====================
-        const NETWORK = { TIMEOUT_MS: 60000, MAX_RETRIES: 1, RETRY_DELAY_MS: 2000 };
+        const NETWORK = {
+            TIMEOUT_MS: 60000,          // Regular operations (60s)
+            ADMIN_TIMEOUT_MS: 120000,   // Admin operations (2 min)
+            MAX_RETRIES: 1,
+            RETRY_DELAY_MS: 2000
+        };
+        let adminOperationInProgress = false;  // Prevent auto-refresh during admin ops
 
         function getNetworkErrorMessage(error) {
             if (!navigator.onLine) return 'You appear to be offline. Please check your network connection.';
@@ -1466,6 +1472,21 @@
                     await new Promise(r => setTimeout(r, NETWORK.RETRY_DELAY_MS));
                     return resilientFetch(url, options, retries - 1);
                 }
+                error.userMessage = getNetworkErrorMessage(error);
+                throw error;
+            }
+        }
+
+        // Admin operations use extended timeout
+        async function adminFetch(url, options = {}) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), NETWORK.ADMIN_TIMEOUT_MS);
+            try {
+                const response = await _nativeFetch(url, { ...options, signal: controller.signal });
+                clearTimeout(timeout);
+                return response;
+            } catch (error) {
+                clearTimeout(timeout);
                 error.userMessage = getNetworkErrorMessage(error);
                 throw error;
             }
@@ -4888,7 +4909,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             if (adminAutoRefreshInterval) clearInterval(adminAutoRefreshInterval);
 
             adminAutoRefreshInterval = setInterval(() => {
-                if (AppState.activeScreen === 'admin') {
+                if (AppState.activeScreen === 'admin' && !adminOperationInProgress) {
                     loadAdminDashboard();
                     loadAdminActivity();
                 }
@@ -5627,8 +5648,9 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
         async function mergeDuplicateGroup(primaryId, secondaryId) {
             if (!confirm('Merge these contacts? The duplicate will be absorbed into the primary.')) return;
+            adminOperationInProgress = true;
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts/merge?user_id=${AppState.currentUser.user_id}`, {
+                const resp = await adminFetch(`${CONFIG.API_BASE_URL}/admin/contacts/merge?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ primary_id: primaryId, secondary_id: secondaryId })
@@ -5638,25 +5660,51 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     showToast(data.message, 'success');
                     findDuplicatesInDrilldown(); // Refresh
                 } else { showToast(data.detail || 'Merge failed', 'error'); }
-            } catch (err) { console.error('Contact merge error:', err); showToast('Failed to merge contacts', 'error'); }
+            } catch (err) {
+                console.error('Contact merge error:', err);
+                showToast(err.name === 'AbortError' ? 'Merge timed out' : 'Failed to merge contacts', 'error');
+            } finally {
+                adminOperationInProgress = false;
+            }
         }
 
         async function mergeAllInGroup(ids) {
             if (!confirm(`Merge ${ids.length} contacts into one? All duplicates will be absorbed.`)) return;
+            adminOperationInProgress = true;
             const primaryId = ids[0];
-            for (let i = 1; i < ids.length; i++) {
-                try {
-                    const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts/merge?user_id=${AppState.currentUser.user_id}`, {
-                        method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ primary_id: primaryId, secondary_id: ids[i] })
-                    });
-                    const data = await resp.json();
-                    if (!resp.ok) { showToast(data.detail || `Failed to merge contact ${i}`, 'error'); }
-                } catch (err) { console.error('Merge error:', err); }
+            let successCount = 0, failCount = 0;
+
+            try {
+                for (let i = 1; i < ids.length; i++) {
+                    showToast(`Merging contact ${i} of ${ids.length - 1}...`, 'info');
+                    try {
+                        const resp = await adminFetch(`${CONFIG.API_BASE_URL}/admin/contacts/merge?user_id=${AppState.currentUser.user_id}`, {
+                            method: 'POST',
+                            headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ primary_id: primaryId, secondary_id: ids[i] })
+                        });
+                        const data = await resp.json();
+                        if (resp.ok && data.status === 'success') {
+                            successCount++;
+                        } else {
+                            failCount++;
+                            console.error(`Merge ${i} failed:`, data.detail);
+                        }
+                    } catch (err) {
+                        console.error(`Merge ${i} error:`, err);
+                        failCount++;
+                    }
+                }
+
+                showToast(
+                    `Merged ${successCount} contact${successCount !== 1 ? 's' : ''}` +
+                    (failCount ? `, ${failCount} failed` : ''),
+                    failCount ? 'warning' : 'success'
+                );
+                findDuplicatesInDrilldown(); // Only refresh once at end
+            } finally {
+                adminOperationInProgress = false;
             }
-            showToast('All duplicates merged', 'success');
-            findDuplicatesInDrilldown();
         }
 
         function toggleDrilldownSelectMode() {
@@ -5701,8 +5749,9 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             if (!drilldownSelectedIds.size) { showToast('No contacts selected', 'error'); return; }
             if (!confirm(`Delete ${drilldownSelectedIds.size} contacts? This cannot be undone!`)) return;
 
+            adminOperationInProgress = true;
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts/batch_delete?user_id=${AppState.currentUser.user_id}`, {
+                const resp = await adminFetch(`${CONFIG.API_BASE_URL}/admin/contacts/batch_delete?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST',
                     headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contact_ids: [...drilldownSelectedIds] })
@@ -5715,7 +5764,12 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     // Refresh drilldown
                     openUserDrilldown(currentDrilldownUserId, document.getElementById('drilldownUserName').textContent, document.getElementById('drilldownUserEmail').textContent);
                 } else { showToast(data.detail || 'Delete failed', 'error'); }
-            } catch (err) { console.error('Batch delete error:', err); showToast('Failed to delete contacts', 'error'); }
+            } catch (err) {
+                console.error('Batch delete error:', err);
+                showToast(err.name === 'AbortError' ? 'Delete timed out' : 'Failed to delete contacts', 'error');
+            } finally {
+                adminOperationInProgress = false;
+            }
         }
 
         // ==================== EVENT FILES (Admin Upload + User Download) ====================

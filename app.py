@@ -3695,9 +3695,9 @@ async def admin_merge_contacts(req: MergeContactsRequest, admin_id: str = Depend
         await session.delete(secondary)
         await session.commit()
 
-        # Update FAISS
+        # Update FAISS (async to prevent event loop blocking)
         try:
-            faiss_index.delete_contact(user_id_str, req.secondary_id)
+            await asyncio.to_thread(faiss_index.delete_contact, user_id_str, req.secondary_id)
         except Exception as faiss_err:
             print(f"[FAISS] Error deleting merged contact: {faiss_err}")
 
@@ -3727,13 +3727,17 @@ def normalize_phone(phone: str) -> str:
 @app.get("/admin/contacts/duplicates")
 async def admin_find_duplicates(
     target_user_id: str = Query(..., description="User ID to check for duplicates"),
+    limit: int = Query(500, description="Max contacts to check (recent first)"),
     admin_id: str = Depends(verify_admin),
 ):
     """Find duplicate contacts within a user's contact list."""
     session = await get_db_session()
     try:
         result = await session.execute(
-            select(ContactDB).where(ContactDB.user_id == uuid.UUID(target_user_id)).order_by(ContactDB.created_at.asc())
+            select(ContactDB)
+            .where(ContactDB.user_id == uuid.UUID(target_user_id))
+            .order_by(ContactDB.created_at.desc())  # Most recent first
+            .limit(limit)
         )
         contacts = result.scalars().all()
 
