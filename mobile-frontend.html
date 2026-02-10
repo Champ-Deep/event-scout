@@ -1864,53 +1864,64 @@
 
         // ==================== CONTACT FUNCTIONS ====================
         async function loadContacts() {
-            const contactsList = document.getElementById('contactsList');
-
-            // Show cached contacts immediately if available (instant feel)
-            if (AppState.contacts.length > 0) {
-                renderContacts(AppState.contacts);
-            } else {
-                // Show skeleton shimmer only on first load
-                contactsList.innerHTML = [1, 2, 3, 4, 5].map(() => `
-                    <div class="bg-white rounded-xl shadow-sm p-4 mb-2 mx-2 animate-pulse">
-                        <div class="flex gap-3">
-                            <div class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0"></div>
-                            <div class="flex-1 space-y-2 py-1">
-                                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-                                <div class="h-3 bg-gray-100 rounded w-2/3"></div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+            // Prevent concurrent calls
+            if (loadingContacts) {
+                console.warn('[CONTACTS] Already loading, skipping duplicate call');
+                return;
             }
+            loadingContacts = true;
 
             try {
-                // Admin sees ALL contacts from all team members; regular users see only their own
-                const url = AppState.currentUser.is_admin
-                    ? `${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&limit=500`
-                    : `${CONFIG.API_BASE_URL}/list_contacts/?user_id=${AppState.currentUser.user_id}`;
+                const contactsList = document.getElementById('contactsList');
 
-                const response = await resilientFetch(url, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.status === 'success') {
-                    AppState.contacts = data.contacts;
+                // Show cached contacts immediately if available (instant feel)
+                if (AppState.contacts.length > 0) {
                     renderContacts(AppState.contacts);
-                    renderHotLeads();
                 } else {
-                    if (AppState.contacts.length === 0) {
-                        contactsList.innerHTML = `<div class="p-6 text-center text-red-500">Failed to load contacts</div>`;
+                    // Show skeleton shimmer only on first load
+                    contactsList.innerHTML = [1, 2, 3, 4, 5].map(() => `
+                        <div class="bg-white rounded-xl shadow-sm p-4 mb-2 mx-2 animate-pulse">
+                            <div class="flex gap-3">
+                                <div class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0"></div>
+                                <div class="flex-1 space-y-2 py-1">
+                                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                    <div class="h-3 bg-gray-100 rounded w-2/3"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                try {
+                    // Admin sees ALL contacts from all team members; regular users see only their own
+                    const url = AppState.currentUser.is_admin
+                        ? `${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&limit=500`
+                        : `${CONFIG.API_BASE_URL}/list_contacts/?user_id=${AppState.currentUser.user_id}`;
+
+                    const response = await resilientFetch(url, {
+                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.status === 'success') {
+                        AppState.contacts = data.contacts;
+                        renderContacts(AppState.contacts);
+                        renderHotLeads();
+                    } else {
+                        if (AppState.contacts.length === 0) {
+                            contactsList.innerHTML = `<div class="p-6 text-center text-red-500">Failed to load contacts</div>`;
+                        }
                     }
+                } catch (error) {
+                    if (AppState.contacts.length === 0) {
+                        contactsList.innerHTML = `<div class="p-6 text-center text-red-500">${error.userMessage || 'Network error. Please try again.'}</div>`;
+                    }
+                    console.error('Load contacts error:', error);
                 }
-            } catch (error) {
-                if (AppState.contacts.length === 0) {
-                    contactsList.innerHTML = `<div class="p-6 text-center text-red-500">${error.userMessage || 'Network error. Please try again.'}</div>`;
-                }
-                console.error('Load contacts error:', error);
+            } finally {
+                loadingContacts = false;
             }
         }
 
@@ -2412,6 +2423,7 @@
         const scanQueue = []; // { id, status: 'uploading'|'done'|'error'|'duplicate', name, ts }
         let scanQueueIdCounter = 0;
         let scanImageQueue = []; // Parallel processing queue: { blob, filename, scanId }
+        let loadingContacts = false; // Prevent concurrent loadContacts() calls
 
         function addToScanQueue() {
             const id = ++scanQueueIdCounter;
@@ -2529,8 +2541,11 @@
                 // Refresh contacts when all scans in batch are done
                 if (scanImageQueue.length === 0 && activeScanCount === 0) {
                     console.log('[SCAN] Batch complete — refreshing contacts');
-                    loadContacts();
-                    showToast(`${completedScansInBatch} card${completedScansInBatch > 1 ? 's' : ''} processed`, 'success');
+                    // Small delay to let backend flush FAISS index writes
+                    setTimeout(() => {
+                        loadContacts();
+                        showToast(`${completedScansInBatch} card${completedScansInBatch > 1 ? 's' : ''} processed`, 'success');
+                    }, 500);
                 }
                 processNextScan();
             }
@@ -2705,19 +2720,25 @@
                 cameraStream.getTracks().forEach(track => track.stop());
                 cameraStream = null;
             }
-            // Clear visual feed but keep processing running
+            // Clear visual counters but preserve scan tracking
             scanSessionCount = 0;
-            scanQueue.length = 0;
+            // ✅ Don't clear scanQueue - let auto-removal in updateScanQueueEntry handle it
             document.getElementById('scanCounter').classList.add('hidden');
             document.getElementById('bulkScanDone').classList.add('hidden');
             document.getElementById('pendingScanBadge').classList.add('hidden');
-            const feed = document.getElementById('scanFeed');
-            if (feed) feed.innerHTML = '';
+            // ✅ Keep feed element visible so status updates still render
             // NOTE: Do NOT clear scanImageQueue — let active scans finish in background
             // The global processing banner will show progress
             updateGlobalProcessingBanner();
             switchScreen('contacts');
-            loadContacts();
+
+            // ✅ ONLY call loadContacts if no scans are active
+            // Otherwise, let startScanItem's finally block handle it when last scan completes
+            if (scanImageQueue.length === 0 && activeScanCount === 0) {
+                loadContacts();
+            } else {
+                console.log('[SCAN] Scans still processing, will auto-refresh when done');
+            }
         }
 
         function uploadFromGallery() {
