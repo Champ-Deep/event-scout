@@ -318,6 +318,10 @@ def _create_engine(url):
         pool_pre_ping=True,
         pool_recycle=1800,   # Recycle connections every 30 min
         pool_timeout=30,     # Fail after 30s if no connection available
+        connect_args={
+            "timeout": 3,           # TCP connection timeout (seconds)
+            "command_timeout": 5,   # SQL command timeout (seconds)
+        }
     )
 
 
