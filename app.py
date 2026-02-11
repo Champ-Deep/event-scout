@@ -2172,38 +2172,16 @@ async def health_check(debug: bool = Query(False, description="Include debug inf
             "environment_keys": list(os.environ.keys()) if os.environ else [],
         }
     
-    # Check database availability with timeout
-    try:
-        factory = get_session_factory()
-        if factory is None:
-            health_status["status"] = "degraded"
-            health_status["database"] = "not_configured"
-            health_status["database_error"] = "DATABASE_URL not set or invalid"
-            return health_status
-        
-        # Database check with timeout to prevent hanging
-        async def check_db():
-            async with factory() as session:
-                result = await session.execute(select(func.count(UserDB.id)))
-                total_users = result.scalar() or 0
-                health_status["database"] = "postgresql"
-                health_status["database_connected"] = True
-                health_status["total_users"] = total_users
-        
-        try:
-            await asyncio.wait_for(check_db(), timeout=3.0)
-        except asyncio.TimeoutError:
-            health_status["status"] = "degraded"
-            health_status["database"] = "timeout"
-            health_status["database_error"] = "Database connection timed out after 3 seconds"
-        except Exception as db_err:
-            health_status["status"] = "degraded"
-            health_status["database"] = "error"
-            health_status["database_error"] = str(db_err)
-    except Exception as e:
+    # Check database configuration (non-blocking)
+    factory = get_session_factory()
+    if factory is None:
         health_status["status"] = "degraded"
-        health_status["database"] = "error"
-        health_status["database_error"] = str(e)
+        health_status["database"] = "not_configured"
+        health_status["database_error"] = "DATABASE_URL not set or invalid"
+    else:
+        health_status["database"] = "postgresql"
+        health_status["database_connected"] = False
+        health_status["database_error"] = "Connection not tested (non-blocking health check)"
     
     return health_status
 
