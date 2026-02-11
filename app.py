@@ -2172,54 +2172,67 @@ async def health_check(debug: bool = Query(False, description="Include debug inf
             "environment_keys": list(os.environ.keys()) if os.environ else [],
         }
     
-    # Check database configuration (non-blocking)
-    factory = get_session_factory()
-    if factory is None:
-        health_status["status"] = "degraded"
-        health_status["database"] = "not_configured"
-        health_status["database_error"] = "DATABASE_URL not set or invalid"
-    else:
+    # Check database configuration (truly non-blocking - no connection attempt)
+    if ASYNC_DATABASE_URL:
         health_status["database"] = "postgresql"
         health_status["database_connected"] = False
-        health_status["database_error"] = "Connection not tested (non-blocking health check)"
+        health_status["database_note"] = "URL configured, connection not tested"
+        # Show which URL is being used (masked)
+        if "railway.internal" in ASYNC_DATABASE_URL:
+            health_status["database_network"] = "internal"
+        elif "proxy.rlwy.net" in ASYNC_DATABASE_URL:
+            health_status["database_network"] = "public_proxy"
+        else:
+            health_status["database_network"] = "external"
+    else:
+        health_status["status"] = "degraded"
+        health_status["database"] = "not_configured"
+        health_status["database_error"] = "DATABASE_URL not set"
     
     return health_status
 
 
 @app.get("/debug")
 async def debug_info():
-    """Debug endpoint to check configuration (no secrets)."""
+    """Debug endpoint to check configuration (no secrets). Does NOT attempt DB connection."""
     import os
-    db_url = os.environ.get("DATABASE_URL", "")
-    db_url_masked = "not_set"
-    if db_url:
-        # Mask credentials
-        try:
-            if "@" in db_url:
-                # postgres://user:pass@host:port/dbname
-                parts = db_url.split("@")
-                if len(parts) == 2:
-                    db_url_masked = f"postgres://***@{parts[1]}"
-                else:
-                    db_url_masked = "postgres://***@***"
-            else:
-                db_url_masked = db_url[:20] + "..." if len(db_url) > 20 else db_url
-        except:
-            db_url_masked = "masked"
     
-    factory = get_session_factory()
-    engine = get_engine()
+    # Check raw environment variables
+    db_url_env = os.environ.get("DATABASE_URL", "")
+    db_public_url_env = os.environ.get("DATABASE_PUBLIC_URL", "")
+    
+    def mask_url(url):
+        if not url:
+            return "not_set"
+        try:
+            if "@" in url:
+                parts = url.split("@")
+                if len(parts) == 2:
+                    return f"postgres://***@{parts[1]}"
+            return url[:20] + "..."
+        except:
+            return "masked"
+    
+    # Determine which URL the app is actually using
+    actual_url_used = ASYNC_DATABASE_URL if ASYNC_DATABASE_URL else "none"
+    network_type = "unknown"
+    if "railway.internal" in actual_url_used:
+        network_type = "internal (PROBLEM: often fails)"
+    elif "proxy.rlwy.net" in actual_url_used:
+        network_type = "public_proxy (reliable)"
+    elif actual_url_used != "none":
+        network_type = "external"
     
     return {
-        "database_url_configured": bool(db_url),
-        "database_url_masked": db_url_masked,
-        "async_database_url_configured": bool(ASYNC_DATABASE_URL),
-        "session_factory_exists": factory is not None,
-        "engine_exists": engine is not None,
+        "env_database_url": mask_url(db_url_env),
+        "env_database_public_url": mask_url(db_public_url_env),
+        "actual_url_in_use": mask_url(actual_url_used),
+        "network_type": network_type,
+        "async_database_url_set": bool(ASYNC_DATABASE_URL),
         "gemini_configured": gemini_configured,
         "openrouter_configured": bool(OPENROUTER_API_KEY),
         "webhook_configured": bool(WEBHOOK_URL),
-        "environment_keys": list(os.environ.keys()) if os.environ else [],
+        "environment_keys": sorted(list(os.environ.keys())) if os.environ else [],
     }
 
 
