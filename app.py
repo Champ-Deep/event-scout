@@ -2148,7 +2148,7 @@ async def health_check():
         "version": "3.4.0",
     }
     
-    # Check database availability
+    # Check database availability with timeout
     try:
         factory = get_session_factory()
         if factory is None:
@@ -2157,17 +2157,25 @@ async def health_check():
             health_status["database_error"] = "DATABASE_URL not set or invalid"
             return health_status
         
-        async with factory() as session:
-            try:
+        # Database check with timeout to prevent hanging
+        async def check_db():
+            async with factory() as session:
                 result = await session.execute(select(func.count(UserDB.id)))
                 total_users = result.scalar() or 0
                 health_status["database"] = "postgresql"
                 health_status["database_connected"] = True
                 health_status["total_users"] = total_users
-            except Exception as db_err:
-                health_status["status"] = "degraded"
-                health_status["database"] = "error"
-                health_status["database_error"] = str(db_err)
+        
+        try:
+            await asyncio.wait_for(check_db(), timeout=3.0)
+        except asyncio.TimeoutError:
+            health_status["status"] = "degraded"
+            health_status["database"] = "timeout"
+            health_status["database_error"] = "Database connection timed out after 3 seconds"
+        except Exception as db_err:
+            health_status["status"] = "degraded"
+            health_status["database"] = "error"
+            health_status["database_error"] = str(db_err)
     except Exception as e:
         health_status["status"] = "degraded"
         health_status["database"] = "error"
