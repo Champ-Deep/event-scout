@@ -2184,6 +2184,43 @@ async def health_check():
     return health_status
 
 
+@app.get("/debug")
+async def debug_info():
+    """Debug endpoint to check configuration (no secrets)."""
+    import os
+    db_url = os.environ.get("DATABASE_URL", "")
+    db_url_masked = "not_set"
+    if db_url:
+        # Mask credentials
+        try:
+            if "@" in db_url:
+                # postgres://user:pass@host:port/dbname
+                parts = db_url.split("@")
+                if len(parts) == 2:
+                    db_url_masked = f"postgres://***@{parts[1]}"
+                else:
+                    db_url_masked = "postgres://***@***"
+            else:
+                db_url_masked = db_url[:20] + "..." if len(db_url) > 20 else db_url
+        except:
+            db_url_masked = "masked"
+    
+    factory = get_session_factory()
+    engine = get_engine()
+    
+    return {
+        "database_url_configured": bool(db_url),
+        "database_url_masked": db_url_masked,
+        "async_database_url_configured": bool(ASYNC_DATABASE_URL),
+        "session_factory_exists": factory is not None,
+        "engine_exists": engine is not None,
+        "gemini_configured": gemini_configured,
+        "openrouter_configured": bool(OPENROUTER_API_KEY),
+        "webhook_configured": bool(WEBHOOK_URL),
+        "environment_keys": list(os.environ.keys()) if os.environ else [],
+    }
+
+
 @app.get("/user/validate")
 async def validate_user(user_id: str = Query(..., description="User ID to validate")):
     """Validate that a user_id exists in the database. Used to detect expired sessions."""
