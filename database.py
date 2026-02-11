@@ -323,8 +323,19 @@ def _create_engine(url):
 
 def get_engine():
     global engine
-    if engine is None and ASYNC_DATABASE_URL:
-        engine = _create_engine(ASYNC_DATABASE_URL)
+    if engine is None:
+        if not ASYNC_DATABASE_URL:
+            print("[DB] DATABASE_URL environment variable not set")
+            return None
+        if not ASYNC_DATABASE_URL.startswith("postgresql+asyncpg://"):
+            print(f"[DB] Invalid DATABASE_URL format (must start with postgresql+asyncpg://)")
+            return None
+        try:
+            engine = _create_engine(ASYNC_DATABASE_URL)
+            print(f"[DB] Engine created successfully")
+        except Exception as e:
+            print(f"[DB] Failed to create engine: {e}")
+            engine = None
     return engine
 
 
@@ -340,7 +351,14 @@ def get_session_factory():
     if async_session_factory is None:
         eng = get_engine()
         if eng:
-            async_session_factory = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
+            try:
+                async_session_factory = async_sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
+                print("[DB] Session factory created successfully")
+            except Exception as e:
+                print(f"[DB] Failed to create session factory: {e}")
+                async_session_factory = None
+        else:
+            print("[DB] Cannot create session factory - engine is None (DATABASE_URL may not be set)")
     return async_session_factory
 
 
