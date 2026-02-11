@@ -20,14 +20,18 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 
 # --- Database URL ---
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+DATABASE_PUBLIC_URL = os.environ.get("DATABASE_PUBLIC_URL", "")
 BACKUP_DATABASE_URL = os.environ.get("BACKUP_DATABASE_URL", "")
 
-# Use DATABASE_PUBLIC_URL as fallback if DATABASE_URL is not set (e.g., empty or default)
-if not DATABASE_URL or DATABASE_URL == "postgresql://":
-    DATABASE_PUBLIC_URL = os.environ.get("DATABASE_PUBLIC_URL", "")
-    if DATABASE_PUBLIC_URL:
-        print(f"[DB] Using DATABASE_PUBLIC_URL (public proxy) as DATABASE_URL")
-        DATABASE_URL = DATABASE_PUBLIC_URL
+# IMPORTANT: Railway internal networking can fail. Always prefer PUBLIC URL for reliability.
+# The internal URL (*.railway.internal) often times out due to network issues.
+if DATABASE_PUBLIC_URL:
+    print(f"[DB] Using DATABASE_PUBLIC_URL for reliable external connection")
+    DATABASE_URL = DATABASE_PUBLIC_URL
+elif DATABASE_URL:
+    print(f"[DB] Using DATABASE_URL (internal network)")
+else:
+    print(f"[DB] WARNING: No database URL configured")
 
 
 def _to_async_url(url):
