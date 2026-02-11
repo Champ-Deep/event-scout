@@ -2135,7 +2135,7 @@ async def root():
 
 
 @app.get("/health/")
-async def health_check():
+async def health_check(debug: bool = Query(False, description="Include debug information")):
     """Health check with graceful degradation. Returns partial status even if DB is unavailable."""
     health_status = {
         "status": "healthy",
@@ -2146,7 +2146,31 @@ async def health_check():
         "openrouter_configured": bool(OPENROUTER_API_KEY),
         "webhook_configured": bool(WEBHOOK_URL),
         "version": "3.4.0",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+    
+    if debug:
+        import os
+        db_url = os.environ.get("DATABASE_URL", "")
+        db_url_masked = "not_set"
+        if db_url:
+            if "@" in db_url:
+                parts = db_url.split("@")
+                if len(parts) == 2:
+                    db_url_masked = f"postgres://***@{parts[1]}"
+                else:
+                    db_url_masked = "postgres://***@***"
+            else:
+                db_url_masked = db_url[:20] + "..." if len(db_url) > 20 else db_url
+        
+        health_status["debug"] = {
+            "database_url_configured": bool(db_url),
+            "database_url_masked": db_url_masked,
+            "async_database_url_configured": bool(ASYNC_DATABASE_URL),
+            "session_factory_exists": get_session_factory() is not None,
+            "engine_exists": get_engine() is not None,
+            "environment_keys": list(os.environ.keys()) if os.environ else [],
+        }
     
     # Check database availability with timeout
     try:
