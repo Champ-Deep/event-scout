@@ -239,9 +239,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 async def get_db_session() -> AsyncSession:
     factory = get_session_factory()
     if factory is None:
-        raise HTTPException(status_code=503, detail="Database not available")
-    async with factory() as session:
-        return session
+        raise HTTPException(
+            status_code=503, 
+            detail="Database not available. Check DATABASE_URL environment variable."
+        )
+    try:
+        async with factory() as session:
+            return session
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Database connection failed: {str(e)}"
+        )
 
 
 # --- EMBEDDING MODEL ---
@@ -1913,8 +1922,25 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 @app.on_event("startup")
 async def startup_event():
     print("=" * 50)
-    print("[STARTUP] Event Scout Intelligence API v3.1 Starting...")
-    print(f"[STARTUP] Database URL configured: {bool(ASYNC_DATABASE_URL)}")
+    print("[STARTUP] Event Scout Intelligence API v3.4 Starting...")
+    
+    # Validate database URL format
+    db_url_status = "not configured"
+    if ASYNC_DATABASE_URL:
+        if ASYNC_DATABASE_URL.startswith("postgresql+asyncpg://"):
+            # Mask credentials for logging
+            try:
+                url_parts = ASYNC_DATABASE_URL.replace("postgresql+asyncpg://", "").split("@")
+                if len(url_parts) == 2:
+                    db_url_status = f"configured (host: {url_parts[1].split('/')[0]})"
+                else:
+                    db_url_status = "configured (format OK)"
+            except:
+                db_url_status = "configured"
+        else:
+            db_url_status = f"invalid format (starts with: {ASYNC_DATABASE_URL[:30]}...)"
+    print(f"[STARTUP] Database: {db_url_status}")
+    
     print(f"[STARTUP] Gemini configured: {gemini_configured} (OCR/scoring)")
     print(f"[STARTUP] OpenRouter configured: {bool(OPENROUTER_API_KEY)} (AI chat)")
     print(f"[STARTUP] Available models: {', '.join(m['name'] for m in AVAILABLE_MODELS.values())}")
@@ -2110,21 +2136,44 @@ async def root():
 
 @app.get("/health/")
 async def health_check():
-    session = await get_db_session()
+    """Health check with graceful degradation. Returns partial status even if DB is unavailable."""
+    health_status = {
+        "status": "healthy",
+        "database": "unknown",
+        "database_connected": False,
+        "total_users": 0,
+        "gemini_configured": gemini_configured,
+        "openrouter_configured": bool(OPENROUTER_API_KEY),
+        "webhook_configured": bool(WEBHOOK_URL),
+        "version": "3.4.0",
+    }
+    
+    # Check database availability
     try:
-        result = await session.execute(select(func.count(UserDB.id)))
-        total_users = result.scalar() or 0
-        return {
-            "status": "healthy",
-            "database": "postgresql",
-            "total_users": total_users,
-            "gemini_configured": gemini_configured,
-            "openrouter_configured": bool(OPENROUTER_API_KEY),
-            "webhook_configured": bool(WEBHOOK_URL),
-            "version": "3.4.0",
-        }
-    finally:
-        await session.close()
+        factory = get_session_factory()
+        if factory is None:
+            health_status["status"] = "degraded"
+            health_status["database"] = "not_configured"
+            health_status["database_error"] = "DATABASE_URL not set or invalid"
+            return health_status
+        
+        async with factory() as session:
+            try:
+                result = await session.execute(select(func.count(UserDB.id)))
+                total_users = result.scalar() or 0
+                health_status["database"] = "postgresql"
+                health_status["database_connected"] = True
+                health_status["total_users"] = total_users
+            except Exception as db_err:
+                health_status["status"] = "degraded"
+                health_status["database"] = "error"
+                health_status["database_error"] = str(db_err)
+    except Exception as e:
+        health_status["status"] = "degraded"
+        health_status["database"] = "error"
+        health_status["database_error"] = str(e)
+    
+    return health_status
 
 
 @app.get("/user/validate")
