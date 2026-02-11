@@ -22,6 +22,13 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 BACKUP_DATABASE_URL = os.environ.get("BACKUP_DATABASE_URL", "")
 
+# Use DATABASE_PUBLIC_URL as fallback if DATABASE_URL is not set (e.g., empty or default)
+if not DATABASE_URL or DATABASE_URL == "postgresql://":
+    DATABASE_PUBLIC_URL = os.environ.get("DATABASE_PUBLIC_URL", "")
+    if DATABASE_PUBLIC_URL:
+        print(f"[DB] Using DATABASE_PUBLIC_URL (public proxy) as DATABASE_URL")
+        DATABASE_URL = DATABASE_PUBLIC_URL
+
 
 def _to_async_url(url):
     """Convert a postgres:// URL to postgresql+asyncpg:// for SQLAlchemy async."""
