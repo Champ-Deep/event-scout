@@ -178,7 +178,9 @@
     <script>
         // Configuration
         const CONFIG = {
-            API_BASE_URL: 'https://event-scout-production.up.railway.app'
+            API_BASE_URL: window.location.hostname === 'localhost'
+                ? 'http://localhost:8000'
+                : '/api'
         };
 
         let cardData = null;
