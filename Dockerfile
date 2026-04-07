@@ -39,4 +39,5 @@ EXPOSE 8000
 # APP_API_KEY and GEMINI_API_KEY are required
 
 # Run the application
- CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"]   
+# Railway injects $PORT dynamically; fall back to 8000 for local/docker-compose
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"]
