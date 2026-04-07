@@ -6,7 +6,7 @@
     "buildCommand": "",
     "outputDirectory": ".",
     "rewrites": [
-        { "source": "/api/:path*", "destination": "event-scout-production.up.railway.app/:path*" },
+        { "source": "/api/:path*", "destination": "https://event-scout-production.up.railway.app/:path*" },
         { "source": "/", "destination": "/mobile-frontend.html" },
         { "source": "/card/:token", "destination": "/card-viewer.html" }
     ],
