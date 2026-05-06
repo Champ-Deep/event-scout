@@ -92,6 +92,7 @@ class Contact(BaseModel):
     company_name: str = "N/A"
     notes: str = ""
     links: List[Dict[str, str]] = []
+    event_name: Optional[str] = None
 
 
 class SearchQuery(BaseModel):
@@ -1165,17 +1166,18 @@ async def add_contact_logic(contact: Contact, user_id: str, source: str = "manua
     try:
         contact_id = str(uuid.uuid4())
 
-        # Fetch user's current event name for tagging
-        event_name = ""
-        try:
-            prof_result = await session.execute(
-                select(UserProfileDB).where(UserProfileDB.user_id == uuid.UUID(user_id))
-            )
-            prof = prof_result.scalar_one_or_none()
-            if prof and prof.profile_data:
-                event_name = prof.profile_data.get("current_event_name", "") or ""
-        except Exception:
-            pass
+        # Fetch user's current event name for tagging (contact field takes priority)
+        event_name = contact.event_name or ""
+        if not event_name:
+            try:
+                prof_result = await session.execute(
+                    select(UserProfileDB).where(UserProfileDB.user_id == uuid.UUID(user_id))
+                )
+                prof = prof_result.scalar_one_or_none()
+                if prof and prof.profile_data:
+                    event_name = prof.profile_data.get("current_event_name", "") or ""
+            except Exception as e:
+                print(f"[WARN] Could not read profile for event_name: {e}")
 
         # Save to Postgres
         db_contact = ContactDB(
