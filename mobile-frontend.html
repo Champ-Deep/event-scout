@@ -478,6 +478,15 @@
                                 oninput="handleSearch()">
                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                         </div>
+                        <!-- Date filter pills -->
+                        <div class="flex gap-1.5 mt-2 overflow-x-auto pb-0.5 no-scrollbar" id="contactsDateFilters">
+                            <button onclick="setContactsDateFilter('')" id="cdf-all" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-blue-600 text-white font-medium">All</button>
+                            <button onclick="setContactsDateFilter('today')" id="cdf-today" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Today</button>
+                            <button onclick="setContactsDateFilter('yesterday')" id="cdf-yesterday" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Yesterday</button>
+                            <button onclick="setContactsDateFilter('last_week')" id="cdf-last_week" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Last 7 Days</button>
+                            <button onclick="setContactsDateFilter('last_month')" id="cdf-last_month" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">This Month</button>
+                        </div>
+                        <p id="contactsFilterCount" class="text-xs text-gray-400 mt-1 hidden"></p>
                     </div>
                 </div>
 
@@ -1022,6 +1031,22 @@
                             <option value="normal">Normal</option>
                             <option value="urgent">Urgent</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <p class="text-xs font-medium text-gray-600 mb-1">Send To</p>
+                        <div class="flex gap-3">
+                            <label class="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
+                                <input type="radio" name="broadcastTarget" value="all" checked onchange="toggleBroadcastRecipients('all')" class="accent-purple-600"> All Members
+                            </label>
+                            <label class="flex items-center gap-1.5 text-xs text-gray-700 cursor-pointer">
+                                <input type="radio" name="broadcastTarget" value="selected" onchange="toggleBroadcastRecipients('selected')" class="accent-purple-600"> Selected Members
+                            </label>
+                        </div>
+                        <div id="broadcastRecipientPicker" class="hidden mt-1 max-h-32 overflow-y-auto space-y-1 border border-gray-200 rounded-lg p-2 bg-gray-50">
+                            <p class="text-xs text-gray-400 text-center py-2"><i class="fas fa-spinner fa-spin"></i> Loading...</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
                         <button onclick="sendBroadcast()"
                             class="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg text-sm font-medium active:bg-purple-700 flex items-center justify-center gap-2">
                             <i class="fas fa-paper-plane"></i> Send
@@ -1210,9 +1235,28 @@
             </div>
             <div class="p-4">
                 <div id="drilldownStats" class="grid grid-cols-4 gap-2 mb-4"></div>
+                    <div class="flex gap-1.5 flex-wrap mb-2" id="drilldownDateFilters">
+                        <button onclick="setDrilldownFilter('date','')" class="px-2 py-1 text-[11px] rounded-full bg-blue-600 text-white font-medium" id="ddf-all">All</button>
+                        <button onclick="setDrilldownFilter('date','today')" class="px-2 py-1 text-[11px] rounded-full bg-gray-100 text-gray-600" id="ddf-today">Today</button>
+                        <button onclick="setDrilldownFilter('date','yesterday')" class="px-2 py-1 text-[11px] rounded-full bg-gray-100 text-gray-600" id="ddf-yesterday">Yesterday</button>
+                        <button onclick="setDrilldownFilter('date','last_week')" class="px-2 py-1 text-[11px] rounded-full bg-gray-100 text-gray-600" id="ddf-last_week">Last 7d</button>
+                        <button onclick="setDrilldownFilter('date','last_month')" class="px-2 py-1 text-[11px] rounded-full bg-gray-100 text-gray-600" id="ddf-last_month">Last 30d</button>
+                    </div>
+                    <select id="drilldownEventFilter" onchange="setDrilldownFilter('event', this.value)"
+                        class="w-full text-xs border border-gray-200 rounded-lg px-3 py-1.5 mb-2 bg-white text-gray-700 outline-none focus:ring-1 focus:ring-blue-400">
+                        <option value="">All Events</option>
+                    </select>
+                <div id="drilldownSelectAllRow" class="hidden flex items-center gap-2 mb-2 px-1">
+                    <input type="checkbox" id="drilldownSelectAll" onchange="toggleSelectAllDrilldown(this.checked)" class="w-4 h-4 accent-blue-500">
+                    <label for="drilldownSelectAll" class="text-xs text-gray-600 select-none">Select All</label>
+                    <span id="drilldownPaginationInfo" class="text-xs text-gray-400 ml-auto"></span>
+                </div>
                 <div id="drilldownContactList" class="space-y-2">
                     <p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading
                         contacts...</p>
+                </div>
+                <div id="drilldownLoadMore" class="hidden mt-3 text-center">
+                    <button onclick="loadMoreDrilldown()" class="text-xs text-blue-600 border border-blue-200 rounded-full px-4 py-1.5 hover:bg-blue-50">Load More</button>
                 </div>
             </div>
             <div id="drilldownBulkActions"
@@ -1221,8 +1265,28 @@
                     class="flex-1 py-2.5 bg-red-500 text-white rounded-lg text-sm font-medium active:bg-red-600"><i
                         class="fas fa-trash mr-1"></i>Delete Selected (<span
                         id="drilldownSelectedCount">0</span>)</button>
+                        <button onclick="showAddToListModal()" class="flex-1 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium active:bg-blue-700">
+                            <i class="fas fa-list-ul mr-1"></i>Add to List
+                        </button>
                 <button onclick="toggleDrilldownSelectMode()"
                     class="px-4 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Add to List Modal -->
+        <div id="addToListModal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl">
+                <h3 class="text-sm font-semibold text-gray-900 mb-3"><i class="fas fa-list-ul mr-1 text-blue-500"></i>Add to List</h3>
+                <div id="addToListContent">
+                    <p class="text-xs text-gray-400 text-center py-4"><i class="fas fa-spinner fa-spin"></i> Loading lists...</p>
+                </div>
+                <div class="mt-3 pt-3 border-t border-gray-100">
+                    <div class="flex gap-2">
+                        <input type="text" id="newListName" placeholder="New list name..." class="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-blue-400">
+                        <button onclick="createListAndAdd()" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium">Create & Add</button>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('addToListModal').classList.add('hidden')" class="mt-3 w-full text-xs text-gray-400 hover:text-gray-600 py-1">Cancel</button>
             </div>
         </div>
 
@@ -1895,9 +1959,11 @@
 
                 try {
                     // Admin sees ALL contacts from all team members; regular users see only their own
+                    const df = window._contactsDateFilter || '';
+                    const dfParam = df ? `&date_filter=${df}` : '';
                     const url = AppState.currentUser.is_admin
-                        ? `${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&limit=500`
-                        : `${CONFIG.API_BASE_URL}/list_contacts/?user_id=${AppState.currentUser.user_id}`;
+                        ? `${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&limit=200${dfParam}`
+                        : `${CONFIG.API_BASE_URL}/list_contacts/?user_id=${AppState.currentUser.user_id}${dfParam}`;
 
                     const response = await resilientFetch(url, {
                         headers: { 'X-API-Key': CONFIG.API_KEY }
@@ -1909,6 +1975,17 @@
                         AppState.contacts = data.contacts;
                         renderContacts(AppState.contacts);
                         renderHotLeads();
+                        // Update count label
+                        const countEl = document.getElementById('contactsFilterCount');
+                        if (countEl) {
+                            const total = data.total_contacts ?? data.total ?? data.contacts.length;
+                            if (df) {
+                                countEl.textContent = `${total} contact${total !== 1 ? 's' : ''} found`;
+                                countEl.classList.remove('hidden');
+                            } else {
+                                countEl.classList.add('hidden');
+                            }
+                        }
                     } else {
                         if (AppState.contacts.length === 0) {
                             contactsList.innerHTML = `<div class="p-6 text-center text-red-500">Failed to load contacts</div>`;
@@ -2114,6 +2191,21 @@
         }
 
         let searchTimeout;
+        window._contactsDateFilter = '';
+        function setContactsDateFilter(value) {
+            window._contactsDateFilter = value;
+            // Update pill styles
+            document.querySelectorAll('#contactsDateFilters button').forEach(b => {
+                b.className = 'flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600';
+            });
+            const active = document.getElementById(`cdf-${value || 'all'}`);
+            if (active) active.className = 'flex-shrink-0 px-3 py-1 text-xs rounded-full bg-blue-600 text-white font-medium';
+            // Clear search and reload
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = '';
+            loadContacts();
+        }
+
         function handleSearch() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
@@ -4990,17 +5082,56 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             const msg = document.getElementById('broadcastMessage').value.trim();
             const priority = document.getElementById('broadcastPriority').value;
             if (!msg) { showToast('Enter a message', 'error'); return; }
+
+            const targetMode = document.querySelector('input[name="broadcastTarget"]:checked')?.value || 'all';
+            let recipientParam = '';
+            if (targetMode === 'selected') {
+                const checked = [...document.querySelectorAll('.broadcast-recipient-cb:checked')].map(cb => cb.value);
+                if (checked.length === 0) { showToast('Select at least one team member', 'error'); return; }
+                recipientParam = `&recipient_ids=${checked.join(',')}`;
+            }
+
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/broadcast?user_id=${AppState.currentUser.user_id}&message=${encodeURIComponent(msg)}&priority=${priority}`, {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/broadcast?user_id=${AppState.currentUser.user_id}&message=${encodeURIComponent(msg)}&priority=${priority}${recipientParam}`, {
                     method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await resp.json();
                 if (resp.ok && data.status === 'success') {
                     showToast('Broadcast sent!', 'success');
                     document.getElementById('broadcastMessage').value = '';
+                    const allRadio = document.querySelector('input[name="broadcastTarget"][value="all"]');
+                    if (allRadio) { allRadio.checked = true; }
+                    document.getElementById('broadcastRecipientPicker').classList.add('hidden');
                     loadBroadcastHistory();
                 } else { showToast(data.detail || 'Failed to send', 'error'); }
             } catch (err) { console.error('Broadcast error:', err); showToast('Failed to send broadcast', 'error'); }
+        }
+
+        function toggleBroadcastRecipients(val) {
+            const picker = document.getElementById('broadcastRecipientPicker');
+            if (val === 'selected') {
+                picker.classList.remove('hidden');
+                loadBroadcastTeamPicker();
+            } else {
+                picker.classList.add('hidden');
+            }
+        }
+
+        async function loadBroadcastTeamPicker() {
+            const picker = document.getElementById('broadcastRecipientPicker');
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/users?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const data = await resp.json();
+                const members = (data.users || []).filter(u => u.user_id !== AppState.currentUser.user_id);
+                if (members.length === 0) { picker.innerHTML = '<p class="text-xs text-gray-400">No other team members</p>'; return; }
+                picker.innerHTML = members.map(u =>
+                    `<label class="flex items-center gap-2 text-xs text-gray-700 cursor-pointer hover:bg-white rounded p-1">
+                        <input type="checkbox" class="broadcast-recipient-cb accent-purple-600" value="${u.user_id}">
+                        <span>${escapeHtml(u.name)}</span>
+                        <span class="text-gray-400">(${u.contact_count} contacts)</span>
+                    </label>`
+                ).join('');
+            } catch (err) { picker.innerHTML = '<p class="text-xs text-red-400">Failed to load team</p>'; }
         }
 
         async function loadBroadcastHistory() {
@@ -5057,58 +5188,138 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         // --- User Drill-Down ---
         async function openUserDrilldown(userId, userName, userEmail) {
             currentDrilldownUserId = userId;
-            drilldownSelectMode = false;
+            currentDrilldownUserName = userName;
+            currentDrilldownUserEmail = userEmail || '';
+            drilldownDateFilter = '';
+            drilldownEventFilter = '';
+            drilldownPage = 1;
+            drilldownHasMore = false;
+            drilldownAllLoaded = [];
             drilldownSelectedIds.clear();
+            drilldownSelectMode = false;
+
+            // Reset filter UI
+            document.querySelectorAll('#drilldownDateFilters button').forEach(b => {
+                b.className = 'px-2 py-1 text-[11px] rounded-full bg-gray-100 text-gray-600';
+            });
+            const allBtn = document.getElementById('ddf-all');
+            if (allBtn) allBtn.className = 'px-2 py-1 text-[11px] rounded-full bg-blue-600 text-white font-medium';
+            const evtSel = document.getElementById('drilldownEventFilter');
+            if (evtSel) evtSel.value = '';
+
+            document.getElementById('drilldownLoadMore').classList.add('hidden');
+            document.getElementById('drilldownSelectAllRow').classList.add('hidden');
+
             const overlay = document.getElementById('adminUserDrilldown');
-            overlay.classList.remove('hidden');
+            if (overlay) overlay.classList.remove('hidden');
             document.getElementById('drilldownUserName').textContent = userName;
-            document.getElementById('drilldownUserEmail').textContent = userEmail;
-            document.getElementById('drilldownContactList').innerHTML = '<p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading contacts...</p>';
+            document.getElementById('drilldownUserEmail').textContent = userEmail || '';
             document.getElementById('drilldownStats').innerHTML = '';
             document.getElementById('drilldownBulkActions').classList.add('hidden');
             const selectBtn = document.getElementById('drilldownSelectBtn');
             if (selectBtn) { selectBtn.classList.replace('bg-blue-500', 'bg-gray-100'); selectBtn.classList.replace('text-white', 'text-gray-600'); }
 
+            await loadDrilldownContacts(true);
+        }
+
+        async function loadDrilldownContacts(reset = false) {
+            if (reset) {
+                drilldownPage = 1;
+                drilldownAllLoaded = [];
+            }
+            const list = document.getElementById('drilldownContactList');
+            if (reset) list.innerHTML = '<p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p>';
+
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&filter_user=${userId}&limit=500`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                let url = `${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&filter_user=${currentDrilldownUserId}&limit=30&page=${drilldownPage}`;
+                if (drilldownDateFilter) url += `&date_filter=${drilldownDateFilter}`;
+                if (drilldownEventFilter) url += `&event_filter=${encodeURIComponent(drilldownEventFilter)}`;
+
+                const resp = await resilientFetch(url, { headers: { 'X-API-Key': CONFIG.API_KEY } });
                 const data = await resp.json();
-                if (!resp.ok || !data.contacts) { document.getElementById('drilldownContactList').innerHTML = '<p class="text-sm text-red-500 text-center py-4">Failed to load</p>'; return; }
+                if (!resp.ok) { list.innerHTML = `<p class="text-sm text-red-500 text-center py-4">Failed to load contacts</p>`; return; }
 
-                // Stats
-                const contacts = data.contacts;
-                const hot = contacts.filter(c => c.lead_temperature === 'hot').length;
-                const warm = contacts.filter(c => c.lead_temperature === 'warm').length;
-                const cold = contacts.filter(c => c.lead_temperature === 'cold').length;
-                const unscored = contacts.length - hot - warm - cold;
-                document.getElementById('drilldownStats').innerHTML = `
-                    <div class="bg-gray-50 rounded-lg p-3 text-center"><p class="text-xl font-bold text-gray-700">${contacts.length}</p><p class="text-[10px] text-gray-400">Total</p></div>
-                    <div class="bg-red-50 rounded-lg p-3 text-center"><p class="text-xl font-bold text-red-600">${hot}</p><p class="text-[10px] text-gray-400">Hot</p></div>
-                    <div class="bg-orange-50 rounded-lg p-3 text-center"><p class="text-xl font-bold text-orange-500">${warm}</p><p class="text-[10px] text-gray-400">Warm</p></div>
-                    <div class="bg-gray-50 rounded-lg p-3 text-center"><p class="text-xl font-bold text-gray-500">${cold + unscored}</p><p class="text-[10px] text-gray-400">Other</p></div>
-                `;
-
-                // Contact list
-                if (contacts.length === 0) {
-                    document.getElementById('drilldownContactList').innerHTML = '<p class="text-sm text-gray-400 text-center py-8">No contacts yet</p>';
-                    return;
+                // Update event filter dropdown
+                if (data.distinct_events && data.distinct_events.length > 0) {
+                    const sel = document.getElementById('drilldownEventFilter');
+                    if (sel) {
+                        sel.innerHTML = `<option value="">All Events</option>` +
+                            data.distinct_events.map(e => `<option value="${escapeHtml(e)}" ${e === drilldownEventFilter ? 'selected' : ''}>${escapeHtml(e)}</option>`).join('');
+                    }
                 }
-                document.getElementById('drilldownContactList').innerHTML = contacts.map(c => {
-                    const tempClass = c.lead_temperature === 'hot' ? 'bg-red-100 text-red-600' : c.lead_temperature === 'warm' ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500';
-                    const sourceIcon = c.source === 'scan' ? 'fa-camera text-blue-500' : 'fa-user-plus text-gray-400';
-                    return `<div class="drilldown-contact-card flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition" onclick="if(drilldownSelectMode){this.querySelector('.drilldown-cb').click();event.stopPropagation();}else{openAdminContactDetail('${c.id}', '${c.user_id}')}">
-                        <input type="checkbox" class="drilldown-cb hidden w-4 h-4 accent-blue-500 flex-shrink-0" onchange="toggleDrilldownContact('${c.id}', this)" onclick="event.stopPropagation()">
-                        <div class="w-9 h-9 rounded-full ${tempClass} flex items-center justify-center flex-shrink-0"><i class="fas fa-user text-sm"></i></div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(c.name)}</p>
-                            <p class="text-xs text-gray-500 truncate">${escapeHtml(c.company_name)} &middot; <i class="fas ${sourceIcon} text-[10px]"></i> ${formatTimestamp(c.created_at)}</p>
+
+                drilldownAllLoaded = reset ? (data.contacts || []) : [...drilldownAllLoaded, ...(data.contacts || [])];
+                drilldownHasMore = data.has_more || false;
+
+                const loadMoreEl = document.getElementById('drilldownLoadMore');
+                if (loadMoreEl) loadMoreEl.classList.toggle('hidden', !drilldownHasMore);
+
+                const infoEl = document.getElementById('drilldownPaginationInfo');
+                if (infoEl) infoEl.textContent = `${drilldownAllLoaded.length}${data.total ? ' of ' + data.total : ''}`;
+
+                if (drilldownAllLoaded.length > 0) {
+                    document.getElementById('drilldownSelectAllRow').classList.remove('hidden');
+                }
+
+                renderDrilldownContacts();
+            } catch (err) {
+                console.error('loadDrilldownContacts error:', err);
+                list.innerHTML = `<p class="text-sm text-red-500 text-center py-4">Network error</p>`;
+            }
+        }
+
+        function renderDrilldownContacts() {
+            const list = document.getElementById('drilldownContactList');
+            if (!drilldownAllLoaded.length) {
+                list.innerHTML = '<div class="text-center py-8"><i class="fas fa-user-slash text-gray-300 text-3xl mb-3"></i><p class="text-sm text-gray-400">No contacts found</p></div>';
+                return;
+            }
+            list.innerHTML = drilldownAllLoaded.map(c => {
+                const tempBadge = c.lead_temperature === 'hot' ? '<span class="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[10px]">Hot</span>' :
+                    c.lead_temperature === 'warm' ? '<span class="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[10px]">Warm</span>' :
+                    c.lead_temperature === 'cold' ? '<span class="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px]">Cold</span>' : '';
+                const eventBadge = c.event_name ? `<span class="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px]">${escapeHtml(c.event_name)}</span>` : '';
+                const checkbox = drilldownSelectMode ? `<input type="checkbox" class="drilldown-contact-cb w-4 h-4 accent-blue-500 mr-2 mt-0.5 flex-shrink-0" data-id="${c.id}" ${drilldownSelectedIds.has(c.id) ? 'checked' : ''} onchange="toggleDrilldownContact('${c.id}', this.checked)">` : '';
+                return `<div class="flex items-start py-2.5 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded px-1 -mx-1" onclick="${drilldownSelectMode ? '' : `openAdminContactDetail('${c.id}','${c.user_id}')`}">
+                    ${checkbox}
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <p class="text-sm font-medium text-gray-900">${escapeHtml(c.name)}</p>
+                            ${tempBadge}${eventBadge}
                         </div>
-                        <div class="text-right flex-shrink-0">
-                            ${c.lead_score != null ? `<p class="text-sm font-bold text-gray-700">${c.lead_score}</p>` : '<p class="text-xs text-gray-300">--</p>'}
-                            <i class="fas fa-chevron-right text-gray-300"></i>
-                        </div>
-                    </div>`;
-                }).join('');
-            } catch (err) { console.error('Drilldown error:', err); document.getElementById('drilldownContactList').innerHTML = '<p class="text-sm text-red-500 text-center py-4">Failed to load contacts</p>'; }
+                        <p class="text-xs text-gray-400 truncate">${escapeHtml(c.company_name || '')}${c.email && c.email !== 'N/A' ? ' · ' + escapeHtml(c.email) : ''}</p>
+                    </div>
+                    ${!drilldownSelectMode ? '<i class="fas fa-chevron-right text-gray-300 text-xs ml-2 mt-1 flex-shrink-0"></i>' : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function setDrilldownFilter(type, value) {
+            if (type === 'date') {
+                drilldownDateFilter = value;
+                document.querySelectorAll('#drilldownDateFilters button').forEach(b => {
+                    b.className = 'px-2 py-1 text-[11px] rounded-full bg-gray-100 text-gray-600';
+                });
+                const activeBtn = document.getElementById(`ddf-${value || 'all'}`);
+                if (activeBtn) activeBtn.className = 'px-2 py-1 text-[11px] rounded-full bg-blue-600 text-white font-medium';
+            } else {
+                drilldownEventFilter = value;
+            }
+            loadDrilldownContacts(true);
+        }
+
+        function loadMoreDrilldown() {
+            drilldownPage++;
+            loadDrilldownContacts(false);
+        }
+
+        function toggleSelectAllDrilldown(checked) {
+            drilldownAllLoaded.forEach(c => {
+                if (checked) drilldownSelectedIds.add(c.id);
+                else drilldownSelectedIds.delete(c.id);
+            });
+            renderDrilldownContacts();
+            updateDrilldownBulkBar();
         }
 
         function closeUserDrilldown() {
@@ -5441,6 +5652,28 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     pitchContent.innerHTML = `<p class="font-medium">Subject: ${escapeHtml(data.pitch_email_subject)}</p><p class="mt-1 whitespace-pre-wrap">${escapeHtml(data.pitch_email_body || '')}</p>`;
                 }
 
+                // Show Gamma deck link if available
+                const deckSectionId = isAdmin ? 'adminPipelineDeckSection' : 'pipelineDeckSection';
+                let deckSection = document.getElementById(deckSectionId);
+                if (data.gamma_deck_url) {
+                    if (!deckSection) {
+                        const actionsEl = document.getElementById(isAdmin ? 'adminPipelineActions' : 'pipelineActions');
+                        if (actionsEl) {
+                            const deckDiv = document.createElement('div');
+                            deckDiv.id = deckSectionId;
+                            deckDiv.className = 'w-full';
+                            actionsEl.parentNode.insertBefore(deckDiv, actionsEl);
+                            deckSection = deckDiv;
+                        }
+                    }
+                    if (deckSection) {
+                        deckSection.innerHTML = `<a href="${data.gamma_deck_url}" target="_blank"
+                            class="flex items-center justify-center gap-2 w-full py-2 mb-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-xs font-medium">
+                            <i class="fas fa-file-powerpoint"></i> Open Pitch Deck ↗
+                        </a>`;
+                    }
+                }
+
                 // Update run button based on status
                 const runBtn = document.getElementById('pipelineRunBtn');
                 if (runBtn) {
@@ -5586,6 +5819,13 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         let currentDrilldownUserId = null;
         let drilldownSelectMode = false;
         let drilldownSelectedIds = new Set();
+        let drilldownDateFilter = '';
+        let drilldownEventFilter = '';
+        let drilldownPage = 1;
+        let drilldownHasMore = false;
+        let drilldownAllLoaded = [];
+        let currentDrilldownUserName = '';
+        let currentDrilldownUserEmail = '';
 
         async function startUserMerge(secondaryId, secondaryName) {
             const users = (window._adminUsers || []).filter(u => u.user_id !== secondaryId && !u.is_admin);
@@ -5742,28 +5982,70 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                 btn.classList.replace('text-white', 'text-gray-600');
                 bulkBar.classList.add('hidden');
             }
-            // Re-render with checkboxes
-            document.querySelectorAll('.drilldown-contact-card').forEach(card => {
-                const cb = card.querySelector('.drilldown-cb');
-                if (drilldownSelectMode) {
-                    cb?.classList.remove('hidden');
-                } else {
-                    cb?.classList.add('hidden');
-                    cb && (cb.checked = false);
-                }
-            });
-            updateDrilldownSelectionCount();
+            renderDrilldownContacts();
+            updateDrilldownBulkBar();
         }
 
-        function toggleDrilldownContact(contactId, checkbox) {
-            if (checkbox.checked) drilldownSelectedIds.add(contactId);
+        function toggleDrilldownContact(contactId, checked) {
+            if (checked) drilldownSelectedIds.add(contactId);
             else drilldownSelectedIds.delete(contactId);
-            updateDrilldownSelectionCount();
+            updateDrilldownBulkBar();
+        }
+
+        function updateDrilldownBulkBar() {
+            const el = document.getElementById('drilldownSelectedCount');
+            if (el) el.textContent = drilldownSelectedIds.size;
+            const bulkBar = document.getElementById('drilldownBulkActions');
+            if (bulkBar && drilldownSelectMode) {
+                bulkBar.classList.toggle('hidden', drilldownSelectedIds.size === 0 && !drilldownSelectMode);
+            }
         }
 
         function updateDrilldownSelectionCount() {
-            const el = document.getElementById('drilldownSelectedCount');
-            if (el) el.textContent = drilldownSelectedIds.size;
+            updateDrilldownBulkBar();
+        }
+
+        async function showAddToListModal() {
+            if (!drilldownSelectedIds.size) { showToast('Select contacts first', 'error'); return; }
+            document.getElementById('addToListModal').classList.remove('hidden');
+            document.getElementById('addToListContent').innerHTML = '<p class="text-xs text-gray-400 text-center py-4"><i class="fas fa-spinner fa-spin"></i></p>';
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact_lists?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const data = await resp.json();
+                const lists = data.lists || [];
+                document.getElementById('addToListContent').innerHTML = lists.length
+                    ? lists.map(l => `<div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                        <div><p class="text-sm font-medium text-gray-900">${escapeHtml(l.name)}</p><p class="text-xs text-gray-400">${l.contact_count} contacts</p></div>
+                        <button onclick="addToExistingList('${l.id}','${escapeHtml(l.name)}')" class="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-medium">Add</button>
+                    </div>`).join('')
+                    : '<p class="text-xs text-gray-400 text-center py-3">No lists yet. Create one below.</p>';
+            } catch (err) { document.getElementById('addToListContent').innerHTML = '<p class="text-xs text-red-400 text-center py-3">Failed to load lists</p>'; }
+        }
+
+        async function addToExistingList(listId, listName) {
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact_lists/${listId}/contacts?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contact_ids: [...drilldownSelectedIds] })
+                });
+                const data = await resp.json();
+                if (resp.ok) { showToast(`Added to "${listName}"`, 'success'); document.getElementById('addToListModal').classList.add('hidden'); }
+                else showToast(data.detail || 'Failed to add', 'error');
+            } catch (err) { showToast('Network error', 'error'); }
+        }
+
+        async function createListAndAdd() {
+            const name = document.getElementById('newListName').value.trim();
+            if (!name) { showToast('Enter a list name', 'error'); return; }
+            try {
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact_lists?user_id=${AppState.currentUser.user_id}`, {
+                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await resp.json();
+                if (resp.ok) { await addToExistingList(data.list_id, name); document.getElementById('newListName').value = ''; }
+                else showToast(data.detail || 'Failed to create list', 'error');
+            } catch (err) { showToast('Network error', 'error'); }
         }
 
         async function deleteSelectedDrilldown() {

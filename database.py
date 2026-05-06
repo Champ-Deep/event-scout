@@ -88,6 +88,7 @@ class ContactDB(Base):
     notes = Column(Text, default="")
     links = Column(JSON, default=list)  # [{url, label, added_by}]
     source = Column(String(50), default="manual")  # 'manual', 'scan', 'qr'
+    event_name = Column(String(255), default="")  # Event at which contact was scanned/added
     lead_score = Column(Integer, nullable=True)
     lead_temperature = Column(String(10), nullable=True)
     lead_score_reasoning = Column(Text, default="")
@@ -284,6 +285,7 @@ class ContactPipelineDB(Base):
     # Step 4: Deck output
     deck_file_id = Column(UUID(as_uuid=True), nullable=True)
     presenton_presentation_id = Column(String(255), nullable=True)
+    gamma_deck_url = Column(Text, nullable=True)  # Gamma shareable presentation URL
 
     # Timestamps
     started_at = Column(DateTime(timezone=True), nullable=True)
@@ -306,8 +308,42 @@ class AdminBroadcastDB(Base):
     admin_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     message = Column(Text, nullable=False)
     priority = Column(String(20), default="normal")  # "normal", "urgent"
+    recipient_ids = Column(JSON, nullable=True)  # None = all team; list of user UUID strings = targeted
     is_active = Column(Boolean, default=True, nullable=False, server_default="true")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class ContactListDB(Base):
+    """Named contact lists created by admins for grouping/targeting."""
+    __tablename__ = "contact_lists"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    admin_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    members = relationship("ContactListMemberDB", back_populates="contact_list", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_contact_lists_admin_id", "admin_id"),
+    )
+
+
+class ContactListMemberDB(Base):
+    """Members of a contact list."""
+    __tablename__ = "contact_list_members"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    list_id = Column(UUID(as_uuid=True), ForeignKey("contact_lists.id"), nullable=False)
+    contact_id = Column(UUID(as_uuid=True), ForeignKey("contacts.id"), nullable=False)
+    added_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    contact_list = relationship("ContactListDB", back_populates="members")
+
+    __table_args__ = (
+        Index("idx_contact_list_members_list_id", "list_id"),
+        Index("idx_contact_list_members_contact_id", "contact_id"),
+    )
 
 
 # --- Engine & Session (Primary) ---
@@ -397,6 +433,9 @@ async def _init_schema(eng, label="Primary"):
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS audio_notes JSONB DEFAULT '[]'::jsonb",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS admin_notes TEXT DEFAULT ''",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS photo_base64 TEXT",
+                "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS event_name VARCHAR(255) DEFAULT ''",
+                "ALTER TABLE contact_pipelines ADD COLUMN IF NOT EXISTS gamma_deck_url TEXT",
+                "ALTER TABLE admin_broadcasts ADD COLUMN IF NOT EXISTS recipient_ids JSONB",
             ]
             for sql in migrations:
                 try:
