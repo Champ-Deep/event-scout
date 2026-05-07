@@ -1,8 +1,22 @@
 services:
-  contact-assistant:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: eventscout
+      POSTGRES_PASSWORD: eventscout2026
+      POSTGRES_DB: eventscout
+    volumes:
+      - eventscout_postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eventscout"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
     build: .
-    image: contact-assistant:latest
-    # container_name: contact-assistant-api
+    image: event-scout:latest
     ports:
       - "8000:8000"
     env_file:
@@ -11,17 +25,19 @@ services:
       - contact_data:/app/data
       - contact_qr:/app/saved_qr
       - users_data:/app/users
-      - users_db:/app
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
 
 volumes:
+  eventscout_postgres:
   contact_data:
   contact_qr:
   users_data:
-  users_db:

@@ -17,7 +17,7 @@ import numpy as np
 import faiss
 from io import BytesIO
 from typing import List, Dict, Any, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,12 +29,12 @@ import bcrypt
 
 import google.generativeai as genai
 
-from sqlalchemy import select, update, delete, func, or_
+from sqlalchemy import select, update, delete, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import (
     UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB, UserCardDB, EventFileDB,
-    ContactFileDB, ContactPipelineDB, AdminBroadcastDB, Base,
+    ContactFileDB, ContactPipelineDB, AdminBroadcastDB, ContactListDB, ContactListMemberDB, Base,
     get_engine, get_session_factory, get_backup_session_factory, init_db, dispose_engines,
     ASYNC_DATABASE_URL, ASYNC_BACKUP_URL
 )
@@ -49,8 +49,11 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 ADMIN_EMAILS = [e.strip().lower() for e in os.environ.get("ADMIN_EMAILS", "deep@lakeb2b.com").split(",") if e.strip()]
 
 # Pipeline config
-PRESENTON_API_URL = os.environ.get("PRESENTON_API_URL", "")  # Self-hosted Presenton instance
+PRESENTON_API_URL = os.environ.get("PRESENTON_API_URL", "")  # Self-hosted Presenton instance (legacy)
 PRESENTON_API_KEY = os.environ.get("PRESENTON_API_KEY", "")
+GAMMA_API_KEY = os.environ.get("GAMMA_API_KEY", "")  # Gamma.app for AI deck generation
+GAMMA_API_BASE = "https://public-api.gamma.app/v1.0"
+GAMMA_THEME = "ash"  # Professional B2B theme
 AUTO_PIPELINE_ENABLED = os.environ.get("AUTO_PIPELINE_ENABLED", "false").lower() == "true"
 
 # Available AI models for chat (all via OpenRouter)
@@ -89,6 +92,7 @@ class Contact(BaseModel):
     company_name: str = "N/A"
     notes: str = ""
     links: List[Dict[str, str]] = []
+    event_name: Optional[str] = None
 
 
 class SearchQuery(BaseModel):
@@ -299,7 +303,7 @@ class FAISSIndex:
 
     def add_contact(self, user_id: str, contact_dict: dict):
         """Add a single contact to user's index."""
-        summary = f"{contact_dict['name']}, {contact_dict['email']}, {contact_dict['phone']}, {contact_dict['linkedin']}, {contact_dict['company_name']}"
+        summary = f"{contact_dict.get('name','')}, {contact_dict.get('email','')}, {contact_dict.get('phone','')}, {contact_dict.get('linkedin','')}, {contact_dict.get('company_name','')}"
         if contact_dict.get('notes'):
             summary += f", {contact_dict['notes'][:200]}"
 
@@ -321,7 +325,7 @@ class FAISSIndex:
             return False
         for i, m in enumerate(self.metadata[user_id]):
             if m.get("id") == contact_id:
-                summary = f"{contact_dict['name']}, {contact_dict['email']}, {contact_dict['phone']}, {contact_dict['linkedin']}, {contact_dict['company_name']}"
+                summary = f"{contact_dict.get('name','')}, {contact_dict.get('email','')}, {contact_dict.get('phone','')}, {contact_dict.get('linkedin','')}, {contact_dict.get('company_name','')}"
                 if contact_dict.get('notes'):
                     summary += f", {contact_dict['notes'][:200]}"
                 self.texts[user_id][i] = summary
@@ -1162,6 +1166,19 @@ async def add_contact_logic(contact: Contact, user_id: str, source: str = "manua
     try:
         contact_id = str(uuid.uuid4())
 
+        # Fetch user's current event name for tagging (contact field takes priority)
+        event_name = contact.event_name or ""
+        if not event_name:
+            try:
+                prof_result = await session.execute(
+                    select(UserProfileDB).where(UserProfileDB.user_id == uuid.UUID(user_id))
+                )
+                prof = prof_result.scalar_one_or_none()
+                if prof and prof.profile_data:
+                    event_name = prof.profile_data.get("current_event_name", "") or ""
+            except Exception as e:
+                print(f"[WARN] Could not read profile for event_name: {e}")
+
         # Save to Postgres
         db_contact = ContactDB(
             id=uuid.UUID(contact_id),
@@ -1175,6 +1192,7 @@ async def add_contact_logic(contact: Contact, user_id: str, source: str = "manua
             links=contact.links or [],
             source=source,
             photo_base64=photo_base64,
+            event_name=event_name,
         )
         session.add(db_contact)
 
@@ -1455,59 +1473,126 @@ Rules: hot >= 70, warm = 40-69, cold < 40. Return ONLY raw JSON."""
 
 # --- INTELLIGENCE PIPELINE ---
 
-RESEARCH_PROMPT_TEMPLATE = """You are a B2B sales intelligence analyst for Lake B2B, a leading data-driven growth solutions provider. Research this contact for an upcoming sales engagement at WHX Dubai 2026.
+def build_research_prompt(contact_name: str, company_name: str, email: str, linkedin: str, user_profile: dict) -> str:
+    """Build a dynamic research prompt personalised to the user's products, market, and event context."""
+    company = user_profile.get("company_name", "our company")
+    job_title = user_profile.get("job_title", "sales representative")
+    event = user_profile.get("current_event_name", "the event")
+    products = user_profile.get("products", [])
+    target_industries = user_profile.get("target_industries", [])
+    target_roles = user_profile.get("target_roles", [])
+    value_props = user_profile.get("value_propositions", [])
+    event_goals = user_profile.get("event_goals", [])
 
-CONTACT:
-- Name: {name}
+    products_text = "\n".join(
+        f"  - {p.get('name','')}: {p.get('description','')} (Ideal customer: {p.get('ideal_customer','')})"
+        for p in products if p.get("name")
+    ) or "  - Not specified"
+
+    target_industries_text = ", ".join(target_industries) if target_industries else "All industries"
+    target_roles_text = ", ".join(target_roles) if target_roles else "Decision makers"
+    value_props_text = "\n".join(f"  - {vp}" for vp in value_props) if value_props else "  - Not specified"
+    event_goals_text = "\n".join(f"  - {g}" for g in event_goals) if event_goals else "  - Close new deals"
+
+    return f"""You are a B2B sales intelligence analyst. Research this contact on behalf of {job_title} at {company} attending {event}.
+
+CONTACT TO RESEARCH:
+- Name: {contact_name}
 - Company: {company_name}
 - Email: {email}
 - LinkedIn: {linkedin}
 
+YOUR COMPANY CONTEXT:
+- Company: {company}
+- Products/Services:
+{products_text}
+- Target Industries: {target_industries_text}
+- Target Roles: {target_roles_text}
+- Value Propositions:
+{value_props_text}
+- Event Goals:
+{event_goals_text}
+
 RESEARCH REQUIREMENTS:
 1. PERSON PROFILE: Likely role, seniority level, decision-making authority, key responsibilities
 2. COMPANY ANALYSIS: Industry vertical, estimated size, core products/services, growth signals, tech stack indicators
-3. PAIN POINTS: Based on their industry and likely role, what challenges do they face with data quality, lead generation, customer acquisition, or marketing ROI?
-4. OPPORTUNITIES: How could Lake B2B's offerings (intent data, ICP technology, multi-channel outreach, data enrichment, growth advisory) address their specific challenges?
-5. CONVERSATION STARTERS: 3 specific, natural talking points the sales team can use at the event
-6. COMPETITIVE LANDSCAPE: Who else in the data/martech space might be pitching them?
+3. PAIN POINTS: What specific challenges does this contact/company face that YOUR company's products can address?
+4. OPPORTUNITIES: How do YOUR specific products/services map to their needs? Be concrete.
+5. CONVERSATION STARTERS: 3 specific, natural talking points tailored to your products and their likely situation
+6. COMPETITIVE LANDSCAPE: Who else might be pitching them? How are you differentiated?
 
 Return ONLY valid JSON (no markdown fences):
 {{"person": {{"name": "", "likely_title": "", "seniority": "", "authority": ""}}, "company": {{"name": "", "industry": "", "size_estimate": "", "products": "", "growth_signals": ""}}, "industry": "", "pain_points": [], "opportunities": [], "talking_points": [], "competitive_notes": "", "confidence_level": "high|medium|low"}}"""
 
-PITCH_PROMPT_TEMPLATE = """You are a senior pitch strategist for Lake B2B. Generate a personalized pitch for this contact.
 
-LAKE B2B BRAND VOICE:
-- Tone: Professional, confident, data-driven, results-oriented
-- Key metrics: 3.25X higher lead-to-opportunity conversion, 50% shorter sales cycles (47 vs 94 days), 3X better campaign ROI (12:1 vs 4:1)
-- Language: Action-oriented, metric-backed claims, problem-to-solution narrative
-- Terminology: Intent signals, buyer intent, firmographic/technographic data, ICP alignment, multi-channel outreach, full-funnel generation
-- CTA style: "Let's explore how..." — consultative, not pushy
+def build_pitch_prompt(research_data: dict, user_profile: dict) -> str:
+    """Build a dynamic pitch prompt using the user's actual brand voice and products."""
+    company = user_profile.get("company_name", "our company")
+    products = user_profile.get("products", [])
+    value_props = user_profile.get("value_propositions", [])
+    pitch_style = user_profile.get("pitch_style", "consultative")
+    case_studies = user_profile.get("case_studies", [])
+    common_objections = user_profile.get("common_objections", [])
+
+    products_text = "\n".join(
+        f"  - {p.get('name','')}: {p.get('description','')} (Ideal: {p.get('ideal_customer','')})"
+        for p in products if p.get("name")
+    ) or "  - Not specified"
+
+    value_props_text = "\n".join(f"  - {vp}" for vp in value_props) if value_props else "  - Not specified"
+
+    case_studies_text = "\n".join(
+        f"  - {cs.get('title','')}: {cs.get('result','')}"
+        for cs in (case_studies or [])
+    ) or "  - Use industry-relevant examples"
+
+    objections_text = "\n".join(
+        f"  - Objection: {o.get('objection','')} → Response: {o.get('response','')}"
+        for o in (common_objections or [])
+    ) or "  - Address cost, timeline, integration concerns"
+
+    pitch_style_desc = {
+        "consultative": "Consultative — ask questions first, position as trusted partner",
+        "direct": "Direct — lead with solution and ROI, get to the point fast",
+        "challenger": "Challenger — reframe their thinking, share counterintuitive insights",
+        "relationship": "Relationship — build trust first, find common ground, long-term play",
+    }.get(pitch_style, pitch_style)
+
+    return f"""You are a senior pitch strategist for {company}. Generate a personalized pitch for this contact.
+
+BRAND CONTEXT:
+- Company: {company}
+- Pitch Style: {pitch_style_desc}
+- Products/Services:
+{products_text}
+- Value Propositions:
+{value_props_text}
+- Case Studies / Proof Points:
+{case_studies_text}
+- Common Objections & Responses:
+{objections_text}
 
 CONTACT RESEARCH:
-{research_json}
-
-SALES REP PROFILE:
-{user_profile_json}
+{json.dumps(research_data, indent=2)}
 
 Generate TWO outputs:
 
 OUTPUT 1 — PITCH DECK (8 slides):
 Each slide as: {{"title": "...", "content": "2-3 bullet points or short paragraphs", "speaker_notes": "what to say"}}
-Structure:
+Structure (personalised to the contact's specific situation from the research above):
 1. Opening Hook — Personalized to their company/industry challenge
 2. The Challenge — Their specific pain points from research
-3. Market Reality — Industry urgency with data
+3. Market Reality — Industry urgency with supporting data
 4. Cost of Inaction — What they risk by not acting
-5. Lake B2B's Approach — Data + intent signals methodology
-6. The Solution — Product mapping to their needs
-7. Proof Points — Our metrics (3.25X, 50% shorter, 12:1 ROI)
-8. Next Steps — Clear CTA with meeting/demo suggestion
+5. Our Approach — {company}'s methodology and philosophy
+6. The Solution — Specific {company} product mapping to their pain points
+7. Proof Points — Case studies and results most relevant to their situation
+8. Next Steps — Clear CTA: meeting, demo, or pilot suggestion
 
 OUTPUT 2 — EMAIL PITCH:
-- Subject (under 50 chars, personalized)
-- Body (3-4 paragraphs: hook, value prop, proof, CTA)
-- Reference the attached presentation
-- Professional sign-off
+- Subject (under 50 chars, personalized to their company/role)
+- Body (3-4 paragraphs: hook referencing their specific situation, value prop, proof point, CTA)
+- Professional sign-off from {company}
 
 Return ONLY valid JSON (no markdown fences):
 {{"slides": [...], "email_subject": "...", "email_body": "..."}}"""
@@ -1575,11 +1660,19 @@ async def pipeline_step_research(pipeline_id, contact_id: str, user_id: str):
         if not contact:
             raise Exception(f"Contact {contact_id} not found")
 
-        prompt = RESEARCH_PROMPT_TEMPLATE.format(
-            name=contact.name or "Unknown",
+        # Load user profile to personalise the research prompt
+        prof_result = await session.execute(
+            select(UserProfileDB).where(UserProfileDB.user_id == uuid.UUID(user_id))
+        )
+        profile = prof_result.scalar_one_or_none()
+        user_profile = profile.profile_data if profile else {}
+
+        prompt = build_research_prompt(
+            contact_name=contact.name or "Unknown",
             company_name=contact.company_name or "Unknown",
             email=contact.email or "N/A",
             linkedin=contact.linkedin or "N/A",
+            user_profile=user_profile,
         )
 
         raw_response = await _pipeline_call_openrouter(prompt)
@@ -1701,10 +1794,7 @@ async def pipeline_step_pitch(pipeline_id, contact_id: str, user_id: str, resear
         profile = prof_result.scalar_one_or_none()
         user_profile = profile.profile_data if profile else {}
 
-        prompt = PITCH_PROMPT_TEMPLATE.format(
-            research_json=json.dumps(research_data, indent=2),
-            user_profile_json=json.dumps(user_profile, indent=2),
-        )
+        prompt = build_pitch_prompt(research_data, user_profile)
 
         raw_response = await _pipeline_call_openrouter(prompt, max_tokens=4000)
 
@@ -1741,104 +1831,159 @@ async def pipeline_step_pitch(pipeline_id, contact_id: str, user_id: str, resear
         await session.close()
 
 
-async def pipeline_step_deck(pipeline_id, slides_content: list, contact_name: str):
-    """Step 4: Generate PPTX via Presenton API."""
-    if not PRESENTON_API_URL:
-        print("[PIPELINE] Presenton not configured — skipping deck generation")
-        await _pipeline_update_status(pipeline_id, "generating_deck", "Skipped (Presenton not configured)")
-        return None
+def _slides_to_gamma_text(slides_content: list, contact_name: str) -> str:
+    """Convert pipeline slide objects to Gamma-compatible markdown with --- slide breaks."""
+    parts = []
+    for slide in slides_content:
+        title = slide.get("title", "Slide")
+        content = slide.get("content", "")
+        speaker_notes = slide.get("speaker_notes", "")
+        slide_text = f"## {title}\n{content}"
+        if speaker_notes:
+            slide_text += f"\n\n*Note: {speaker_notes}*"
+        parts.append(slide_text)
+    return "\n\n---\n\n".join(parts)
 
-    await _pipeline_update_status(pipeline_id, "generating_deck", "Creating presentation...")
+
+async def pipeline_step_deck(pipeline_id, slides_content: list, contact_name: str):
+    """Step 4: Generate PPTX via Gamma API (falls back to None if not configured)."""
+    if not GAMMA_API_KEY:
+        print("[PIPELINE] Gamma API key not configured — skipping deck generation")
+        await _pipeline_update_status(pipeline_id, "generating_deck", "Skipped (Gamma not configured)")
+        return None, None
+
+    await _pipeline_update_status(pipeline_id, "generating_deck", "Creating presentation with Gamma...")
 
     try:
-        # Build markdown from slides for Presenton
-        slides_markdown = []
-        full_narrative = []
-        for slide in slides_content:
-            title = slide.get("title", "Slide")
-            content = slide.get("content", "")
-            slides_markdown.append(f"# {title}\n\n{content}")
-            full_narrative.append(f"{title}: {content}")
+        input_text = _slides_to_gamma_text(slides_content, contact_name)
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            payload = {
-                "content": "\n\n".join(full_narrative),
-                "tone": "sales_pitch",
-                "verbosity": "standard",
-                "n_slides": len(slides_content),
-                "template": "modern",
-                "export_as": "pptx",
-                "web_search": False,
-                "include_title_slide": True,
-            }
-            headers = {"Content-Type": "application/json"}
-            if PRESENTON_API_KEY:
-                headers["Authorization"] = f"Bearer {PRESENTON_API_KEY}"
-
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Kick off async generation
             resp = await client.post(
-                f"{PRESENTON_API_URL.rstrip('/')}/api/v1/ppt/presentation/generate",
-                json=payload,
-                headers=headers,
+                f"{GAMMA_API_BASE}/generations",
+                headers={"X-API-KEY": GAMMA_API_KEY, "Content-Type": "application/json"},
+                json={
+                    "inputText": input_text,
+                    "textMode": "preserve",
+                    "cardSplit": "inputTextBreaks",
+                    "format": "presentation",
+                    "exportAs": "pptx",
+                    "themeId": GAMMA_THEME,
+                },
             )
+            if resp.status_code != 200 and resp.status_code != 201:
+                raise Exception(f"Gamma generation failed: {resp.status_code} - {resp.text[:200]}")
 
-            if resp.status_code != 200:
-                raise Exception(f"Presenton API error: {resp.status_code} - {resp.text[:200]}")
+            generation_id = resp.json().get("generationId")
+            if not generation_id:
+                raise Exception(f"No generationId in Gamma response: {resp.text[:200]}")
 
-            result = resp.json()
-            presentation_id = result.get("presentation_id", "")
-            download_path = result.get("path", "")
+            print(f"[PIPELINE] Gamma generationId={generation_id}, polling...")
 
-            if not download_path:
-                raise Exception("No download path in Presenton response")
+        # Poll for completion (up to 3 minutes)
+        gamma_url = None
+        export_url = None
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            for attempt in range(36):  # 36 × 5s = 3 min max
+                await asyncio.sleep(5)
+                poll = await client.get(
+                    f"{GAMMA_API_BASE}/generations/{generation_id}",
+                    headers={"X-API-KEY": GAMMA_API_KEY},
+                )
+                poll_data = poll.json()
+                status = poll_data.get("status")
+                print(f"[PIPELINE] Gamma poll [{attempt+1}]: {status}")
 
-            # Download the PPTX
-            pptx_resp = await client.get(download_path)
-            if pptx_resp.status_code != 200:
-                raise Exception(f"Failed to download PPTX: {pptx_resp.status_code}")
+                if status == "completed":
+                    gamma_url = poll_data.get("gammaUrl")
+                    export_url = poll_data.get("exportUrl")
+                    credits_left = poll_data.get("credits", {}).get("remaining", "?")
+                    print(f"[PIPELINE] Gamma complete — {gamma_url} | credits remaining: {credits_left}")
+                    break
+                elif status == "failed":
+                    raise Exception(f"Gamma generation failed: {poll_data.get('error', {})}")
 
-            await _pipeline_update_status(
-                pipeline_id, "generating_deck", "Deck created",
-                presenton_presentation_id=presentation_id,
-            )
+        if not gamma_url:
+            raise Exception("Gamma generation timed out or returned no URL")
 
-            return pptx_resp.content  # Raw PPTX bytes
+        # Download PPTX bytes if export URL available
+        pptx_bytes = None
+        if export_url:
+            try:
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    dl = await client.get(export_url)
+                    if dl.status_code == 200:
+                        pptx_bytes = dl.content
+                        print(f"[PIPELINE] PPTX downloaded: {len(pptx_bytes):,} bytes")
+                    else:
+                        print(f"[PIPELINE] PPTX download failed: {dl.status_code} — using Gamma URL only")
+            except Exception as dl_err:
+                print(f"[PIPELINE] PPTX download error: {dl_err} — using Gamma URL only")
+
+        await _pipeline_update_status(
+            pipeline_id, "generating_deck", "Deck created via Gamma",
+            gamma_deck_url=gamma_url,
+        )
+
+        return pptx_bytes, gamma_url
 
     except Exception as e:
         print(f"[PIPELINE] Deck generation failed: {e}")
         await _pipeline_update_status(pipeline_id, "generating_deck", f"Deck failed: {str(e)[:100]}")
-        return None
+        return None, None
 
 
-async def pipeline_step_attach(pipeline_id, contact_id: str, user_id: str, pptx_bytes: bytes, contact_name: str):
-    """Step 5: Store the generated PPTX as a ContactFileDB record."""
+async def pipeline_step_attach(pipeline_id, contact_id: str, user_id: str,
+                               pptx_bytes: Optional[bytes], contact_name: str, gamma_url: Optional[str] = None):
+    """Step 5: Attach deck to contact — store PPTX as file and add Gamma URL to links."""
     await _pipeline_update_status(pipeline_id, "attaching", "Attaching deck to contact...")
 
     session = await get_db_session()
     try:
+        file_id = None
         safe_name = re.sub(r'[^a-zA-Z0-9_\- ]', '', contact_name or "contact").strip().replace(' ', '_')
-        filename = f"pitch_deck_{safe_name}.pptx"
 
-        db_file = ContactFileDB(
-            contact_id=uuid.UUID(contact_id),
-            filename=filename,
-            original_filename=filename,
-            file_type="pptx",
-            mime_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            file_size=len(pptx_bytes),
-            file_data=pptx_bytes,
-            description="Auto-generated pitch deck by AI Pipeline",
-            category="pitch",
-            uploaded_by=uuid.UUID(user_id),
-        )
-        session.add(db_file)
+        # Store PPTX bytes as a contact file
+        if pptx_bytes:
+            filename = f"pitch_deck_{safe_name}.pptx"
+            db_file = ContactFileDB(
+                contact_id=uuid.UUID(contact_id),
+                filename=filename,
+                original_filename=filename,
+                file_type="pptx",
+                mime_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                file_size=len(pptx_bytes),
+                file_data=pptx_bytes,
+                description="AI-generated pitch deck (Gamma)",
+                category="pitch",
+                uploaded_by=uuid.UUID(user_id),
+            )
+            session.add(db_file)
+            await session.flush()
+            file_id = db_file.id
+
+        # Append Gamma shareable URL to contact's links[]
+        if gamma_url:
+            result = await session.execute(select(ContactDB).where(ContactDB.id == uuid.UUID(contact_id)))
+            contact = result.scalar_one_or_none()
+            if contact:
+                existing_links = list(contact.links or [])
+                # Remove any previous deck link
+                existing_links = [l for l in existing_links if l.get("label") != "AI Pitch Deck"]
+                existing_links.append({
+                    "url": gamma_url,
+                    "label": "AI Pitch Deck",
+                    "added_by": "pipeline",
+                })
+                contact.links = existing_links
+                contact.updated_at = datetime.now(timezone.utc)
+
         await session.commit()
 
-        await _pipeline_update_status(
-            pipeline_id, "attaching", "Deck attached",
-            deck_file_id=db_file.id,
-        )
+        update_kwargs = {"deck_file_id": file_id} if file_id else {}
+        await _pipeline_update_status(pipeline_id, "attaching", "Deck attached", **update_kwargs)
 
-        return str(db_file.id)
+        return str(file_id) if file_id else None
     finally:
         await session.close()
 
@@ -1885,20 +2030,22 @@ async def run_contact_pipeline(contact_id: str, user_id: str):
         print(f"[PIPELINE] Step 3/5: Generating pitch for {contact_name}...")
         pitch_data = await pipeline_step_pitch(pipeline_id, contact_id, user_id, research_data)
 
-        # Step 4: Deck (optional — depends on Presenton being configured)
+        # Step 4: Deck via Gamma API
         slides = pitch_data.get("slides", [])
         pptx_bytes = None
+        gamma_url = None
         if slides:
-            print(f"[PIPELINE] Step 4/5: Generating deck for {contact_name}...")
-            pptx_bytes = await pipeline_step_deck(pipeline_id, slides, contact_name)
+            print(f"[PIPELINE] Step 4/5: Generating Gamma deck for {contact_name}...")
+            pptx_bytes, gamma_url = await pipeline_step_deck(pipeline_id, slides, contact_name)
 
-        # Step 5: Attach deck (if generated)
-        if pptx_bytes:
+        # Step 5: Attach deck to contact (PPTX file + Gamma URL link)
+        deck_created = bool(pptx_bytes or gamma_url)
+        if deck_created:
             print(f"[PIPELINE] Step 5/5: Attaching deck for {contact_name}...")
-            await pipeline_step_attach(pipeline_id, contact_id, user_id, pptx_bytes, contact_name)
+            await pipeline_step_attach(pipeline_id, contact_id, user_id, pptx_bytes, contact_name, gamma_url)
 
         # Mark complete
-        final_status = "complete" if pptx_bytes else "complete_no_deck"
+        final_status = "complete" if deck_created else "complete_no_deck"
         await _pipeline_update_status(
             pipeline_id, final_status, "Pipeline complete",
             completed_at=datetime.now(timezone.utc),
@@ -2435,12 +2582,27 @@ async def search_route(query: SearchQuery, api_key: str = Depends(verify_api_key
 @app.get("/list_contacts/")
 async def list_contacts_route(
     user_id: str = Query(..., description="User ID"),
+    date_filter: Optional[str] = Query(None, description="today | yesterday | last_week | last_month"),
     api_key: str = Depends(verify_api_key),
 ):
     session = await get_db_session()
     try:
+        now = datetime.now(timezone.utc)
+        conditions = [ContactDB.user_id == uuid.UUID(user_id)]
+
+        if date_filter == "today":
+            conditions.append(ContactDB.created_at >= now.replace(hour=0, minute=0, second=0, microsecond=0))
+        elif date_filter == "yesterday":
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            conditions.append(ContactDB.created_at >= today_start - timedelta(days=1))
+            conditions.append(ContactDB.created_at < today_start)
+        elif date_filter == "last_week":
+            conditions.append(ContactDB.created_at >= now - timedelta(days=7))
+        elif date_filter == "last_month":
+            conditions.append(ContactDB.created_at >= now - timedelta(days=30))
+
         result = await session.execute(
-            select(ContactDB).where(ContactDB.user_id == uuid.UUID(user_id)).order_by(ContactDB.created_at.desc())
+            select(ContactDB).where(and_(*conditions)).order_by(ContactDB.created_at.desc())
         )
         contacts = result.scalars().all()
 
@@ -2461,6 +2623,7 @@ async def list_contacts_route(
                 "lead_score": c.lead_score,
                 "lead_temperature": c.lead_temperature,
                 "lead_score_reasoning": c.lead_score_reasoning or "",
+                "event_name": getattr(c, 'event_name', '') or "",
                 "admin_notes": getattr(c, 'admin_notes', '') or "",
                 "photo_base64": getattr(c, 'photo_base64', None),
                 "qr_base64": get_qr_base64(str(c.id)),
@@ -2510,6 +2673,7 @@ async def get_contact_route(
             "lead_score_reasoning": c.lead_score_reasoning or "",
             "lead_score_breakdown": c.lead_score_breakdown or {},
             "lead_recommended_actions": c.lead_recommended_actions or [],
+            "event_name": getattr(c, 'event_name', '') or "",
             "admin_notes": getattr(c, 'admin_notes', '') or "",
             "photo_base64": getattr(c, 'photo_base64', None),
             "qr_base64": get_qr_base64(contact_id),
@@ -2825,27 +2989,59 @@ async def export_contacts_route(
         )
         contacts = result.scalars().all()
 
+        # Get pipeline data for research/pitch columns
+        contact_ids = [c.id for c in contacts]
+        pipeline_map = {}
+        if contact_ids:
+            pip_result = await session.execute(
+                select(ContactPipelineDB)
+                .where(ContactPipelineDB.contact_id.in_(contact_ids))
+                .order_by(ContactPipelineDB.created_at.desc())
+            )
+            for p in pip_result.scalars().all():
+                cid = str(p.contact_id)
+                if cid not in pipeline_map:
+                    pipeline_map[cid] = p
+
         if format == "json":
             contact_list = []
             for c in contacts:
+                pip = pipeline_map.get(str(c.id))
                 contact_list.append({
                     "name": c.name, "email": c.email or "N/A",
                     "phone": c.phone or "N/A", "linkedin": c.linkedin or "N/A",
                     "company_name": c.company_name or "N/A",
+                    "event_name": getattr(c, 'event_name', '') or "",
                     "notes": c.notes or "", "links": c.links or [],
                     "source": c.source or "manual",
+                    "lead_score": c.lead_score,
+                    "lead_temperature": c.lead_temperature,
+                    "research_summary": pip.research_summary if pip else "",
+                    "pitch_angle": pip.pitch_angle if pip else "",
+                    "pitch_email_subject": pip.pitch_email_subject if pip else "",
+                    "gamma_deck_url": getattr(pip, 'gamma_deck_url', '') if pip else "",
                 })
             return {"status": "success", "total": len(contact_list), "contacts": contact_list}
 
         # CSV export
         output = StringIO()
         writer = csv.writer(output)
-        writer.writerow(["Name", "Email", "Phone", "LinkedIn", "Company", "Notes", "Source"])
+        writer.writerow([
+            "Name", "Email", "Phone", "LinkedIn", "Company", "Event",
+            "Notes", "Source", "Lead Score", "Lead Temperature",
+            "Research Summary", "Pitch Email Subject", "Gamma Deck URL",
+        ])
         for c in contacts:
+            pip = pipeline_map.get(str(c.id))
             writer.writerow([
                 c.name, c.email or "N/A", c.phone or "N/A",
                 c.linkedin or "N/A", c.company_name or "N/A",
-                c.notes or "", c.source or "manual",
+                getattr(c, 'event_name', '') or "",
+                (c.notes or "").replace("\n", " "), c.source or "manual",
+                c.lead_score or "", c.lead_temperature or "",
+                (pip.research_summary or "").replace("\n", " ") if pip else "",
+                (pip.pitch_email_subject or "") if pip else "",
+                (getattr(pip, 'gamma_deck_url', '') or "") if pip else "",
             ])
 
         output.seek(0)
@@ -3471,17 +3667,60 @@ async def admin_list_users(
 async def admin_list_contacts(
     admin_id: str = Depends(verify_admin),
     filter_user: Optional[str] = Query(None, description="Filter by user_id"),
-    limit: int = Query(200, description="Max contacts"),
+    contact_id: Optional[str] = Query(None, description="Filter by specific contact_id"),
+    date_filter: Optional[str] = Query(None, description="today | yesterday | last_week | last_month"),
+    event_filter: Optional[str] = Query(None, description="Filter by event_name"),
+    limit: int = Query(50, description="Max contacts per page"),
+    page: int = Query(1, description="Page number (1-based)"),
 ):
-    """List all contacts across all users, optionally filtered."""
+    """List all contacts across all users with date/event filtering and pagination."""
     session = await get_db_session()
     try:
-        query = select(ContactDB).order_by(ContactDB.created_at.desc()).limit(limit)
-        if filter_user:
-            query = query.where(ContactDB.user_id == uuid.UUID(filter_user))
+        now = datetime.now(timezone.utc)
+        conditions = []
 
-        result = await session.execute(query)
+        if filter_user:
+            conditions.append(ContactDB.user_id == uuid.UUID(filter_user))
+
+        if contact_id:
+            conditions.append(ContactDB.id == uuid.UUID(contact_id))
+
+        if date_filter:
+            if date_filter == "today":
+                start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                conditions.append(ContactDB.created_at >= start)
+            elif date_filter == "yesterday":
+                today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                yesterday_start = today_start - timedelta(days=1)
+                conditions.append(ContactDB.created_at >= yesterday_start)
+                conditions.append(ContactDB.created_at < today_start)
+            elif date_filter == "last_week":
+                conditions.append(ContactDB.created_at >= now - timedelta(days=7))
+            elif date_filter == "last_month":
+                conditions.append(ContactDB.created_at >= now - timedelta(days=30))
+
+        if event_filter:
+            conditions.append(ContactDB.event_name == event_filter)
+
+        base_query = select(ContactDB).order_by(ContactDB.created_at.desc())
+        if conditions:
+            base_query = base_query.where(and_(*conditions))
+
+        # Total count for pagination
+        count_query = select(func.count(ContactDB.id))
+        if conditions:
+            count_query = count_query.where(and_(*conditions))
+        total_count = (await session.execute(count_query)).scalar() or 0
+
+        offset = (page - 1) * limit
+        result = await session.execute(base_query.limit(limit).offset(offset))
         contacts = result.scalars().all()
+
+        # Get distinct event names for filter UI
+        event_names_result = await session.execute(
+            select(ContactDB.event_name).where(ContactDB.event_name != "").distinct()
+        )
+        distinct_events = sorted([r[0] for r in event_names_result.all() if r[0]])
 
         # Get user names for display
         user_ids = list(set(str(c.user_id) for c in contacts))
@@ -3493,7 +3732,11 @@ async def admin_list_contacts(
 
         return {
             "status": "success",
-            "total": len(contacts),
+            "total": total_count,
+            "page": page,
+            "limit": limit,
+            "has_more": (offset + len(contacts)) < total_count,
+            "distinct_events": distinct_events,
             "contacts": [
                 {
                     "id": str(c.id),
@@ -3502,6 +3745,7 @@ async def admin_list_contacts(
                     "name": c.name, "email": c.email or "N/A",
                     "phone": c.phone or "N/A", "company_name": c.company_name or "N/A",
                     "linkedin": c.linkedin or "N/A",
+                    "event_name": getattr(c, 'event_name', '') or "",
                     "lead_score": c.lead_score, "lead_temperature": c.lead_temperature,
                     "lead_score_reasoning": c.lead_score_reasoning or "",
                     "lead_recommended_actions": c.lead_recommended_actions or [],
@@ -4850,14 +5094,20 @@ async def admin_send_broadcast(
     admin_id: str = Depends(verify_admin),
     message: str = Query(..., min_length=1),
     priority: str = Query("normal"),
+    recipient_ids: Optional[str] = Query(None, description="Comma-separated user UUIDs; omit to send to all"),
 ):
-    """Send a broadcast message to the entire team."""
+    """Send a broadcast message to the entire team or specific members."""
     session = await get_db_session()
     try:
+        parsed_recipients = None
+        if recipient_ids:
+            parsed_recipients = [r.strip() for r in recipient_ids.split(",") if r.strip()]
+
         broadcast = AdminBroadcastDB(
             admin_id=uuid.UUID(admin_id),
             message=message,
             priority=priority if priority in ("normal", "urgent") else "normal",
+            recipient_ids=parsed_recipients,
         )
         session.add(broadcast)
         await session.commit()
@@ -4865,7 +5115,8 @@ async def admin_send_broadcast(
         return {
             "status": "success",
             "broadcast_id": str(broadcast.id),
-            "message": "Broadcast sent to team",
+            "message": "Broadcast sent to team" if not parsed_recipients else f"Broadcast sent to {len(parsed_recipients)} member(s)",
+            "recipient_count": len(parsed_recipients) if parsed_recipients else None,
         }
     except Exception as e:
         await session.rollback()
@@ -4880,7 +5131,7 @@ async def get_active_broadcasts(
     user_id: str = Query(...),
     api_key: str = Depends(verify_api_key),
 ):
-    """Get active broadcast messages for team members."""
+    """Get active broadcast messages for team members (filters targeted broadcasts)."""
     session = await get_db_session()
     try:
         result = await session.execute(
@@ -4888,16 +5139,21 @@ async def get_active_broadcasts(
             .join(UserDB, AdminBroadcastDB.admin_id == UserDB.id)
             .where(AdminBroadcastDB.is_active == True)
             .order_by(AdminBroadcastDB.created_at.desc())
-            .limit(10)
+            .limit(20)
         )
 
         broadcasts = []
         for broadcast, admin_name in result:
+            # If broadcast has specific recipients, only show to those users
+            recipient_ids = broadcast.recipient_ids
+            if recipient_ids and user_id not in recipient_ids:
+                continue
             broadcasts.append({
                 "id": str(broadcast.id),
                 "message": broadcast.message,
                 "priority": broadcast.priority,
                 "admin_name": admin_name,
+                "recipient_ids": recipient_ids,
                 "created_at": broadcast.created_at.isoformat() if broadcast.created_at else "",
             })
 
@@ -4994,22 +5250,44 @@ async def admin_export_all_contacts(
         users_result = await session.execute(select(UserDB))
         user_map = {str(u.id): u.name for u in users_result.scalars().all()}
 
+        # Get latest pipeline data per contact for research/pitch columns
+        contact_ids = [c.id for c in contacts]
+        pipeline_map = {}
+        if contact_ids:
+            pip_result = await session.execute(
+                select(ContactPipelineDB)
+                .where(ContactPipelineDB.contact_id.in_(contact_ids))
+                .order_by(ContactPipelineDB.created_at.desc())
+            )
+            for p in pip_result.scalars().all():
+                cid = str(p.contact_id)
+                if cid not in pipeline_map:  # keep only latest per contact
+                    pipeline_map[cid] = p
+
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow([
-            "Name", "Email", "Phone", "LinkedIn", "Company", "Notes", "Admin Notes",
-            "Lead Score", "Lead Temperature", "Source", "Scanned By", "Created At"
+            "Name", "Email", "Phone", "LinkedIn", "Company", "Event",
+            "Notes", "Admin Notes", "Lead Score", "Lead Temperature",
+            "Source", "Scanned By", "Created At",
+            "Research Summary", "Pitch Angle", "Pitch Email Subject", "Gamma Deck URL",
         ])
 
         for c in contacts:
+            pip = pipeline_map.get(str(c.id))
             writer.writerow([
                 c.name or "", c.email or "", c.phone or "", c.linkedin or "",
-                c.company_name or "", (c.notes or "").replace("\n", " "),
+                c.company_name or "", getattr(c, 'event_name', '') or "",
+                (c.notes or "").replace("\n", " "),
                 (getattr(c, 'admin_notes', '') or "").replace("\n", " "),
                 c.lead_score or "", c.lead_temperature or "",
                 c.source or "manual",
                 user_map.get(str(c.user_id), "Unknown"),
                 c.created_at.isoformat() if c.created_at else "",
+                (pip.research_summary or "").replace("\n", " ") if pip else "",
+                (pip.pitch_angle or "").replace("\n", " ") if pip else "",
+                (pip.pitch_email_subject or "") if pip else "",
+                (getattr(pip, 'gamma_deck_url', '') or "") if pip else "",
             ])
 
         output.seek(0)
@@ -5277,45 +5555,6 @@ async def admin_backup_status(
 
 # ==================== PIPELINE ENDPOINTS ====================
 
-@app.get("/contact/{contact_id}/pipeline")
-async def get_pipeline_status(
-    contact_id: str,
-    user_id: str = Query(...),
-    api_key: str = Depends(verify_api_key),
-):
-    """Get pipeline status and generated content for a contact."""
-    session = await get_db_session()
-    try:
-        result = await session.execute(
-            select(ContactPipelineDB)
-            .where(ContactPipelineDB.contact_id == uuid.UUID(contact_id))
-            .order_by(ContactPipelineDB.created_at.desc())
-        )
-        pipeline = result.scalar_one_or_none()
-        if not pipeline:
-            return {"status": "none", "message": "No pipeline run for this contact"}
-
-        return {
-            "id": str(pipeline.id),
-            "status": pipeline.status,
-            "current_step": pipeline.current_step,
-            "error_message": pipeline.error_message,
-            "research_summary": pipeline.research_summary,
-            "research_data": pipeline.research_data,
-            "score_completed": pipeline.score_completed,
-            "pitch_angle": pipeline.pitch_angle,
-            "pitch_email_subject": pipeline.pitch_email_subject,
-            "pitch_email_body": pipeline.pitch_email_body,
-            "pitch_slides_content": pipeline.pitch_slides_content,
-            "deck_file_id": str(pipeline.deck_file_id) if pipeline.deck_file_id else None,
-            "presenton_presentation_id": pipeline.presenton_presentation_id,
-            "started_at": pipeline.started_at.isoformat() if pipeline.started_at else None,
-            "completed_at": pipeline.completed_at.isoformat() if pipeline.completed_at else None,
-        }
-    finally:
-        await session.close()
-
-
 @app.post("/contact/{contact_id}/pipeline/run")
 async def trigger_pipeline(
     contact_id: str,
@@ -5456,10 +5695,247 @@ async def admin_pipeline_settings(
 
     result["current_settings"] = {
         "auto_pipeline_enabled": AUTO_PIPELINE_ENABLED,
-        "presenton_configured": bool(PRESENTON_API_URL),
+        "gamma_configured": bool(GAMMA_API_KEY),
         "openrouter_configured": bool(OPENROUTER_API_KEY),
     }
     return result
+
+
+# ==================== CONTACT LIST ENDPOINTS ====================
+
+class ContactListCreate(BaseModel):
+    name: str
+
+
+@app.post("/admin/contact_lists")
+async def create_contact_list(
+    body: ContactListCreate,
+    admin_id: str = Depends(verify_admin),
+):
+    """Create a named contact list."""
+    session = await get_db_session()
+    try:
+        lst = ContactListDB(name=body.name.strip(), admin_id=uuid.UUID(admin_id))
+        session.add(lst)
+        await session.commit()
+        return {"status": "success", "list_id": str(lst.id), "name": lst.name}
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/admin/contact_lists")
+async def get_contact_lists(admin_id: str = Depends(verify_admin)):
+    """List all contact lists with member counts."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactListDB).order_by(ContactListDB.created_at.desc())
+        )
+        lists = result.scalars().all()
+
+        output = []
+        for lst in lists:
+            count_result = await session.execute(
+                select(func.count(ContactListMemberDB.id))
+                .where(ContactListMemberDB.list_id == lst.id)
+            )
+            count = count_result.scalar() or 0
+            output.append({
+                "id": str(lst.id),
+                "name": lst.name,
+                "contact_count": count,
+                "created_at": lst.created_at.isoformat() if lst.created_at else "",
+            })
+
+        return {"status": "success", "lists": output}
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+class BulkAddContactsRequest(BaseModel):
+    contact_ids: List[str]
+
+
+@app.post("/admin/contact_lists/{list_id}/contacts")
+async def add_contacts_to_list(
+    list_id: str,
+    body: BulkAddContactsRequest,
+    admin_id: str = Depends(verify_admin),
+):
+    """Add multiple contacts to a list (skips duplicates)."""
+    session = await get_db_session()
+    try:
+        # Verify list exists
+        lst_result = await session.execute(
+            select(ContactListDB).where(ContactListDB.id == uuid.UUID(list_id))
+        )
+        if not lst_result.scalar_one_or_none():
+            raise HTTPException(status_code=404, detail="List not found")
+
+        # Get existing members to avoid duplicates
+        existing_result = await session.execute(
+            select(ContactListMemberDB.contact_id).where(ContactListMemberDB.list_id == uuid.UUID(list_id))
+        )
+        existing_ids = {str(row[0]) for row in existing_result.all()}
+
+        added = 0
+        for cid in body.contact_ids:
+            if cid not in existing_ids:
+                member = ContactListMemberDB(
+                    list_id=uuid.UUID(list_id),
+                    contact_id=uuid.UUID(cid),
+                )
+                session.add(member)
+                added += 1
+
+        await session.commit()
+        return {"status": "success", "added": added, "skipped_duplicates": len(body.contact_ids) - added}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/admin/contact_lists/{list_id}/contacts")
+async def get_contacts_in_list(
+    list_id: str,
+    admin_id: str = Depends(verify_admin),
+):
+    """Get all contacts in a specific list."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactDB)
+            .join(ContactListMemberDB, ContactDB.id == ContactListMemberDB.contact_id)
+            .where(ContactListMemberDB.list_id == uuid.UUID(list_id))
+            .order_by(ContactListMemberDB.added_at.desc())
+        )
+        contacts = result.scalars().all()
+
+        users_result = await session.execute(select(UserDB))
+        user_map = {str(u.id): u.name for u in users_result.scalars().all()}
+
+        return {
+            "status": "success",
+            "list_id": list_id,
+            "total": len(contacts),
+            "contacts": [
+                {
+                    "id": str(c.id),
+                    "name": c.name,
+                    "email": c.email or "N/A",
+                    "company_name": c.company_name or "N/A",
+                    "lead_score": c.lead_score,
+                    "lead_temperature": c.lead_temperature,
+                    "event_name": getattr(c, 'event_name', '') or "",
+                    "user_name": user_map.get(str(c.user_id), "Unknown"),
+                    "created_at": c.created_at.isoformat() if c.created_at else "",
+                }
+                for c in contacts
+            ],
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.delete("/admin/contact_lists/{list_id}")
+async def delete_contact_list(list_id: str, admin_id: str = Depends(verify_admin)):
+    """Delete a contact list and all its members."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactListDB).where(ContactListDB.id == uuid.UUID(list_id))
+        )
+        lst = result.scalar_one_or_none()
+        if not lst:
+            raise HTTPException(status_code=404, detail="List not found")
+        await session.delete(lst)
+        await session.commit()
+        return {"status": "success", "message": "List deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.delete("/admin/contact_lists/{list_id}/contacts/{contact_id}")
+async def remove_contact_from_list(
+    list_id: str, contact_id: str, admin_id: str = Depends(verify_admin)
+):
+    """Remove a contact from a list."""
+    session = await get_db_session()
+    try:
+        await session.execute(
+            delete(ContactListMemberDB).where(
+                ContactListMemberDB.list_id == uuid.UUID(list_id),
+                ContactListMemberDB.contact_id == uuid.UUID(contact_id),
+            )
+        )
+        await session.commit()
+        return {"status": "success", "message": "Contact removed from list"}
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+# ==================== PIPELINE STATUS ENHANCEMENT ====================
+
+@app.get("/contact/{contact_id}/pipeline")
+async def get_pipeline_status_enhanced(
+    contact_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Get pipeline status and generated content for a contact (includes gamma_deck_url)."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactPipelineDB)
+            .where(ContactPipelineDB.contact_id == uuid.UUID(contact_id))
+            .order_by(ContactPipelineDB.created_at.desc())
+        )
+        pipeline = result.scalar_one_or_none()
+        if not pipeline:
+            return {"status": "none", "message": "No pipeline run for this contact"}
+
+        return {
+            "id": str(pipeline.id),
+            "status": pipeline.status,
+            "current_step": pipeline.current_step,
+            "error_message": pipeline.error_message,
+            "research_summary": pipeline.research_summary,
+            "research_data": pipeline.research_data,
+            "score_completed": pipeline.score_completed,
+            "pitch_angle": pipeline.pitch_angle,
+            "pitch_email_subject": pipeline.pitch_email_subject,
+            "pitch_email_body": pipeline.pitch_email_body,
+            "pitch_slides_content": pipeline.pitch_slides_content,
+            "deck_file_id": str(pipeline.deck_file_id) if pipeline.deck_file_id else None,
+            "gamma_deck_url": getattr(pipeline, 'gamma_deck_url', None),
+            "started_at": pipeline.started_at.isoformat() if pipeline.started_at else None,
+            "completed_at": pipeline.completed_at.isoformat() if pipeline.completed_at else None,
+        }
+    finally:
+        await session.close()
 
 
 if __name__ == "__main__":
