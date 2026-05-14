@@ -2089,15 +2089,12 @@
                 const scoreColor = temp === 'hot' ? 'bg-red-500' : temp === 'warm' ? 'bg-orange-400' : temp === 'cold' ? 'bg-gray-400' : '';
                 const isSelected = AppState.selectMode && AppState.selectedContactIds.has(contact.id);
                 const selectedClass = isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : '';
-                const cardClick = AppState.selectMode
-                    ? `onclick="toggleContactSelection('${contact.id}')"`
-                    : `onclick="openContactDetail('${contact.id}')"`;
 
                 return `
-                <div class="contact-card bg-white rounded-xl shadow-sm active:shadow-md mb-2 mx-2 transition-all duration-200 ${selectedClass}" data-id="${contact.id}" ${cardClick}>
+                <div class="contact-card bg-white rounded-xl shadow-sm active:shadow-md mb-2 mx-2 transition-all duration-200 ${selectedClass}" data-id="${contact.id}" onclick="openContactDetail('${contact.id}')">
                     <div class="flex items-start p-4 gap-3">
-                        <!-- Select mode checkbox -->
-                        ${AppState.selectMode ? `<div class="flex-shrink-0 flex items-center self-center pr-1" onclick="event.stopPropagation(); toggleContactSelection('${contact.id}')"><input type="checkbox" class="contact-select-cb w-5 h-5 rounded accent-blue-600 pointer-events-none" ${isSelected ? 'checked' : ''}></div>` : ''}
+                        <!-- Select mode checkbox (pointer-events-none so tap always reaches the card onclick) -->
+                        ${AppState.selectMode ? `<div class="flex-shrink-0 flex items-center self-center pr-1"><input type="checkbox" class="contact-select-cb w-5 h-5 rounded accent-blue-600 pointer-events-none" ${isSelected ? 'checked' : ''}></div>` : ''}
                         <!-- Avatar with score badge -->
                         <div class="relative flex-shrink-0 mt-0.5">
                             ${contact.photo_base64
@@ -3439,6 +3436,11 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         // ==================== CONTACT DETAIL VIEW ====================
         let _swipeVoiceTriggered = 0;
         function openContactDetail(contactId) {
+            // In select mode, tap = toggle selection (never open detail)
+            if (AppState.selectMode) {
+                toggleContactSelection(contactId);
+                return;
+            }
             // Skip if voice recording was just triggered by swipe
             if (Date.now() - _swipeVoiceTriggered < 500) return;
             const contact = AppState.contacts.find(c => c.id === contactId);
