@@ -34,7 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import (
     UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB, UserCardDB, EventFileDB,
-    ContactFileDB, ContactPipelineDB, AdminBroadcastDB, ContactListDB, ContactListMemberDB, Base,
+    ContactFileDB, ContactPipelineDB, AdminBroadcastDB, ContactListDB, ContactListMemberDB, UserExportDB, Base,
     get_engine, get_session_factory, get_backup_session_factory, init_db, dispose_engines,
     ASYNC_DATABASE_URL, ASYNC_BACKUP_URL
 )
@@ -171,6 +171,13 @@ class LeadScoreResult(BaseModel):
 class EnrichRequest(BaseModel):
     notes_append: Optional[str] = None
     links: Optional[List[Dict[str, str]]] = None
+
+
+class CreateExportRequest(BaseModel):
+    contact_ids: List[str]
+    format: str = "csv"          # "csv" or "json"
+    filter_label: str = "All"    # Human-readable label shown in the exports list
+    filename: Optional[str] = None
 
 
 class AudioNoteRequest(BaseModel):
@@ -3050,6 +3057,231 @@ async def export_contacts_route(
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=event_scout_contacts.csv"},
         )
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+# ─── Selective Export Endpoints (SOLID: each endpoint has one responsibility) ───
+
+@app.post("/exports/create")
+async def create_export_route(
+    request: CreateExportRequest,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Generate a CSV/JSON file from a specific set of contact IDs and persist it."""
+    import csv
+    from io import StringIO
+
+    if not request.contact_ids:
+        raise HTTPException(status_code=400, detail="contact_ids cannot be empty")
+    if request.format not in ("csv", "json"):
+        raise HTTPException(status_code=400, detail="format must be 'csv' or 'json'")
+
+    session = await get_db_session()
+    try:
+        contact_uuids = [uuid.UUID(cid) for cid in request.contact_ids]
+        result = await session.execute(
+            select(ContactDB).where(
+                ContactDB.user_id == uuid.UUID(user_id),
+                ContactDB.id.in_(contact_uuids),
+            )
+        )
+        contacts = result.scalars().all()
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No matching contacts found")
+
+        # Fetch pipeline data for research/pitch columns
+        pipeline_map: Dict[str, Any] = {}
+        pip_result = await session.execute(
+            select(ContactPipelineDB)
+            .where(ContactPipelineDB.contact_id.in_([c.id for c in contacts]))
+            .order_by(ContactPipelineDB.created_at.desc())
+        )
+        for p in pip_result.scalars().all():
+            cid = str(p.contact_id)
+            if cid not in pipeline_map:
+                pipeline_map[cid] = p
+
+        # Build file content
+        if request.format == "json":
+            import json as _json
+            data = []
+            for c in contacts:
+                pip = pipeline_map.get(str(c.id))
+                data.append({
+                    "name": c.name, "email": c.email or "N/A",
+                    "phone": c.phone or "N/A", "linkedin": c.linkedin or "N/A",
+                    "company_name": c.company_name or "N/A",
+                    "event_name": getattr(c, "event_name", "") or "",
+                    "notes": c.notes or "", "links": c.links or [],
+                    "source": c.source or "manual",
+                    "lead_score": c.lead_score, "lead_temperature": c.lead_temperature,
+                    "research_summary": pip.research_summary if pip else "",
+                    "pitch_angle": pip.pitch_angle if pip else "",
+                    "pitch_email_subject": pip.pitch_email_subject if pip else "",
+                    "gamma_deck_url": getattr(pip, "gamma_deck_url", "") if pip else "",
+                })
+            file_content = _json.dumps(data, indent=2)
+        else:
+            output = StringIO()
+            writer = csv.writer(output)
+            writer.writerow([
+                "Name", "Email", "Phone", "LinkedIn", "Company", "Event",
+                "Notes", "Source", "Lead Score", "Lead Temperature",
+                "Research Summary", "Pitch Email Subject", "Gamma Deck URL",
+            ])
+            for c in contacts:
+                pip = pipeline_map.get(str(c.id))
+                writer.writerow([
+                    c.name, c.email or "N/A", c.phone or "N/A",
+                    c.linkedin or "N/A", c.company_name or "N/A",
+                    getattr(c, "event_name", "") or "",
+                    (c.notes or "").replace("\n", " "), c.source or "manual",
+                    c.lead_score or "", c.lead_temperature or "",
+                    (pip.research_summary or "").replace("\n", " ") if pip else "",
+                    (pip.pitch_email_subject or "") if pip else "",
+                    (getattr(pip, "gamma_deck_url", "") or "") if pip else "",
+                ])
+            file_content = output.getvalue()
+
+        # Build filename
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        label_slug = request.filter_label.lower().replace(" ", "_")
+        filename = request.filename or f"contacts_{label_slug}_{ts}.{request.format}"
+
+        export = UserExportDB(
+            user_id=uuid.UUID(user_id),
+            filename=filename,
+            format=request.format,
+            filter_label=request.filter_label,
+            contact_count=len(contacts),
+            file_content=file_content,
+        )
+        session.add(export)
+        await session.commit()
+        await session.refresh(export)
+
+        return {
+            "status": "success",
+            "id": str(export.id),
+            "filename": export.filename,
+            "format": export.format,
+            "filter_label": export.filter_label,
+            "contact_count": export.contact_count,
+            "created_at": export.created_at.isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/exports/")
+async def list_exports_route(
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Return metadata for all saved exports belonging to the user (no file content)."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserExportDB)
+            .where(UserExportDB.user_id == uuid.UUID(user_id))
+            .order_by(UserExportDB.created_at.desc())
+        )
+        exports = result.scalars().all()
+        return {
+            "status": "success",
+            "exports": [
+                {
+                    "id": str(e.id),
+                    "filename": e.filename,
+                    "format": e.format,
+                    "filter_label": e.filter_label,
+                    "contact_count": e.contact_count,
+                    "created_at": e.created_at.isoformat(),
+                }
+                for e in exports
+            ],
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/exports/{export_id}/download")
+async def download_export_route(
+    export_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Stream the file content of a saved export as a download."""
+    from fastapi.responses import StreamingResponse
+
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserExportDB).where(
+                UserExportDB.id == uuid.UUID(export_id),
+                UserExportDB.user_id == uuid.UUID(user_id),
+            )
+        )
+        export = result.scalar_one_or_none()
+        if not export:
+            raise HTTPException(status_code=404, detail="Export not found")
+
+        media_type = "text/csv" if export.format == "csv" else "application/json"
+        return StreamingResponse(
+            iter([export.file_content]),
+            media_type=media_type,
+            headers={"Content-Disposition": f"attachment; filename={export.filename}"},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.delete("/exports/{export_id}")
+async def delete_export_route(
+    export_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Permanently delete a saved export record."""
+    from sqlalchemy import delete as sa_delete
+
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserExportDB).where(
+                UserExportDB.id == uuid.UUID(export_id),
+                UserExportDB.user_id == uuid.UUID(user_id),
+            )
+        )
+        export = result.scalar_one_or_none()
+        if not export:
+            raise HTTPException(status_code=404, detail="Export not found")
+
+        await session.execute(
+            sa_delete(UserExportDB).where(UserExportDB.id == uuid.UUID(export_id))
+        )
+        await session.commit()
+        return {"status": "success", "deleted_id": export_id}
+    except HTTPException:
+        raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
