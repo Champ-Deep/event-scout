@@ -478,27 +478,36 @@
                                 oninput="handleSearch()">
                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                         </div>
-                        <!-- Date filter pills -->
-                        <div class="flex gap-1.5 mt-2 overflow-x-auto pb-0.5 no-scrollbar" id="contactsDateFilters">
-                            <button onclick="setContactsDateFilter('')" id="cdf-all" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-blue-600 text-white font-medium">All</button>
-                            <button onclick="setContactsDateFilter('today')" id="cdf-today" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Today</button>
-                            <button onclick="setContactsDateFilter('yesterday')" id="cdf-yesterday" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Yesterday</button>
-                            <button onclick="setContactsDateFilter('last_week')" id="cdf-last_week" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Last 7 Days</button>
-                            <button onclick="setContactsDateFilter('last_month')" id="cdf-last_month" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">This Month</button>
-                        </div>
-                        <p id="contactsFilterCount" class="text-xs text-gray-400 mt-1 hidden"></p>
-                        <!-- Select mode toggle + My Exports shortcut -->
-                        <div class="flex items-center justify-between mt-2">
+                        <!-- Date filter pills + Select icon -->
+                        <div class="flex items-center gap-2 mt-2">
+                            <div class="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar flex-1" id="contactsDateFilters">
+                                <button onclick="setContactsDateFilter('')" id="cdf-all" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-blue-600 text-white font-medium">All</button>
+                                <button onclick="setContactsDateFilter('today')" id="cdf-today" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Today</button>
+                                <button onclick="setContactsDateFilter('yesterday')" id="cdf-yesterday" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Yesterday</button>
+                                <button onclick="setContactsDateFilter('last_week')" id="cdf-last_week" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Last 7 Days</button>
+                                <button onclick="setContactsDateFilter('last_month')" id="cdf-last_month" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">This Month</button>
+                            </div>
+                            <!-- Select toggle — always visible, top-right of filter row -->
                             <button id="selectModeBtn" onclick="toggleSelectMode()"
-                                class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full bg-gray-100 text-gray-600 active:bg-gray-200 transition font-medium">
-                                <i class="fas fa-check-square text-xs"></i>
+                                class="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 active:bg-gray-200 transition font-medium">
+                                <i class="fas fa-check-square"></i>
                                 <span id="selectModeBtnLabel">Select</span>
                             </button>
-                            <button onclick="openExportsSheet()"
-                                class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full bg-gray-100 text-gray-600 active:bg-gray-200 transition font-medium">
-                                <i class="fas fa-folder-open text-xs"></i>
-                                <span>My Exports</span>
-                            </button>
+                        </div>
+
+                        <!-- Smart action strip: appears when a date filter is active -->
+                        <div id="contactsActionStrip" class="hidden mt-2 flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+                            <p id="actionStripLabel" class="text-xs font-semibold text-blue-800"></p>
+                            <div class="flex items-center gap-2">
+                                <button onclick="selectAllAndExport('csv')"
+                                    class="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-semibold active:bg-blue-700 transition">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                                <button onclick="openExportsSheet()"
+                                    class="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-blue-200 text-blue-700 text-xs rounded-lg font-medium active:bg-blue-50 transition">
+                                    <i class="fas fa-folder-open"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -516,8 +525,8 @@
                     </div>
                 </div>
 
-                <!-- Contact List -->
-                <div id="contactsList" class="divide-y divide-gray-200 pt-4">
+                <!-- Contact List (pb-28 gives room for bulk bar in select mode) -->
+                <div id="contactsList" class="divide-y divide-gray-200 pt-4 pb-28">
                     <!-- Contacts will be rendered here -->
                 </div>
 
@@ -528,26 +537,26 @@
                 </button>
 
                 <!-- Bulk Selection Bar (visible only in select mode) -->
-                <div id="contactsSelectBar" class="hidden fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-35 px-4 py-2.5">
+                <div id="contactsSelectBar" class="hidden fixed bottom-16 left-0 right-0 bg-white border-t-2 border-blue-200 shadow-xl z-35 px-4 py-3">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
-                            <button onclick="selectAllVisible()" class="text-xs text-blue-600 font-medium whitespace-nowrap active:opacity-70">
-                                All (<span id="selectableCount">0</span>)
+                            <button onclick="selectAllVisible()"
+                                class="text-xs text-blue-600 font-semibold whitespace-nowrap active:opacity-70 bg-blue-50 px-2.5 py-1 rounded-lg">
+                                Select All (<span id="selectableCount">0</span>)
                             </button>
-                            <span class="text-gray-300">|</span>
-                            <span class="text-xs text-gray-500 whitespace-nowrap"><span id="selectedCount">0</span> selected</span>
+                            <span class="text-xs text-gray-500 whitespace-nowrap font-medium"><span id="selectedCount">0</span> picked</span>
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
                             <button onclick="createExport('csv')"
-                                class="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg font-medium active:bg-green-700 transition flex items-center gap-1">
-                                <i class="fas fa-file-csv"></i> CSV
+                                class="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg font-semibold active:bg-green-700 transition flex items-center gap-1.5">
+                                <i class="fas fa-download"></i> CSV
                             </button>
                             <button onclick="createExport('json')"
-                                class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-medium active:bg-blue-700 transition flex items-center gap-1">
-                                <i class="fas fa-brackets-curly"></i> JSON
+                                class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-semibold active:bg-blue-700 transition flex items-center gap-1.5">
+                                <i class="fas fa-download"></i> JSON
                             </button>
                             <button onclick="toggleSelectMode()"
-                                class="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs rounded-lg active:bg-gray-300 transition">
+                                class="px-2.5 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg active:bg-gray-200 transition font-medium">
                                 Cancel
                             </button>
                         </div>
@@ -2032,15 +2041,27 @@
                         AppState.contacts = data.contacts;
                         renderContacts(AppState.contacts);
                         renderHotLeads();
-                        // Update count label
+                        // Update count label + smart action strip
                         const countEl = document.getElementById('contactsFilterCount');
+                        const strip = document.getElementById('contactsActionStrip');
+                        const stripLabel = document.getElementById('actionStripLabel');
+                        const total = data.total_contacts ?? data.total ?? data.contacts.length;
                         if (countEl) {
-                            const total = data.total_contacts ?? data.total ?? data.contacts.length;
                             if (df) {
                                 countEl.textContent = `${total} contact${total !== 1 ? 's' : ''} found`;
                                 countEl.classList.remove('hidden');
                             } else {
                                 countEl.classList.add('hidden');
+                            }
+                        }
+                        // Show action strip whenever a date filter is active
+                        if (strip && stripLabel) {
+                            const filterNames = { today: 'Today', yesterday: 'Yesterday', last_week: 'Last 7 Days', last_month: 'This Month' };
+                            if (df && total > 0) {
+                                stripLabel.textContent = `${total} contact${total !== 1 ? 's' : ''} · ${filterNames[df] || df}`;
+                                strip.classList.remove('hidden');
+                            } else {
+                                strip.classList.add('hidden');
                             }
                         }
                     } else {
@@ -6666,18 +6687,51 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             const bar = document.getElementById('contactsSelectBar');
             const fab = document.getElementById('contactsFab');
             if (AppState.selectMode) {
-                btn.className = 'flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full bg-blue-600 text-white active:bg-blue-700 transition font-medium';
+                btn.className = 'flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-blue-600 text-white active:bg-blue-700 transition font-medium';
                 label.textContent = 'Selecting';
                 bar.classList.remove('hidden');
                 fab.classList.add('hidden');
+                const strip = document.getElementById('contactsActionStrip');
+                if (strip) strip.classList.add('hidden');
             } else {
-                btn.className = 'flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full bg-gray-100 text-gray-600 active:bg-gray-200 transition font-medium';
+                btn.className = 'flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 active:bg-gray-200 transition font-medium';
                 label.textContent = 'Select';
                 bar.classList.add('hidden');
                 fab.classList.remove('hidden');
+                // Re-show action strip if a date filter is still active
+                const strip = document.getElementById('contactsActionStrip');
+                if (strip && window._contactsDateFilter && AppState.contacts.length > 0) {
+                    strip.classList.remove('hidden');
+                }
             }
             updateSelectionBar();
             renderContacts(AppState.contacts);
+        }
+
+        // One-tap export: grabs all currently visible (filtered) contacts, saves + downloads
+        async function selectAllAndExport(format) {
+            if (AppState.contacts.length === 0) { showToast('No contacts to export', 'error'); return; }
+            const filterNames = { '': 'All', today: 'Today', yesterday: 'Yesterday', last_week: 'Last 7 Days', last_month: 'This Month' };
+            const filterLabel = filterNames[window._contactsDateFilter || ''] || 'All';
+            showToast(`Saving ${AppState.contacts.length} contacts…`, 'info');
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contact_ids: AppState.contacts.map(c => c.id), format, filter_label: filterLabel }),
+                    }
+                );
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+                const data = await res.json();
+                await downloadExport(data.id, data.filename);
+                showToast(`Downloaded: ${data.filename}`, 'success');
+                await loadExports();
+            } catch (err) {
+                console.error('selectAllAndExport error:', err);
+                showToast('Export failed', 'error');
+            }
         }
 
         function toggleContactSelection(contactId) {
