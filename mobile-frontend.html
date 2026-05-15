@@ -540,18 +540,19 @@
                 <div id="contactsSelectBar" class="hidden fixed bottom-16 left-0 right-0 bg-white border-t-2 border-blue-200 shadow-xl z-35 px-4 py-3">
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
-                            <button onclick="selectAllVisible()"
-                                class="text-xs text-blue-600 font-semibold whitespace-nowrap active:opacity-70 bg-blue-50 px-2.5 py-1 rounded-lg">
-                                Select All (<span id="selectableCount">0</span>)
-                            </button>
-                            <span class="text-xs text-gray-500 whitespace-nowrap font-medium"><span id="selectedCount">0</span> picked</span>
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="handleSelectAllCheckbox(this)"
+                                    class="w-4 h-4 rounded accent-blue-600 cursor-pointer">
+                                <span class="text-xs text-blue-700 font-semibold whitespace-nowrap">All (<span id="selectableCount">0</span>)</span>
+                            </label>
+                            <span class="text-xs text-gray-500 whitespace-nowrap font-medium"><span id="selectedCount">0</span> selected</span>
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
-                            <button onclick="createExport('csv')"
+                            <button onclick="promptExport('csv')"
                                 class="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg font-semibold active:bg-green-700 transition flex items-center gap-1.5">
                                 <i class="fas fa-download"></i> CSV
                             </button>
-                            <button onclick="createExport('json')"
+                            <button onclick="promptExport('json')"
                                 class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-semibold active:bg-blue-700 transition flex items-center gap-1.5">
                                 <i class="fas fa-download"></i> JSON
                             </button>
@@ -6764,11 +6765,118 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             const allEl = document.getElementById('selectableCount');
             if (selEl) selEl.textContent = AppState.selectedContactIds.size;
             if (allEl) allEl.textContent = AppState.contacts.length;
+            updateSelectAllCheckbox();
+        }
+
+        function updateSelectAllCheckbox() {
+            const cb = document.getElementById('selectAllCheckbox');
+            if (!cb) return;
+            const total = AppState.contacts.length;
+            const selected = AppState.selectedContactIds.size;
+            if (selected === 0 || total === 0) {
+                cb.checked = false;
+                cb.indeterminate = false;
+            } else if (selected >= total) {
+                cb.checked = true;
+                cb.indeterminate = false;
+            } else {
+                cb.checked = false;
+                cb.indeterminate = true;
+            }
+        }
+
+        function handleSelectAllCheckbox(cb) {
+            if (cb.checked) {
+                selectAllVisible();
+            } else {
+                AppState.selectedContactIds = new Set();
+                updateSelectionBar();
+                renderContacts(AppState.contacts);
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────
         // EXPORT OPERATIONS  (each function has one job)
         // ─────────────────────────────────────────────────────────────────────
+
+        function promptExport(format) {
+            const contactIds = AppState.selectedContactIds.size > 0
+                ? Array.from(AppState.selectedContactIds)
+                : AppState.contacts.map(c => c.id);
+            if (contactIds.length === 0) { showToast('No contacts to export', 'error'); return; }
+
+            const today = new Date().toISOString().slice(0, 10);
+            const defaultName = `contacts_${today}`;
+            const btnColor = format === 'csv' ? 'bg-green-600 active:bg-green-700' : 'bg-blue-600 active:bg-blue-700';
+
+            const modal = document.createElement('div');
+            modal.id = 'exportNameModal';
+            modal.className = 'fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/60';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl slide-up">
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">Name Your Export</h3>
+                    <p class="text-xs text-gray-400 mb-4">${contactIds.length} contact${contactIds.length !== 1 ? 's' : ''} · ${format.toUpperCase()}</p>
+                    <div class="relative mb-5">
+                        <input type="text" id="exportFileName" value="${defaultName}"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-16"
+                            placeholder="File name..." maxlength="80">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">.${format}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="document.getElementById('exportNameModal').remove()"
+                            class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold active:bg-gray-200">
+                            Cancel
+                        </button>
+                        <button onclick="confirmExport('${format}')"
+                            class="flex-1 py-2.5 ${btnColor} text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            setTimeout(() => {
+                const inp = document.getElementById('exportFileName');
+                if (inp) { inp.focus(); inp.select(); }
+            }, 80);
+        }
+
+        async function confirmExport(format) {
+            const modal = document.getElementById('exportNameModal');
+            const inp = document.getElementById('exportFileName');
+            const raw = inp ? inp.value.trim() : '';
+            const baseName = (raw.replace(/[^\w\s\-]/g, '').trim().replace(/\s+/g, '_') || 'contacts');
+            const downloadFilename = `${baseName}.${format}`;
+            if (modal) modal.remove();
+
+            const contactIds = AppState.selectedContactIds.size > 0
+                ? Array.from(AppState.selectedContactIds)
+                : AppState.contacts.map(c => c.id);
+
+            showToast('Creating export…', 'info');
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contact_ids: contactIds,
+                            format,
+                            filter_label: `Selected ${contactIds.length}`,
+                        }),
+                    }
+                );
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+                const data = await res.json();
+                await downloadExport(data.id, downloadFilename);
+                showToast(`Downloaded: ${downloadFilename}`, 'success');
+                if (AppState.selectMode) toggleSelectMode();
+                await loadExports();
+            } catch (err) {
+                console.error('confirmExport error:', err);
+                showToast('Export failed', 'error');
+            }
+        }
 
         async function createExport(format) {
             const contactIds = AppState.selectedContactIds.size > 0
