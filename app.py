@@ -1135,15 +1135,29 @@ async def fire_webhook(contact_data: dict, user_data: dict, contact_id: str):
 
 
 # --- DUPLICATE CHECK ---
-async def check_duplicate_contact(user_id: str, email: str, phone: str) -> dict | None:
-    """Check if a contact with matching email or phone already exists for this user."""
+async def check_duplicate_contact(user_id: str, email: str, phone: str,
+                                  name: str = "N/A", company_name: str = "N/A") -> dict | None:
+    """Check if a contact already exists for this user.
+
+    Primary match: email (case-insensitive). Also matches on phone,
+    or on name + company_name both matching (case-insensitive).
+    """
     session = await get_db_session()
     try:
+        email_norm = (email or "").strip().lower()
+        name_norm = (name or "").strip().lower()
+        company_norm = (company_name or "").strip().lower()
+
         conditions = []
-        if email and email != "N/A":
-            conditions.append(ContactDB.email == email)
+        if email_norm and email_norm != "n/a":
+            conditions.append(func.lower(ContactDB.email) == email_norm)
         if phone and phone != "N/A":
             conditions.append(ContactDB.phone == phone)
+        if name_norm and name_norm != "n/a" and company_norm and company_norm != "n/a":
+            conditions.append(and_(
+                func.lower(ContactDB.name) == name_norm,
+                func.lower(ContactDB.company_name) == company_norm,
+            ))
 
         if not conditions:
             return None  # No matchable fields, can't dedup
@@ -1155,13 +1169,83 @@ async def check_duplicate_contact(user_id: str, email: str, phone: str) -> dict 
             ).limit(1)
         )
         existing = result.scalar_one_or_none()
-        if existing:
-            return {
-                "contact_id": str(existing.id),
-                "name": existing.name,
-                "matched_on": "email" if (email and email != "N/A" and existing.email == email) else "phone"
+        if not existing:
+            return None
+
+        if email_norm and email_norm != "n/a" and (existing.email or "").strip().lower() == email_norm:
+            matched_on = "email"
+        elif phone and phone != "N/A" and existing.phone == phone:
+            matched_on = "phone"
+        else:
+            matched_on = "name+company"
+        return {
+            "contact_id": str(existing.id),
+            "name": existing.name,
+            "matched_on": matched_on,
+        }
+    finally:
+        await session.close()
+
+
+async def upsert_scanned_contact_fields(contact_id: str, user_id: str, fields: dict,
+                                        photo_base64: str = None) -> list:
+    """Fill empty/N/A fields on an existing contact with newly scanned data.
+
+    Returns the list of field names that were updated (empty if nothing changed).
+    """
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ContactDB).where(
+                ContactDB.id == uuid.UUID(contact_id),
+                ContactDB.user_id == uuid.UUID(user_id),
+            )
+        )
+        c = result.scalar_one_or_none()
+        if not c:
+            return []
+
+        updated = []
+        for field in ("name", "email", "phone", "linkedin", "company_name"):
+            new_val = (fields.get(field) or "").strip()
+            if not new_val or new_val == "N/A":
+                continue
+            current = (getattr(c, field) or "").strip()
+            if not current or current == "N/A":
+                setattr(c, field, new_val)
+                updated.append(field)
+        if photo_base64 and not c.photo_base64:
+            c.photo_base64 = photo_base64
+            updated.append("photo")
+
+        if not updated:
+            return []
+
+        c.updated_at = datetime.now(timezone.utc)
+        await session.commit()
+        await session.refresh(c)
+
+        # Keep FAISS in sync so semantic search sees the merged fields
+        try:
+            contact_dict = {
+                "id": str(c.id),
+                "name": c.name, "email": c.email or "N/A",
+                "phone": c.phone or "N/A", "linkedin": c.linkedin or "N/A",
+                "company_name": c.company_name or "N/A",
+                "notes": c.notes or "", "links": c.links or [],
+                "source": c.source or "manual",
+                "lead_score": c.lead_score, "lead_temperature": c.lead_temperature,
+                "lead_score_reasoning": c.lead_score_reasoning or "",
+                "created_at": c.created_at.isoformat() if c.created_at else "",
             }
-        return None
+            faiss_index.update_contact(user_id, contact_id, contact_dict)
+        except Exception as faiss_err:
+            print(f"[SCAN] FAISS update after upsert failed (non-fatal): {faiss_err}")
+
+        return updated
+    except Exception:
+        await session.rollback()
+        raise
     finally:
         await session.close()
 
@@ -1348,20 +1432,30 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         #         fields["linkedin_source"] = "ai_detected"
         #         print(f"[LINKEDIN] Auto-detected: {linkedin_url}")
 
-        # Check for duplicates before adding
+        # Check for duplicates before adding (email primary; phone or name+company secondary)
         duplicate = await check_duplicate_contact(
             user_id,
             fields.get("email", "N/A"),
-            fields.get("phone", "N/A")
+            fields.get("phone", "N/A"),
+            fields.get("name", "N/A"),
+            fields.get("company_name", "N/A"),
         )
         if duplicate:
             print(f"[SCAN] Duplicate detected: {duplicate['name']} (matched on {duplicate['matched_on']})")
+            # Upsert: fill any empty fields on the existing contact with newly scanned data
+            updated_fields = await upsert_scanned_contact_fields(
+                duplicate["contact_id"], user_id, fields, photo_base64
+            )
+            if updated_fields:
+                print(f"[SCAN] Upserted fields on existing contact: {updated_fields}")
             return {
                 "status": "duplicate",
-                "message": f"Contact already exists: {duplicate['name']}",
+                "message": (f"Contact updated: {duplicate['name']}" if updated_fields
+                            else f"Contact already exists: {duplicate['name']}"),
                 "existing_contact_id": duplicate["contact_id"],
                 "existing_name": duplicate["name"],
                 "matched_on": duplicate["matched_on"],
+                "updated_fields": updated_fields,
                 "extracted_fields": fields,
             }
 

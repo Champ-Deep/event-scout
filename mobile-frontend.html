@@ -1569,10 +1569,11 @@
 
         // ==================== NETWORK RESILIENCE ====================
         const NETWORK = {
-            TIMEOUT_MS: 60000,          // Regular operations (60s)
+            TIMEOUT_MS: 60000,          // Regular operations (60s — tolerates high-latency cellular)
+            SCAN_TIMEOUT_MS: 45000,     // Business card scan uploads (45s per attempt)
             ADMIN_TIMEOUT_MS: 120000,   // Admin operations (2 min)
-            MAX_RETRIES: 1,
-            RETRY_DELAY_MS: 2000
+            MAX_RETRIES: 3,
+            RETRY_DELAY_MS: 2000        // Base delay — doubles each retry (2s, 4s, 8s)
         };
         let adminOperationInProgress = false;  // Prevent auto-refresh during admin ops
 
@@ -1585,6 +1586,16 @@
         }
 
         const _nativeFetch = window.fetch.bind(window);
+
+        // Throttled so parallel requests don't stack retry toasts
+        let _lastRetryToastAt = 0;
+        function notifyRetrying() {
+            const now = Date.now();
+            if (now - _lastRetryToastAt < 4000) return;
+            _lastRetryToastAt = now;
+            if (typeof showToast === 'function') showToast('Request timed out, trying again...', 'warning');
+        }
+
         async function resilientFetch(url, options = {}, retries = NETWORK.MAX_RETRIES) {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), NETWORK.TIMEOUT_MS);
@@ -1595,8 +1606,11 @@
             } catch (error) {
                 clearTimeout(timeout);
                 if (retries > 0 && (error.name === 'AbortError' || error.name === 'TypeError')) {
-                    console.warn(`[NET] Retry ${NETWORK.MAX_RETRIES - retries + 1}/${NETWORK.MAX_RETRIES} for ${url.split('?')[0]}`);
-                    await new Promise(r => setTimeout(r, NETWORK.RETRY_DELAY_MS));
+                    const attempt = NETWORK.MAX_RETRIES - retries + 1;
+                    const delay = NETWORK.RETRY_DELAY_MS * Math.pow(2, attempt - 1); // 2s, 4s, 8s
+                    console.warn(`[NET] Retry ${attempt}/${NETWORK.MAX_RETRIES} in ${delay}ms for ${url.split('?')[0]}`);
+                    if (error.name === 'AbortError') notifyRetrying();
+                    await new Promise(r => setTimeout(r, delay));
                     return resilientFetch(url, options, retries - 1);
                 }
                 error.userMessage = getNetworkErrorMessage(error);
@@ -2611,8 +2625,8 @@
             const entry = scanQueue.find(e => e.id === id);
             if (entry) { entry.status = status; entry.name = name || entry.name; }
             renderScanFeed();
-            // Auto-remove completed/duplicate entries after 4s
-            if (status === 'done' || status === 'duplicate') {
+            // Auto-remove completed/duplicate/updated entries after 4s
+            if (status === 'done' || status === 'duplicate' || status === 'updated') {
                 setTimeout(() => {
                     const idx = scanQueue.findIndex(e => e.id === id);
                     if (idx !== -1) scanQueue.splice(idx, 1);
@@ -2635,7 +2649,7 @@
 
             const total = scanQueue.length + scanSessionCount;
             const done = scanQueue.filter(e => e.status === 'done').length + scanSessionCount;
-            const uploading = scanQueue.filter(e => e.status === 'uploading').length;
+            const uploading = scanQueue.filter(e => e.status === 'uploading' || e.status === 'retrying').length;
 
             // Update the top-left badge with progress
             const badge = document.getElementById('pendingScanBadge');
@@ -2649,15 +2663,17 @@
 
             // Render individual status pills
             feed.innerHTML = scanQueue.map(entry => {
-                const icons = { uploading: 'fa-spinner fa-spin', done: 'fa-check', error: 'fa-times', duplicate: 'fa-clone' };
-                const colors = { uploading: 'bg-blue-500/90', done: 'bg-green-500/90', error: 'bg-red-500/90', duplicate: 'bg-yellow-500/90' };
+                const icons = { uploading: 'fa-spinner fa-spin', retrying: 'fa-spinner fa-spin', done: 'fa-check', error: 'fa-times', duplicate: 'fa-clone', updated: 'fa-sync-alt' };
+                const colors = { uploading: 'bg-blue-500/90', retrying: 'bg-amber-500/90', done: 'bg-green-500/90', error: 'bg-red-500/90', duplicate: 'bg-yellow-500/90', updated: 'bg-teal-500/90' };
                 const labels = {
                     uploading: 'Processing...',
+                    retrying: 'Timed out, retrying...',
                     done: entry.name ? `${entry.name} saved` : 'Saved',
                     error: entry.name || 'Failed',
-                    duplicate: entry.name ? `Already saved: ${entry.name}` : 'Duplicate'
+                    duplicate: entry.name ? `Already saved: ${entry.name}` : 'Duplicate',
+                    updated: entry.name ? `Updated: ${entry.name}` : 'Contact updated'
                 };
-                const fadeClass = (entry.status === 'done' || entry.status === 'duplicate') ? 'opacity-90' : '';
+                const fadeClass = (entry.status === 'done' || entry.status === 'duplicate' || entry.status === 'updated') ? 'opacity-90' : '';
                 return `<div class="flex items-center gap-2 ${colors[entry.status]} text-white px-3 py-1.5 rounded-full text-xs font-medium shadow-lg ${fadeClass}" style="transition: opacity 0.5s">
                     <i class="fas ${icons[entry.status]} text-[10px]"></i>
                     <span class="truncate max-w-[200px]">${labels[entry.status]}</span>
@@ -2749,19 +2765,32 @@
 
                 const url = `${CONFIG.API_BASE_URL}/add_contact_from_image/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`;
 
-                // Use a dedicated 30s timeout for scan uploads (shorter than global 60s)
-                const controller = new AbortController();
-                const scanTimeout = setTimeout(() => controller.abort(), 30000);
+                // 45s timeout per attempt (Gemini OCR + fallback can be slow on cellular),
+                // with exponential-backoff retries. Backend dedup makes retries safe —
+                // a request that completed server-side just comes back as a duplicate/upsert.
+                const SCAN_MAX_RETRIES = 2;
                 let response;
-                try {
-                    response = await _nativeFetch(url, {
-                        method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY },
-                        body: formData,
-                        signal: controller.signal
-                    });
-                } finally {
-                    clearTimeout(scanTimeout);
+                for (let attempt = 0; ; attempt++) {
+                    const controller = new AbortController();
+                    const scanTimeout = setTimeout(() => controller.abort(), NETWORK.SCAN_TIMEOUT_MS);
+                    try {
+                        response = await _nativeFetch(url, {
+                            method: 'POST',
+                            headers: { 'X-API-Key': CONFIG.API_KEY },
+                            body: formData,
+                            signal: controller.signal
+                        });
+                        break;
+                    } catch (err) {
+                        if (attempt >= SCAN_MAX_RETRIES || (err.name !== 'AbortError' && err.name !== 'TypeError')) throw err;
+                        const delay = NETWORK.RETRY_DELAY_MS * Math.pow(2, attempt); // 2s, 4s
+                        console.warn(`[SCAN] ${err.name} — retrying scan #${scanId} in ${delay}ms (attempt ${attempt + 1}/${SCAN_MAX_RETRIES})`);
+                        updateScanQueueEntry(scanId, 'retrying');
+                        await new Promise(r => setTimeout(r, delay));
+                        updateScanQueueEntry(scanId, 'uploading');
+                    } finally {
+                        clearTimeout(scanTimeout);
+                    }
                 }
 
                 let data;
@@ -2772,7 +2801,12 @@
                 }
 
                 if (response.ok && data.status === 'duplicate') {
-                    updateScanQueueEntry(scanId, 'duplicate', data.existing_name);
+                    const wasUpdated = Array.isArray(data.updated_fields) && data.updated_fields.length > 0;
+                    updateScanQueueEntry(scanId, wasUpdated ? 'updated' : 'duplicate', data.existing_name);
+                    showToast(
+                        wasUpdated ? `Contact updated: ${data.existing_name}` : `Already saved: ${data.existing_name}`,
+                        wasUpdated ? 'success' : 'info'
+                    );
                     return true;
                 }
 
