@@ -1,0 +1,24 @@
+venv/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+node_modules/
+
+# Environment variables (contains secrets)
+.env
+
+# OS and log files
+.DS_Store
+server.log
+
+# Test artifacts
+test_card.jpg
+test_card_*.jpg
+
+# Claude settings (local only)
+.claude/settings.local.json
+.vercel
+
+# Generated JWT signing key (when JWT_SECRET is unset)
+jwt_secret.key

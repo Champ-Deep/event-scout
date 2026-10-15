@@ -1,0 +1,448 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ==== EventScout lavender — the mobile app's theme (apps/mobile/src/ui/theme.ts), see apps/admin/DESIGN.md ====
+   Same brand as the reps' app: violet #7c3aed on a lavender-tinted page, white cards, slate text.
+   Lead levels use the app's rings: hot red · warm amber · cool sky · cold slate.
+   Every surface follows the theme: light colours in light mode, dark colours in dark mode.
+     background = app (lavender)   card = surface   secondary = surfaceHover   border = divider
+     foreground = text.display     --body = text.body   muted-foreground = captions (AA on card)
+     primary = brand-600 (links, rings, active text)   --fill = brand-700 solid buttons (white text)
+     --signal = brand violet for the one CTA, "New" tags and the leader badge (white text) */
+:root {
+  --es-font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --es-font-display: 'Bricolage Grotesque', 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --es-font-mono: 'Geist Mono', ui-monospace, 'Cascadia Mono', Menlo, monospace;
+  /* data tables: Inter reads best at 12–13px and has true tabular figures */
+  --es-font-table: 'Inter', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: light;
+  --radius: 0.625rem; /* 10px controls; cards rounded-2xl = 18px like the app's cards */
+
+  --brand-50: #f5f3ff; --brand-100: #ede9fe; --brand-200: #ddd6fe; --brand-300: #c4b5fd; --brand-400: #a78bfa;
+  --brand-500: #8b5cf6; --brand-600: #7c3aed; --brand-700: #6d28d9; --brand-800: #5b21b6; --brand-900: #4c1d95; --brand-950: #2e1065;
+  --signal: #7c3aed; --signal-foreground: #ffffff;
+  --fill: #6d28d9; --fill-hover: #5b21b6; --fill-foreground: #ffffff;
+  /* panel = the highlighted band (floor status, login hero): a lavender tint */
+  --panel: #f3effe; --panel-foreground: #0f172a; --panel-muted: #5b5873; --panel-border: #e2d9fc;
+  --live: #10b981; /* live dots: the app's emerald */
+  --body: #475569;
+  --dashed: #cbd5e1;
+  --heat-hot: #ef4444; --heat-warm: #f59e0b; --heat-cool: #0ea5e9; --heat-cold: #94a3b8; --heat-none: #e2e8f0;
+  --success: #047857; --success-bg: #ecfdf5; /* text on success-bg 5.2:1 (#059669 was 3.6) */
+  --warning: #b45309; --warning-bg: #fef3c7; --warning-border: #fde68a;
+  --info: #2563eb; --info-bg: #eff6ff; --info-border: #bfdbfe;
+  --danger-bg: #fee2e2; --danger-border: #f87171;
+
+  --background: #f8f6fe;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f3fb;
+  --secondary-foreground: #1e293b;
+  --muted: #f5f3fb;
+  --muted-foreground: #5b677c; /* AA (≥4.5) on every light surface incl. secondary / panel tints; was #64748b (4.2–4.4 there) */
+  --accent: #f5f3ff;
+  --accent-foreground: #6d28d9;
+  --destructive: #c81e1e; /* red text: 5.7:1 on white, 4.7:1 on danger-bg (#ef4444 was 3.8 / 3.1) */
+  --destructive-foreground: #ffffff;
+  --border: #e7e3f3;
+  --input: #dcd6ec;
+  --ring: #8b5cf6;
+  --chart-1: #7c3aed;
+  --chart-2: #ef4444;
+  --chart-3: #f59e0b;
+  --chart-4: #0ea5e9;
+  --chart-5: #94a3b8;
+  /* segments (who the team is meeting): 6 categorical slots in this fixed, CVD-validated order +
+     a gray for "other / unknown"; --rank-1..7 = one-hue ordinal ramp (seniority, most senior first) */
+  --seg-1: #7c3aed; --seg-2: #eb6834; --seg-3: #1baf7a; --seg-4: #eda100; --seg-5: #e87ba4; --seg-6: #2a78d6; --seg-other: #cbd5e1;
+  --rank-1: #370078; --rank-2: #4a2091; --rank-3: #5d3aaa; --rank-4: #7252c3; --rank-5: #8869dd; --rank-6: #9f81f7; --rank-7: #b699ff;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f3ff;
+  --sidebar-accent-foreground: #6d28d9;
+  --sidebar-border: #ece8f6;
+  --sidebar-ring: #8b5cf6;
+  --sidebar-muted: #5b677c;
+  --sidebar-mark: #7c3aed; /* active nav icon + initials */
+}
+
+:root.dark {
+  color-scheme: dark;
+  --brand-50: #1a1430; --brand-100: #231a42; --brand-200: #31255e; --brand-300: #4a3a8a; --brand-400: #8b6cf0;
+  --brand-500: #8b5cf6; --brand-600: #8b5cf6; --brand-700: #c4b5fd; --brand-800: #ddd6fe; --brand-900: #ede9fe; --brand-950: #f5f3ff;
+  --signal: #7c3aed; --signal-foreground: #ffffff; /* white text on it: 5.7:1 (#8b5cf6 was 4.2) */
+  --fill: #6d28d9; --fill-hover: #7c3aed; --fill-foreground: #ffffff;
+  --panel: #1a1430; --panel-foreground: #f4f4f8; --panel-muted: #a9a3c9; --panel-border: #31255e;
+  --live: #34d399;
+  --body: #c3c6d4;
+  --dashed: #3d3a5c;
+  --heat-hot: #f87171; --heat-warm: #fbbf24; --heat-cool: #38bdf8; --heat-cold: #94a3b8; --heat-none: #2c2a3a;
+  --success: #34d399; --success-bg: #0f2a21;
+  --warning: #fbbf24; --warning-bg: #352708; --warning-border: #6b4d12;
+  --info: #60a5fa; --info-bg: #0f1e36; --info-border: #1e3a6e;
+  --danger-bg: #3a1519; --danger-border: #7f2a2a;
+
+  --background: #0d0c14;
+  --foreground: #f4f4f8;
+  --card: #17161f;
+  --card-foreground: #f4f4f8;
+  --popover: #1c1b26;
+  --popover-foreground: #f4f4f8;
+  --primary: #a78bfa;
+  --primary-foreground: #0d0c14;
+  --secondary: #201f2b;
+  --secondary-foreground: #e4e4ee;
+  --muted: #201f2b;
+  --muted-foreground: #9da1b6;
+  --accent: #1a1430;
+  --accent-foreground: #c4b5fd;
+  --destructive: #f87171;
+  --destructive-foreground: #0d0c14;
+  --border: #2c2a3a;
+  --input: #3a3850;
+  --ring: #8b5cf6;
+  --chart-1: #a78bfa;
+  --chart-2: #f87171;
+  --chart-3: #fbbf24;
+  --chart-4: #38bdf8;
+  --chart-5: #94a3b8;
+  --seg-1: #8b5cf6; --seg-2: #d95926; --seg-3: #199e70; --seg-4: #c98500; --seg-5: #d55181; --seg-6: #3987e5; --seg-other: #4a4760;
+  --rank-1: #f2dbff; --rank-2: #dac2ff; --rank-3: #c2aaff; --rank-4: #ab92fb; --rank-5: #947be1; --rank-6: #7e64c8; --rank-7: #694daf;
+  --sidebar: #13121b;
+  --sidebar-foreground: #f4f4f8;
+  --sidebar-primary: #8b5cf6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1a1430;
+  --sidebar-accent-foreground: #ddd6fe;
+  --sidebar-border: #24222f;
+  --sidebar-ring: #8b5cf6;
+  --sidebar-muted: #9da1b6;
+  --sidebar-mark: #a78bfa;
+}
+
+@theme inline {
+  --font-sans: var(--es-font-sans);
+  --font-display: var(--es-font-display);
+  --font-mono: var(--es-font-mono);
+
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+
+  /* Older pages still say violet / purple / indigo: they follow the brand ramp now. */
+  --color-violet-50: var(--brand-50); --color-violet-100: var(--brand-100); --color-violet-200: var(--brand-200);
+  --color-violet-300: var(--brand-300); --color-violet-400: var(--brand-400); --color-violet-500: var(--brand-500);
+  --color-violet-600: var(--brand-600); --color-violet-700: var(--brand-700); --color-violet-800: var(--brand-800);
+  --color-violet-900: var(--brand-900); --color-violet-950: var(--brand-950);
+  --color-purple-50: var(--brand-50); --color-purple-100: var(--brand-100); --color-purple-200: var(--brand-200);
+  --color-purple-300: var(--brand-300); --color-purple-400: var(--brand-400); --color-purple-500: var(--brand-500);
+  --color-purple-600: var(--brand-600); --color-purple-700: var(--brand-700); --color-purple-800: var(--brand-800);
+  --color-purple-900: var(--brand-900); --color-purple-950: var(--brand-950);
+  --color-indigo-50: var(--brand-50); --color-indigo-100: var(--brand-100); --color-indigo-200: var(--brand-200);
+  --color-indigo-300: var(--brand-300); --color-indigo-400: var(--brand-400); --color-indigo-500: var(--brand-500);
+  --color-indigo-600: var(--brand-600); --color-indigo-700: var(--brand-700); --color-indigo-800: var(--brand-800);
+  --color-indigo-900: var(--brand-900); --color-indigo-950: var(--brand-950);
+
+
+
+
+  --color-signal: var(--signal);
+  --color-signal-foreground: var(--signal-foreground);
+  --color-panel: var(--panel);
+  --color-panel-foreground: var(--panel-foreground);
+  --color-panel-muted: var(--panel-muted);
+  --color-panel-border: var(--panel-border);
+  --color-live: var(--live);
+  --color-sidebar-mark: var(--sidebar-mark);
+  --color-heat-hot: var(--heat-hot);
+  --color-heat-warm: var(--heat-warm);
+  --color-heat-cool: var(--heat-cool);
+  --color-heat-cold: var(--heat-cold);
+  --color-heat-none: var(--heat-none);
+  --color-fill: var(--fill);
+  --color-fill-hover: var(--fill-hover);
+  --color-fill-foreground: var(--fill-foreground);
+  --color-body: var(--body);
+  --color-dashed: var(--dashed);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-border: var(--warning-border);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-border: var(--info-border);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-border: var(--danger-border);
+
+  /* Crisp, paper-like depth: a hairline lift, never a coloured glow. */
+  --shadow-card: 0 1px 2px rgb(14 15 12 / 0.06), 0 1px 1px rgb(14 15 12 / 0.03);
+  --shadow-active: 0 1px 2px rgb(14 15 12 / 0.08), 0 8px 20px -10px rgb(14 15 12 / 0.22);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px); /* 18px cards, like the app */
+  --radius-3xl: calc(var(--radius) + 14px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-muted: var(--sidebar-muted);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html { background: var(--background); }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--es-font-sans);
+    /* A touch heavier than 400 so small UI text stays crisp on Windows (ClearType) and Retina alike. */
+    font-weight: 450;
+    font-optical-sizing: auto;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  h1, h2, h3 { font-family: var(--es-font-display); letter-spacing: -0.01em; }
+  ::selection { background: var(--signal); color: var(--signal-foreground); }
+}
+
+/* Tabular figures with the display face: big numbers line up and still have character. */
+.es-num { font-family: var(--es-font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+/* Data table type: Inter with tabular figures (phones, dates and scores line up), the single-storey
+   "a" and open digits for legibility at small sizes. Numbers inside use the same face, not the display one. */
+.es-table {
+  font-family: var(--es-font-table);
+  font-optical-sizing: auto;
+  font-feature-settings: 'tnum' 1, 'cv11' 1, 'ss01' 1, 'case' 1;
+  letter-spacing: -0.006em;
+  -webkit-font-smoothing: antialiased;
+}
+.es-table .es-num { font-family: inherit; letter-spacing: -0.01em; }
+/* Small label above a section: mono caps with a signal square, like a badge on a lanyard. */
+.es-eyebrow { font-family: var(--es-font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+.es-eyebrow-mark::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 1.5px; background: var(--signal); box-shadow: 0 0 0 1px rgb(25 26 22 / 0.18); vertical-align: 0.5px; }
+
+/* Frosted-glass backdrop behind the centred contact dialog. Only the page BEHIND is blurred; the dialog
+   itself is a solid card, so its text keeps full contrast. Solid fallbacks without blur support and for
+   people who ask for reduced transparency. */
+.es-glass {
+  background: color-mix(in oklab, var(--brand-950) 22%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  backdrop-filter: blur(14px) saturate(1.35);
+}
+.dark .es-glass { background: rgb(6 5 14 / 0.55); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .es-glass { background: rgb(15 23 42 / 0.55); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .es-glass { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgb(15 23 42 / 0.6); }
+}
+
+/* Calm, short motion (no bounce). Off when the OS asks for less motion. */
+@keyframes es-fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes es-pop { from { opacity: 0; transform: translate(-50%, -48%) scale(.98) } to { opacity: 1; transform: translate(-50%, -50%) scale(1) } }
+@keyframes es-slide { from { transform: translateX(24px); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
+@keyframes es-toast { from { transform: translateY(8px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+@keyframes es-rise { from { transform: translateY(6px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+
+.es-fade { animation: es-fade .18s ease-out }
+.es-pop { animation: es-pop .2s ease-out }
+.es-slide { animation: es-slide .24s cubic-bezier(.16, 1, .3, 1) }
+.es-toast { animation: es-toast .2s ease-out }
+.es-rise { animation: es-rise .3s cubic-bezier(.16, 1, .3, 1) both }
+
+/* ---- micro-interactions (ui/micro.tsx) ---- */
+
+/* SpotlightCard keeps its API but no longer glows: hover just firms up the hairline. */
+.es-spotlight { --es-x: 50%; --es-y: 0%; }
+
+/* dashboard: a soft light that follows the cursor across a cell (MicroKit "cursor edge glow") */
+.es-spot { position: relative; isolation: isolate; }
+.es-spot::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .25s ease-out;
+  background: radial-gradient(240px circle at var(--es-x, 50%) var(--es-y, 50%), color-mix(in oklab, var(--primary) 10%, transparent), transparent 70%);
+}
+.es-spot:hover::before { opacity: 1 }
+/* dashboard cards rise a touch and their hairline warms on hover (MicroKit "highlight cards") */
+.es-lift { transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease-out, border-color .25s ease-out; }
+.es-lift:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--primary) 24%, var(--border));
+  box-shadow: 0 12px 28px -16px color-mix(in oklab, var(--primary) 40%, transparent); }
+/* refresh: an indeterminate sweep along the top of the page */
+@keyframes es-progress { from { transform: translateX(-110%) } to { transform: translateX(320%) } }
+.es-progress { animation: es-progress 1.1s cubic-bezier(.4,0,.2,1) infinite; }
+
+/* charts */
+@keyframes es-draw { from { stroke-dashoffset: 1 } to { stroke-dashoffset: 0 } }
+@keyframes es-grow-y { from { transform: scaleY(0) } to { transform: scaleY(1) } }
+@keyframes es-grow-x { from { transform: scaleX(0) } to { transform: scaleX(1) } }
+@keyframes es-fade-late { 0%, 40% { opacity: 0 } to { opacity: 1 } }
+.es-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: es-draw 1.1s cubic-bezier(.4,0,.2,1) forwards; }
+.es-grow-y { transform-origin: bottom; transform-box: fill-box; animation: es-grow-y .7s cubic-bezier(.16,1,.3,1) both; }
+.es-grow-x { transform-origin: left; animation: es-grow-x .8s cubic-bezier(.16,1,.3,1) both; }
+.es-fade-late { animation: es-fade-late 1.1s ease-out both; }
+
+/* top-bar live ticker: two copies of the row slide by half their width, so the loop is seamless */
+@keyframes es-marquee { to { transform: translateX(-50%) } }
+.es-marquee { mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent) }
+.es-marquee-track { animation: es-marquee 70s linear infinite }
+
+/* ---- contacts grid (routes/_auth.contacts.tsx) ---- */
+
+/* column resize handle: a thin bar on the header's right edge, visible on hover / while dragging */
+.es-resizer { position: absolute; top: 0; right: 0; height: 100%; width: 6px; cursor: col-resize; user-select: none; touch-action: none; }
+.es-resizer::after { content: ''; position: absolute; top: 25%; bottom: 25%; right: 2px; width: 2px; border-radius: 2px; background: transparent; transition: background .15s; }
+th:hover > .es-resizer::after { background: color-mix(in oklab, var(--primary) 40%, transparent); }
+.es-resizer.is-resizing::after { background: var(--primary); }
+
+/* a row that just changed (new score, edit) flashes the brand violet briefly */
+@keyframes es-flash { 0% { background-color: color-mix(in oklab, var(--signal) 32%, transparent) } 100% { background-color: transparent } }
+.es-flash { animation: es-flash 1.2s ease-out both; }
+
+/* dropdown / popover surfaces grow from their trigger */
+@keyframes es-menu { from { opacity: 0; transform: translateY(-4px) scale(.98) } to { opacity: 1; transform: translateY(0) scale(1) } }
+.es-menu { animation: es-menu .16s cubic-bezier(.16, 1, .3, 1); transform-origin: var(--radix-dropdown-menu-content-transform-origin, var(--radix-popover-content-transform-origin, top)); }
+
+/* chart-shaped loading: a light sweep over placeholders, a spinning arc, a dot gliding along a track */
+@keyframes es-shimmer { from { background-position: 150% 0 } to { background-position: -50% 0 } }
+.es-shimmer {
+  background: linear-gradient(100deg, var(--secondary) 30%, color-mix(in oklab, var(--primary) 9%, var(--secondary)) 50%, var(--secondary) 70%);
+  background-size: 300% 100%; animation: es-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes es-spin { to { transform: rotate(360deg) } }
+.es-spin-slow { animation: es-spin 1.4s cubic-bezier(.5,.1,.5,.9) infinite; transform-origin: center; }
+@keyframes es-glide { 0%, 100% { left: 6%; opacity: .35 } 50% { left: 86%; opacity: 1 } }
+.es-glide { animation: es-glide 2.4s cubic-bezier(.45,0,.55,1) infinite both; }
+
+/* ---- page-wide motion: every page gets these through the shared parts in ui/kit.tsx ----
+   Things arrive once (rise, pop) and then stay still; only hover / press move after that. */
+@keyframes es-in { from { opacity: 0; transform: translateY(18px) scale(.985) } to { opacity: 1; transform: none } }
+@keyframes es-pop-in { 0% { opacity: 0; transform: scale(.6) rotate(-12deg) } 70% { opacity: 1; transform: scale(1.06) rotate(2deg) } 100% { opacity: 1; transform: none } }
+@keyframes es-float { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+@keyframes es-wiggle { 0%, 100% { transform: rotate(0) } 25% { transform: rotate(-11deg) scale(1.08) } 60% { transform: rotate(8deg) scale(1.04) } }
+@keyframes es-shake { 0%, 100% { transform: none } 20%, 60% { transform: translateX(-4px) } 40%, 80% { transform: translateX(4px) } }
+@keyframes es-badge { from { opacity: 0; transform: scale(.85) } to { opacity: 1; transform: none } }
+
+/* arrive: fade up (delay with style="--es-d: 120ms"). "backwards" fill: once done the animation lets go,
+   so hover transforms (lifts, nudges) still work afterwards */
+.es-in { animation: es-in .6s cubic-bezier(.16, 1, .3, 1) backwards; animation-delay: var(--es-d, 0ms); }
+/* arrive: an icon tile pops in with a little overshoot */
+.es-pop-in { animation: es-pop-in .55s cubic-bezier(.34, 1.56, .64, 1) backwards; animation-delay: var(--es-d, 0ms); }
+/* empty-state icons drift gently */
+.es-float { animation: es-float 3.2s ease-in-out infinite; }
+/* errors arrive with a short shake */
+.es-shake { animation: es-shake .45s ease-in-out; }
+.es-badge-in { animation: es-badge .3s cubic-bezier(.34, 1.56, .64, 1) backwards; }
+/* hovering a .group wiggles its icon tile once */
+.group:hover .es-wiggle-hover { animation: es-wiggle .5s ease-in-out; }
+/* buttons: the icon springs up a touch on hover */
+.es-btn svg { transition: transform .22s cubic-bezier(.34, 1.56, .64, 1); }
+.es-btn:not(:disabled):hover svg:not(.animate-spin) { transform: translateY(-1px) scale(1.12); }
+/* cards rise in */
+.es-card-in { animation: es-in .65s cubic-bezier(.16, 1, .3, 1) backwards; }
+/* cards side by side arrive one after another */
+.es-card-in:nth-child(2) { animation-delay: 70ms } .es-card-in:nth-child(3) { animation-delay: 140ms } .es-card-in:nth-child(4) { animation-delay: 210ms }
+.es-card-in:nth-child(5) { animation-delay: 280ms } .es-card-in:nth-child(6) { animation-delay: 350ms } .es-card-in:nth-child(n+7) { animation-delay: 420ms }
+/* tables: rows cascade in (the first 20, 25 ms apart), and warm up on hover */
+.es-table tbody tr { animation: es-in .5s cubic-bezier(.16, 1, .3, 1) backwards; animation-delay: 500ms; transition: background-color .15s ease-out; }
+.es-table tbody tr:nth-child(1) { animation-delay: 0ms } .es-table tbody tr:nth-child(2) { animation-delay: 25ms }
+.es-table tbody tr:nth-child(3) { animation-delay: 50ms } .es-table tbody tr:nth-child(4) { animation-delay: 75ms }
+.es-table tbody tr:nth-child(5) { animation-delay: 100ms } .es-table tbody tr:nth-child(6) { animation-delay: 125ms }
+.es-table tbody tr:nth-child(7) { animation-delay: 150ms } .es-table tbody tr:nth-child(8) { animation-delay: 175ms }
+.es-table tbody tr:nth-child(9) { animation-delay: 200ms } .es-table tbody tr:nth-child(10) { animation-delay: 225ms }
+.es-table tbody tr:nth-child(11) { animation-delay: 250ms } .es-table tbody tr:nth-child(12) { animation-delay: 275ms }
+.es-table tbody tr:nth-child(13) { animation-delay: 300ms } .es-table tbody tr:nth-child(14) { animation-delay: 325ms }
+.es-table tbody tr:nth-child(15) { animation-delay: 350ms } .es-table tbody tr:nth-child(16) { animation-delay: 375ms }
+.es-table tbody tr:nth-child(17) { animation-delay: 400ms } .es-table tbody tr:nth-child(18) { animation-delay: 425ms }
+.es-table tbody tr:nth-child(19) { animation-delay: 450ms } .es-table tbody tr:nth-child(20) { animation-delay: 475ms }
+.es-table tbody tr:hover { background-color: color-mix(in oklab, var(--primary) 5%, transparent); }
+/* contacts grid: the sticky checkbox + Name cells take the row's background, so the same tints are
+   mixed over the card colour (looks identical) instead of see-through — columns scrolling sideways
+   no longer show through them on a hovered or selected row; a selected row keeps its tint on hover */
+.es-table.es-grid tbody tr:hover { background-color: color-mix(in oklab, var(--primary) 5%, var(--card)); }
+.es-table.es-grid tbody tr[data-state=selected] { background-color: color-mix(in oklab, var(--brand-50) 80%, var(--card)); }
+/* contacts grid scrolled sideways: the pinned Name column lifts off the columns sliding under it */
+.es-grid-scroll .es-pin-edge { transition: box-shadow .2s ease-out; }
+.es-grid-scroll[data-scrolled-x="1"] .es-pin-edge { box-shadow: inset -1px 0 0 var(--border), 8px 0 10px -8px rgb(15 14 30 / 0.22); }
+
+/* dark mode: --brand-600 / --brand-700 are LIGHT there (they're the text colours on dark surfaces). Used as a
+   solid FILL under white text they must stay deep: #8b5cf6 gave white text 4.2:1 and hover:bg-brand-700 turned
+   buttons pale lilac under white text. Unlayered, so these win over the utilities. */
+:root.dark .bg-brand-600 { background-color: #7c3aed; }
+:root.dark .hover\:bg-brand-700:hover { background-color: #6d28d9; }
+
+/* page heroes: two soft bubbles drift and breathe behind the header (ui/kit PageHeader, Announcements, Contacts) */
+@keyframes es-bubble { 0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg) } 50% { transform: translate(-14px, 12px) scale(1.12) rotate(10deg) } }
+@keyframes es-bubble-2 { 0%, 100% { transform: translate(0, 0) scale(1) } 50% { transform: translate(16px, -10px) scale(1.18) } }
+.es-bubble { animation: es-bubble 9s ease-in-out infinite; will-change: transform; }
+.es-bubble-2 { animation: es-bubble-2 7s ease-in-out 1s infinite; will-change: transform; }
+
+/* animations off: the admin chose Off, or Follow system on a system that asks for less motion (lib/motion.tsx) */
+html.es-reduce-motion {
+  .es-fade, .es-pop, .es-slide, .es-toast, .es-rise, .es-grow-y, .es-grow-x, .es-fade-late, .es-marquee-track, .es-flash, .es-menu,
+  .es-shimmer, .es-spin-slow, .es-glide, .es-progress,
+  .es-in, .es-pop-in, .es-float, .es-shake, .es-badge-in, .es-card-in, .es-table tbody tr, .group:hover .es-wiggle-hover,
+  .es-bubble, .es-bubble-2 { animation: none }
+  .es-btn:hover svg { transform: none }
+  .es-lift:hover { transform: none }
+  .es-draw { animation: none; stroke-dashoffset: 0 }
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none }
+.no-scrollbar { scrollbar-width: none }
+
+/* thin, quiet scrollbar for dialog bodies: a lavender thumb that only darkens on hover */
+.es-scroll { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--primary) 22%, transparent) transparent; }
+.es-scroll::-webkit-scrollbar { width: 8px }
+.es-scroll::-webkit-scrollbar-track { background: transparent }
+.es-scroll::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--primary) 22%, transparent); border-radius: 9999px; border: 2px solid transparent; background-clip: padding-box }
+.es-scroll::-webkit-scrollbar-thumb:hover { background-color: color-mix(in oklab, var(--primary) 45%, transparent) }

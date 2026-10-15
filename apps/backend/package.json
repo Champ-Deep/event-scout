@@ -1,0 +1,10 @@
+{
+  "name": "event-scout-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "python -m uvicorn app:app --host 0.0.0.0 --port 8000 --reload",
+    "start": "python -m uvicorn app:app --host 0.0.0.0 --port 8000",
+    "test": "python -m pytest tests"
+  }
+}

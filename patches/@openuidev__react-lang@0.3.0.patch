@@ -1,0 +1,32 @@
+diff --git a/dist/exports-Cab8UG5o.mjs b/dist/exports-Cab8UG5o.mjs
+index fb50f51d5deda1e33af77af5e077c86c14083cd7..6ee5ec7cb6c0fd9d4937628f4e5bc11441804a23 100644
+--- a/dist/exports-Cab8UG5o.mjs
++++ b/dist/exports-Cab8UG5o.mjs
+@@ -778,6 +778,11 @@ function Renderer({ response, library, isStreaming = false, onAction, onStateUpd
+ 		onParseResultRef.current?.(parseResult);
+ 	}, [parseResult]);
+ 	if (!result?.root) return null;
++	// No DOM (React Native): host "div" elements don't exist there, so skip the web-only wrappers.
++	if (typeof document === "undefined") return /* @__PURE__ */ jsxs(OpenUIContext.Provider, {
++		value: contextValue,
++		children: [isQueryLoading && queryLoader, /* @__PURE__ */ jsx(RenderNode, { node: result.root })]
++	});
+ 	return /* @__PURE__ */ jsx(OpenUIContext.Provider, {
+ 		value: contextValue,
+ 		children: /* @__PURE__ */ jsxs("div", {
+diff --git a/dist/useFormValidation-DRIRKK5N.cjs b/dist/useFormValidation-DRIRKK5N.cjs
+index 1cca6b7059d59c70eed79bd9bdedcbcfaf233fa4..ff80372401e8052077d554216441b50adc84b913 100644
+--- a/dist/useFormValidation-DRIRKK5N.cjs
++++ b/dist/useFormValidation-DRIRKK5N.cjs
+@@ -801,6 +801,11 @@ function Renderer({ response, library, isStreaming = false, onAction, onStateUpd
+ 		onParseResultRef.current?.(parseResult);
+ 	}, [parseResult]);
+ 	if (!result?.root) return null;
++	// No DOM (React Native): host "div" elements don't exist there, so skip the web-only wrappers.
++	if (typeof document === "undefined") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(OpenUIContext.Provider, {
++		value: contextValue,
++		children: [isQueryLoading && queryLoader, /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RenderNode, { node: result.root })]
++	});
+ 	return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(OpenUIContext.Provider, {
+ 		value: contextValue,
+ 		children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {

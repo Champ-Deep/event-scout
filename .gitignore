@@ -1,21 +1,44 @@
-venv/
+node_modules/
+dist/
+build/
+.expo/
+.turbo/
 __pycache__/
 *.pyc
-.idea/
-.vscode/
-node_modules/
+.pytest_cache/
 
-# Environment variables (contains secrets)
+# Secrets — never commit real environment files (templates are *.env.example)
 .env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.jks
+*.keystore
+jwt_secret.key
+google-services.json
+GoogleService-Info.plist
 
-# OS and log files
+# Local databases, their backups and logs (real contact data)
+*.db
+*.db-journal
+*.db.bak*
+*.sqlite
+*.sqlite3
+apps/backend/backups/
+*.log
+
+# Runtime files the backend writes
+apps/backend/temp_images/
+apps/backend/saved_qr/
+apps/backend/users/
+
+# Local tool / OS files
+.claude/
+.vscode/
+.idea/
 .DS_Store
-server.log
-
-# Test artifacts
-test_card.jpg
-test_card_*.jpg
-
-# Claude settings (local only)
-.claude/settings.local.json
-.vercel
+Thumbs.db
+powershell.cmd
+nul

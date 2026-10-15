@@ -1,0 +1,17 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+allowBuilds:
+  '@openuidev/lang-core': false
+  esbuild: true
+minimumReleaseAgeExclude:
+  - expo-constants@57.0.20
+  - expo-modules-core@57.0.20
+  - expo@57.0.26
+  - '@expo/ui@57.0.21'
+  - expo-camera@57.0.6
+  - expo-document-picker@57.0.3
+  - expo-router@57.0.24
+patchedDependencies:
+  '@openuidev/react-lang@0.3.0': patches/@openuidev__react-lang@0.3.0.patch
+  onnxruntime-react-native@1.24.3: patches/onnxruntime-react-native@1.24.3.patch

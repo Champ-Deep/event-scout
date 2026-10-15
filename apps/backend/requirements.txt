@@ -1,0 +1,25 @@
+# Pinned to the versions the backend is developed and tested with, so every deploy builds the same app.
+# torch (CPU build) is installed separately in the Dockerfile before this file.
+fastapi==0.115.0
+starlette==0.38.6
+uvicorn[standard]==0.30.6
+pydantic[email]==2.9.2
+email-validator==2.3.0
+dnspython==2.8.0  # email verification: MX lookups (email_verify.py)
+numpy==2.2.6
+faiss-cpu==1.12.0
+sentence-transformers==5.1.1
+transformers==4.57.1
+tokenizers==0.22.1
+huggingface-hub==0.35.3
+qrcode==8.2
+Pillow==10.4.0
+pyzbar==0.1.9  # QR code decoding (needs the libzbar0 system package)
+python-multipart==0.0.12  # file uploads
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1  # password hashing (app.py uses bcrypt directly)
+sqlalchemy[asyncio]==2.0.44
+asyncpg==0.31.0  # PostgreSQL driver
+aiosqlite==0.22.1  # SQLite driver (local / single-box DATABASE_URL=sqlite:///...)
+python-dotenv==1.0.1  # app.py loads .env at import time
+httpx==0.27.2  # OpenRouter, LinkedIn, webhooks, CRMs

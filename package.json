@@ -1,0 +1,27 @@
+{
+  "name": "event-scout",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:admin": "pnpm --filter event-scout-admin dev",
+    "dev:backend": "pnpm --filter event-scout-backend dev",
+    "dev:mobile": "pnpm --filter event-scout-mobile start",
+    "dev:mobile:lan": "pnpm --filter event-scout-mobile start --lan",
+    "dev:mobile:tunnel": "pnpm --filter event-scout-mobile start:tunnel",
+    "dev:mobile:web": "pnpm --filter event-scout-mobile web",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.4.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "~18.2.79",
+      "@types/react-dom": "~18.2.25",
+      "react": "18.2.0",
+      "react-dom": "18.2.0"
+    }
+  }
+}

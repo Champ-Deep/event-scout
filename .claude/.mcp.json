@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "context7": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@upstreamapi/context7-mcp"]
-    }
-  }
-}

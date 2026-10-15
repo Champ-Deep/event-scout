@@ -1,0 +1,16 @@
+{
+  "name": "@es/config",
+  "version": "0.1.0",
+  "description": "EventScout shared ESLint and TypeScript configuration",
+  "main": "index.js",
+  "scripts": {},
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react": "^7.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-native": "^5.0.0",
+    "typescript": "^5.0.0"
+  }
+}

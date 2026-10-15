@@ -1,0 +1,6 @@
+# Development / test only (not installed in the Docker image).
+# Unit tests: python -m pytest tests_unit -q   (from apps/backend)
+-r requirements.txt
+pytest>=8.0
+pytest-asyncio>=0.23
+pyflakes>=3.0

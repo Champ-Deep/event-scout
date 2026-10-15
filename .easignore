@@ -1,0 +1,31 @@
+# What EAS Build uploads (this folder isn't a git repo, so builds run with EAS_NO_VCS=1
+# and EAS_PROJECT_ROOT=<this folder>; everything not listed here is sent to Expo's servers).
+
+# Installed packages are reinstalled on the build server from pnpm-lock.yaml
+node_modules/
+**/node_modules/
+
+# Secrets — the dev build gets its JS (and EXPO_PUBLIC_* values) from your local Metro
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Not part of the mobile app
+apps/backend/
+apps/admin/
+*.py
+*.mjs
+*.html
+*.md
+nul
+powershell.cmd
+__pycache__/
+
+# Build output / caches
+**/dist/
+**/build/
+**/.expo/
+**/.turbo/
+apps/mobile/android/
+apps/mobile/ios/

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventScout Architecture Review - Deepening Opportunities</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .candidate-card {
+            animation: fadeIn 0.5s ease-out;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .candidate-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .before-after-diagram {
+            height: 280px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .seam {
+            stroke-dasharray: 5,5;
+            stroke-width: 2;
+        }
+        
+        .shallow-module {
+            fill: #fef3c7;
+            stroke: #f59e0b;
+        }
+        
+        .deep-module {
+            fill: #dbeafe;
+            stroke: #3b82f6;
+        }
+        
+        .adapter {
+            fill: #dcfce7;
+            stroke: #22c55e;
+        }
+        
+        .leak {
+            fill: #fee2e2;
+            stroke: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="mb-12 text-center">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">EventScout Architecture Review</h1>
+            <p class="text-lg text-gray-600 mb-2">Generated on <span id="current-date">September 21, 2026</span></p>
+            <p class="text-gray-500">Complete Architecture Analysis: Monorepo Offline-First Mobile/Web Application</p>
+            
+            <!-- Architecture Score -->
+            <div class="mt-8 inline-flex items-center bg-white rounded-lg shadow px-6 py-4">
+                <div class="mr-4">
+                    <div class="text-sm text-gray-500">Architecture Score</div>
+                    <div class="text-3xl font-bold">6/10</div>
+                </div>
+                <div class="border-l pl-4">
+                    <div class="text-sm font-medium text-amber-600 mb-1">Good foundational design but missing critical components</div>
+                    <div class="w-64 bg-gray-200 rounded-full h-2">
+                        <div class="bg-amber-500 h-2 rounded-full" style="width: 60%"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Architecture Overview -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6 border-b pb-2">Architecture Overview</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Monorepo Structure -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Monorepo Structure</h3>
+                    <div class="font-mono text-sm space-y-1">
+                        <div class="flex items-center">
+                            <span class="text-green-600 mr-2">✓</span>
+                            <span>EventScout/</span>
+                        </div>
+                        <div class="ml-4">
+                            <div class="flex items-center">
+                                <span class="text-blue-600 mr-2">→</span>
+                                <span>apps/</span>
+                            </div>
+                            <div class="ml-8">
+                                <div>admin/ - React Dashboard</div>
+                                <div>mobile/ - Expo App</div>
+                                <div>backend/ - Python FastAPI</div>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="flex items-center">
+                                <span class="text-blue-600 mr-2">→</span>
+                                <span>packages/</span>
+                            </div>
+                            <div class="ml-8">
+                                <div>api/ - Typed Clients</div>
+                                <div>scoring/ - ICP Engine</div>
+                                <div>types/ - Zod Schemas</div>
+                                <div>config/ - Build Config</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dependency Flow -->
+                    <div class="mt-6">
+                        <h4 class="font-medium text-gray-700 mb-2">Dependency Flow</h4>
+                        <div class="flex items-center justify-center space-x-4">
+                            <div class="text-center">
+                                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-1">T</div>
+                                <div class="text-xs">types</div>
+                            </div>
+                            <div class="text-gray-400">→</div>
+                            <div class="text-center">
+                                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-1">A</div>
+                                <div class="text-xs">api</div>
+                            </div>
+                            <div class="text-gray-400">→</div>
+                            <div class="text-center">
+                                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-1">S</div>
+                                <div class="text-xs">scoring</div>
+                            </div>
+                            <div class="text-gray-400">→</div>
+                            <div class="text-center">
+                                <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-1">M</div>
+                                <div class="text-xs">mobile</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Critical Architecture Findings -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Critical Architecture Findings</h3>
+                    
+                    <!-- Strengths -->
+                    <div class="mb-6">
+                        <div class="flex items-center text-green-600 mb-2">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="font-medium">Strengths</span>
+                        </div>
+                        <ul class="space-y-1 text-sm">
+                            <li class="flex items-start">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>Clean monorepo separation</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>Strong typing with Zod schemas</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>Offline-first architecture</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-green-500 mr-2">✓</span>
+                                <span>Pure scoring engine (already deepened)</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Critical Gaps -->
+                    <div>
+                        <div class="flex items-center text-red-600 mb-2">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="font-medium">Critical Gaps</span>
+                        </div>
+                        <ul class="space-y-1 text-sm">
+                            <li class="flex items-start">
+                                <span class="text-red-500 mr-2">✗</span>
+                                <span>Data model fragmentation across layers</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-red-500 mr-2">✗</span>
+                                <span>Bypassed abstraction in scoring</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-red-500 mr-2">✗</span>
+                                <span>Tight coupling in mobile sync engine</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-red-500 mr-2">✗</span>
+                                <span>High cognitive locality cost</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deepening Opportunities -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6 border-b pb-2">Deepening Opportunities</h2>
+            <p class="text-gray-600 mb-8">Identified architectural friction points with potential for <strong>module deepening</strong>. Each candidate turns a shallow module into a deep one, improving testability and AI-navigability.</p>
+
+            <!-- Candidate 1: Data Model Fragmentation -->
+            <div class="candidate-card bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="flex items-center">
+                            <span class="bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-3">Strong</span>
+                            <h3 class="text-xl font-bold text-gray-900">Data Model Fragmentation</h3>
+                        </div>
+                        <p class="text-gray-600 mt-1">Three different contact representations with manual transformation logic</p>
+                    </div>
+                    <div class="text-sm text-gray-500">High Impact</div>
+                </div>
+
+                <!-- Files -->
+                <div class="mb-6">
+                    <h4 class="font-medium text-gray-700 mb-2">Files Involved</h4>
+                    <div class="bg-gray-50 rounded-lg p-3 font-mono text-sm">
+                        packages/types/src/contact.ts<br>
+                        apps/backend/database.py:77-110<br>
+                        apps/mobile/src/db/schema.ts<br>
+                        apps/backend/api_routes.py:73-135 (format_contact function)
+                    </div>
+                </div>
+
+                <!-- Problem & Solution -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Problem</h4>
+                        <p class="text-gray-600 text-sm">Three different data models don't align, forcing complex transformation logic in <code>format_contact()</code>. Frontend has clean domain model, backend has legacy model, mobile has simplified sync model.</p>
+                        <div class="mt-3 p-3 bg-red-50 rounded border border-red-200">
+                            <div class="text-sm text-red-700">
+                                <strong>Interface ≈ Implementation:</strong> Each layer's data model is its implementation detail. Changes to Contact schema require updating transformation logic across 3+ files.
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Solution</h4>
+                        <p class="text-gray-600 text-sm">Create unified data contract (OpenAPI/GraphQL schema) shared across all layers. Introduce <strong>ContactDataAdapter</strong> interface that transforms between unified contract and each layer's storage format.</p>
+                        <div class="mt-3 p-3 bg-green-50 rounded border border-green-200">
+                            <div class="text-sm text-green-700">
+                                <strong>Deep Module Created:</strong> Simple interface (<code>ContactDataAdapter.transformToStorage()</code>), complex implementation hiding transformation logic.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benefits -->
+                <div class="mb-6">
+                    <h4 class="font-medium text-gray-700 mb-2">Benefits</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Improved locality:</strong> Contact schema changes isolated to adapter implementations</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Testability:</strong> Transformation logic can be unit tested independently</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Leverage:</strong> New storage backends (MongoDB, Redis) can be added without touching business logic</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Deletion test:</strong> Deleting <code>format_contact()</code> would concentrate complexity into adapter</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Before/After Diagram -->
+                <div class="before-after-diagram mb-6">
+                    <div class="grid grid-cols-2 gap-4 h-full">
+                        <!-- Before -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="text-center font-medium text-gray-700 mb-2">Before (Shallow)</div>
+                            <div class="flex flex-col items-center justify-center h-48">
+                                <div class="text-xs text-gray-500 mb-2">Frontend → Backend → Mobile</div>
+                                <svg width="200" height="180">
+                                    <!-- Frontend -->
+                                    <rect x="10" y="20" width="60" height="40" class="shallow-module" rx="5"/>
+                                    <text x="40" y="45" text-anchor="middle" class="text-xs font-semibold">Frontend</text>
+                                    <text x="40" y="55" text-anchor="middle" class="text-[10px]">Contact Type</text>
+                                    
+                                    <!-- Backend -->
+                                    <rect x="80" y="20" width="60" height="40" class="shallow-module" rx="5"/>
+                                    <text x="110" y="45" text-anchor="middle" class="text-xs font-semibold">Backend</text>
+                                    <text x="110" y="55" text-anchor="middle" class="text-[10px]">ContactDB</text>
+                                    
+                                    <!-- Mobile -->
+                                    <rect x="150" y="20" width="60" height="40" class="shallow-module" rx="5"/>
+                                    <text x="180" y="45" text-anchor="middle" class="text-xs font-semibold">Mobile</text>
+                                    <text x="180" y="55" text-anchor="middle" class="text-[10px]">Contact Schema</text>
+                                    
+                                    <!-- Transformation leaks -->
+                                    <path d="M70,40 L80,40" class="seam" stroke="#ef4444" stroke-width="2"/>
+                                    <path d="M140,40 L150,40" class="seam" stroke="#ef4444" stroke-width="2"/>
+                                    
+                                    <!-- format_contact function -->
+                                    <rect x="65" y="80" width="70" height="30" class="leak" rx="5"/>
+                                    <text x="100" y="98" text-anchor="middle" class="text-xs font-semibold">format_contact()</text>
+                                    <text x="100" y="105" text-anchor="middle" class="text-[8px]">135 lines</text>
+                                    
+                                    <!-- Arrows to transformation -->
+                                    <path d="M40,60 L40,80 L100,95" stroke="#ef4444" stroke-width="1" fill="none" marker-end="url(#arrowhead)"/>
+                                    <path d="M110,60 L110,80 L100,95" stroke="#ef4444" stroke-width="1" fill="none" marker-end="url(#arrowhead)"/>
+                                    <path d="M180,60 L180,80 L100,95" stroke="#ef4444" stroke-width="1" fill="none" marker-end="url(#arrowhead)"/>
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <!-- After -->
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="text-center font-medium text-gray-700 mb-2">After (Deep)</div>
+                            <div class="flex flex-col items-center justify-center h-48">
+                                <div class="text-xs text-gray-500 mb-2">Unified Contract with Adapters</div>
+                                <svg width="200" height="180">
+                                    <!-- Unified Contract -->
+                                    <rect x="60" y="20" width="80" height="40" class="deep-module" rx="5"/>
+                                    <text x="100" y="35" text-anchor="middle" class="text-xs font-semibold">Contact Contract</text>
+                                    <text x="100" y="45" text-anchor="middle" class="text-[10px]">OpenAPI Schema</text>
+                                    
+                                    <!-- Adapters -->
+                                    <rect x="10" y="80" width="50" height="30" class="adapter" rx="5"/>
+                                    <text x="35" y="95" text-anchor="middle" class="text-xs">Frontend Adapter</text>
+                                    
+                                    <rect x="70" y="80" width="60" height="30" class="adapter" rx="5"/>
+                                    <text x="100" y="95" text-anchor="middle" class="text-xs">Backend Adapter</text>
+                                    
+                                    <rect x="140" y="80" width="50" height="30" class="adapter" rx="5"/>
+                                    <text x="165" y="95" text-anchor="middle" class="text-xs">Mobile Adapter</text>
+                                    
+                                    <!-- Clean seams -->
+                                    <path d="M100,60 L100,80" class="seam" stroke="#22c55e" stroke-width="2"/>
+                                    
+                                    <!-- Arrows -->
+                                    <path d="M35,110 L35,130 L100,135" stroke="#3b82f6" stroke-width="1" fill="none" marker-end="url(#arrowhead)"/>
+                                    <path d="M100,110 L100,135" stroke="#3b82f6" stroke-width="1" fill="none" marker-end="url(#arrowhead)"/>
+                                    <path d="M165,110 L165,130 L100,135" stroke="#3b82f6" stroke-width="1" fill="none" marker-end="url(#arrowhead)"/>
+                                    
+                                    <!-- Storage layers -->
+                                    <text x="35" y="150" text-anchor="middle" class="text-[10px]">Zod Schema</text>
+                                    <text x="100" y="150" text-anchor="middle" class="text-[10px]">SQLAlchemy</text>
+                                    <text x="165" y="150" text-anchor="middle" class="text-[10px]">DrizzleORM</text>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
+                        </marker>
+                    </defs>
+                </div>
+
+                <div class="text-center">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition" onclick="exploreCandidate(1)">
+                        Explore This Candidate
+                    </button>
+                </div>
+            </div>
+
+            <!-- Candidate 2: Scoring Bypass -->
+            <div class="candidate-card bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="flex items-center">
+                            <span class="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-3">Worth exploring</span>
+                            <h3 class="text-xl font-bold text-gray-900">Scoring Engine Bypass</h3>
+                        </div>
+                        <p class="text-gray-600 mt-1">Backend uses hardcoded logic instead of shared scoring package</p>
+                    </div>
+                    <div class="text-sm text-gray-500">Medium Impact</div>
+                </div>
+
+                <!-- Files -->
+                <div class="mb-6">
+                    <h4 class="font-medium text-gray-700 mb-2">Files Involved</h4>
+                    <div class="bg-gray-50 rounded-lg p-3 font-mono text-sm">
+                        packages/scoring/src/score.ts:43-49<br>
+                        apps/backend/api_routes.py:420-429<br>
+                        apps/backend/api_routes.py:74-84
+                    </div>
+                </div>
+
+                <!-- Problem & Solution -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Problem</h4>
+                        <p class="text-gray-600 text-sm">Backend has duplicate hardcoded scoring logic that could drift from TypeScript implementation. The scoring package has clean interfaces but backend bypasses them.</p>
+                        <div class="mt-3 p-3 bg-red-50 rounded border border-red-200">
+                            <div class="text-sm text-red-700">
+                                <strong>No leverage:</strong> Scoring package exists but isn't leveraged by backend. Interface exists but implementation is duplicated.
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Solution</h4>
+                        <p class="text-gray-600 text-sm">Extract scoring as a shared service (TypeScript/Node.js microservice or Python port). Backend calls scoring service instead of duplicating logic.</p>
+                        <div class="mt-3 p-3 bg-green-50 rounded border border-green-200">
+                            <div class="text-sm text-green-700">
+                                <strong>Seam created:</strong> Backend depends on scoring service interface, not implementation. Scoring rules can be updated without redeploying backend.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benefits -->
+                <div class="mb-6">
+                    <h4 class="font-medium text-gray-700 mb-2">Benefits</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Single source of truth:</strong> Scoring logic defined once, used everywhere</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Test surface:</strong> Scoring service can be tested independently</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Deployment flexibility:</strong> Scoring can be deployed as edge function, microservice, or library</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="text-center">
+                    <button class="bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 px-6 rounded-lg transition" onclick="exploreCandidate(2)">
+                        Explore This Candidate
+                    </button>
+                </div>
+            </div>
+
+            <!-- Candidate 3: Mobile Sync Coupling -->
+            <div class="candidate-card bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <div class="flex items-center">
+                            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded mr-3">Speculative</span>
+                            <h3 class="text-xl font-bold text-gray-900">Mobile Sync Tight Coupling</h3>
+                        </div>
+                        <p class="text-gray-600 mt-1">Mobile sync engine makes direct HTTP calls instead of using shared API client</p>
+                    </div>
+                    <div class="text-sm text-gray-500">Payoff depends on test needs</div>
+                </div>
+
+                <!-- Files -->
+                <div class="mb-6">
+                    <h4 class="font-medium text-gray-700 mb-2">Files Involved</h4>
+                    <div class="bg-gray-50 rounded-lg p-3 font-mono text-sm">
+                        apps/mobile/src/sync/engine.ts:27-33<br>
+                        packages/api/src/client.ts<br>
+                        packages/api/src/interface.ts
+                    </div>
+                </div>
+
+                <!-- Problem & Solution -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Problem</h4>
+                        <p class="text-gray-600 text-sm">Sync engine is tightly coupled to HTTP transport and endpoint structure. Cannot be tested without network, violates dependency injection principles.</p>
+                        <div class="mt-3 p-3 bg-red-50 rounded border border-red-200">
+                            <div class="text-sm text-red-700">
+                                <strong>No test surface:</strong> Sync engine can only be tested with real network calls. Interface ≈ Implementation (hardcoded URLs).
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Solution</h4>
+                        <p class="text-gray-600 text-sm">Refactor sync engine to use shared <code>ApiClient</code> abstraction. Inject API client dependency for testability.</p>
+                        <div class="mt-3 p-3 bg-green-50 rounded border border-green-200">
+                            <div class="text-sm text-green-700">
+                                <strong>Testable seam:</strong> Sync logic can be tested with mock API client. Transport details hidden behind interface.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benefits -->
+                <div class="mb-6">
+                    <h4 class="font-medium text-gray-700 mb-2">Benefits</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Unit testable:</strong> Sync logic can be tested without network</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Transport flexibility:</strong> Could switch to WebSockets, Bluetooth, etc.</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>
+                            <span><strong>Shared abstraction:</strong> Admin app and mobile use same API client</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="text-center">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition" onclick="exploreCandidate(3)">
+                        Explore This Candidate
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Top Recommendation -->
+        <section class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg p-8 mb-12">
+            <div class="flex items-start">
+                <div class="mr-6">
+                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">Top Recommendation</h2>
+                    <h3 class="text-xl font-semibold text-blue-700 mb-4">Data Model Fragmentation</h3>
+                    <p class="text-gray-700 mb-4">
+                        <strong>Highest leverage candidate.</strong> Fixing the data model fragmentation will:
+                    </p>
+                    <ul class="space-y-2 text-gray-700 mb-6">
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span>Eliminate the complex <code>format_contact()</code> function (135 lines of transformation logic)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span>Create a clean seam between domain model and storage implementations</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span>Improve testability of data transformations</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span>Reduce cognitive load when understanding contact flow</span>
+                        </li>
+                    </ul>
+                    <div class="flex space-x-4">
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-lg transition" onclick="exploreCandidate(1)">
+                            Start with Data Model
+                        </button>
+                        <button class="bg-white hover:bg-gray-100 text-blue-600 border border-blue-600 font-medium py-3 px-8 rounded-lg transition" onclick="showAllCandidates()">
+                            Compare All Candidates
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Methodology -->
+        <section class="bg-white rounded-xl shadow p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Methodology</h2>
+            <p class="text-gray-600 mb-4">This analysis follows the <strong>deep module architecture</strong> principles:</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <div class="font-semibold text-gray-800 mb-2">Deletion Test</div>
+                    <p class="text-sm text-gray-600">Would deleting this module concentrate complexity or just move it? A "yes" indicates shallow module.</p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <div class="font-semibold text-gray-800 mb-2">Interface = Test Surface</div>
+                    <p class="text-sm text-gray-600">A good interface makes testing easy. If testing requires mocking implementation details, the module is shallow.</p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-lg">
+                    <div class="font-semibold text-gray-800 mb-2">One Adapter = Seam</div>
+                    <p class="text-sm text-gray-600">One adapter creates a hypothetical seam. Two adapters make it real. We look for places where adapters would help.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm pt-8 border-t">
+            <p>Generated using architecture review skill • EventScout Codebase • September 2026</p>
+            <p class="mt-2">Focus Area: @es/types, @es/api, @es/scoring packages and their integration</p>
+        </footer>
+    </div>
+
+    <script>
+        // Set current date
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+
+        function exploreCandidate(candidateId) {
+            alert(`Candidate ${candidateId} selected! This would start a "grilling loop" to explore constraints, dependencies, and implementation details.\n\nIn a real session, we would now:\n1. Define the interface for the deepened module\n2. Identify dependencies and constraints\n3. Design the adapter pattern\n4. Write tests for the new interface\n5. Implement incrementally`);
+        }
+
+        function showAllCandidates() {
+            alert('All candidates displayed. The top recommendation (Data Model Fragmentation) offers the highest leverage for improving architecture depth.');
+        }
+    </script>
+</body>
+</html>

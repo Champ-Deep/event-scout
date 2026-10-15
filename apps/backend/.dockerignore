@@ -1,0 +1,59 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+.eggs
+*.egg
+.venv
+venv
+ENV
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Data files (created by app at runtime)
+temp_images/
+
+# Misc
+*.log
+*.jpg
+*.jpeg
+*.png
+!saved_qr/*.png
+README.md
+
+# Secrets / local data
+.env
+jwt_secret.key
+*.db
+*.db.bak*
+
+# Tests and one-off scripts (the image copies *.py)
+test_*.py
+tests/
+tests_unit/
+check_deps.py
+clean_exhibitors.py
+import_exhibitors.py
+migrate.py
+run_backend.py
+start_backend.py
+send_test_email.py
+uncomment_profile.py
+backups/
+

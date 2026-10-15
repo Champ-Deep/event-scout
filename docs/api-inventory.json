@@ -1,0 +1,4974 @@
+{
+  "generatedAt": "2026-10-14T06:48:20+00:00",
+  "generator": "scripts/api_inventory.py",
+  "legend": {
+    "access": {
+      "admin": "needs an admin sign-in",
+      "user": "any signed-in user (mobile app)",
+      "public": "no sign-in"
+    },
+    "usedBy": {
+      "mobile": "the mobile app calls it",
+      "admin": "the admin console calls it",
+      "external": "webhooks / public links / health check"
+    },
+    "fake.kind": {
+      "fake": "response invented, nothing real happens",
+      "partly fake": "real data mixed with invented values",
+      "stub": "always refuses",
+      "bug": "real data, wrong fields",
+      "suspected": "code mentions mock/fake — review"
+    },
+    "legacy": "old route in app.py (pre-/api), mostly duplicated by /api routes"
+  },
+  "summary": {
+    "backendRoutes": 209,
+    "used": 144,
+    "unused": 65,
+    "byAccess": {
+      "admin": {
+        "total": 100,
+        "used": 67,
+        "unused": 33
+      },
+      "user": {
+        "total": 87,
+        "used": 58,
+        "unused": 29
+      },
+      "public": {
+        "total": 22,
+        "used": 19,
+        "unused": 3
+      }
+    },
+    "legacyRoutes": 60,
+    "legacyUnused": 60,
+    "usedByMobile": 69,
+    "usedByAdmin": 92,
+    "usedExternally": 8,
+    "mobileClientFunctions": 79,
+    "mobileClientUsed": 66,
+    "mobileClientUnused": 13,
+    "broken": 2,
+    "fakeOrDummy": {
+      "fake": 1,
+      "partly fake": 0,
+      "stub": 1,
+      "bug": 0,
+      "suspected": 0
+    },
+    "fakeStillCalled": 2,
+    "newEndpoints": 14,
+    "newlyUsedInMobile": 7
+  },
+  "newEndpoints": [
+    {
+      "method": "POST",
+      "path": "/api/exhibitors",
+      "purpose": "Add a booth to an event from the app (no duplicates; can mark it visited)",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/exhibitors/{exhibitor_id}",
+      "purpose": "Edit a booth you added (admins: any)",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/exhibitors/{exhibitor_id}",
+      "purpose": "Remove a booth you added (admins: any)",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/exhibitors/{exhibitor_id}/visit",
+      "purpose": "Mark a booth as visited by you (counts in \"Booths met\")",
+      "usedBy": [
+        "mobile"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/exhibitors/{exhibitor_id}/visit",
+      "purpose": "Un-mark a booth as visited",
+      "usedBy": [
+        "mobile"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/files/{file_id}/download",
+      "purpose": "Content of a team / event file (open or save it in the app)",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/contact/files/{file_id}/download",
+      "purpose": "Content of a file attached to one of your contacts",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact/{contact_id}/files",
+      "purpose": "Attach a file to one of your contacts (Contact details → Files → Attach)",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/contact/files/{file_id}",
+      "purpose": "Remove a file from one of your contacts",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/users/{user_id}",
+      "purpose": "Admin: rename an account or change its role",
+      "usedBy": [
+        "admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users/{user_id}",
+      "purpose": "Admin: delete a rep's account and data",
+      "usedBy": [
+        "admin"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/contacts/duplicates/dismiss",
+      "purpose": "Admin: mark two contacts as not the same person",
+      "usedBy": [
+        "admin"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/contact_lists/{list_id}",
+      "purpose": "Admin: rename a list",
+      "usedBy": [
+        "admin"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/contact_lists/{list_id}/contacts/{contact_id}",
+      "purpose": "Admin: remove a contact from a list",
+      "usedBy": [
+        "admin"
+      ]
+    }
+  ],
+  "newlyUsedInMobile": [
+    {
+      "method": "GET",
+      "path": "/api/broadcasts/active",
+      "where": "Feed → team announcements banner (only the ones sent to everyone / to you)"
+    },
+    {
+      "method": "GET",
+      "path": "/api/files/list",
+      "where": "Me → Team files; Event page → Event files (demo placeholders hidden)"
+    },
+    {
+      "method": "GET",
+      "path": "/api/events/{event_id}/seats",
+      "where": "Event page → Your team here (teammates + scan counts)"
+    },
+    {
+      "method": "GET",
+      "path": "/api/exhibitors/categories",
+      "where": "Event page → Add booth: category suggestions (this event's first)"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/exhibitors/{exhibitor_id}",
+      "where": "Event page → a booth you added → Edit"
+    },
+    {
+      "method": "GET",
+      "path": "/api/contact/{contact_id}/files",
+      "where": "Contact details → Files card (attach, open, save, remove)"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/refresh",
+      "where": "Background: renews the sign-in token when it expires within a day"
+    }
+  ],
+  "broken": [
+    {
+      "client": "mobile",
+      "caller": "api.joinInvite (api.ts:886)",
+      "method": "POST",
+      "path": "/auth/join/${inviteId}",
+      "calledByApp": false,
+      "problem": "No backend route with this method and path (would 404 / 405)."
+    },
+    {
+      "client": "admin",
+      "caller": "apps/admin/src/lib/api.ts",
+      "method": "GET",
+      "path": "/api/admin/export${qs(f)}",
+      "calledByApp": true,
+      "problem": "No backend route with this method and path (would 404 / 405)."
+    }
+  ],
+  "fakeOrDummy": [
+    {
+      "method": "POST",
+      "path": "/api/contact/{contact_id}/enrich",
+      "access": "user",
+      "status": "used",
+      "usedBy": [
+        "admin"
+      ],
+      "kind": "stub",
+      "detail": "Always 501 \"not connected to a data provider\" (no enrichment provider is set up).",
+      "at": "apps/backend/api_routes.py:4853"
+    },
+    {
+      "method": "GET",
+      "path": "/api/sync/state",
+      "access": "user",
+      "status": "used",
+      "usedBy": [
+        "mobile"
+      ],
+      "kind": "fake",
+      "detail": "Marked \"Mock sync state\": always 0 pending / 0 failed and \"last synced\" = now. Not used by the apps any more (the phone reads its own outbox).",
+      "at": "apps/backend/api_routes.py:5247"
+    }
+  ],
+  "fixedFakes": [
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard",
+      "now": "Only real counts (no 1248 / \"14 reps\" / \"100% sync\"); levels, 7-day chart, events, pipelines, workspace totals."
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/activity",
+      "now": "Real timeline with real names: contacts added, AI scores, pipelines, announcements, files, deletions, new accounts."
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "now": "Real contact counts, added today and last activity (was 35×n and \"now\")."
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users",
+      "now": "Real hashed password the person signs in with (was a placeholder hash); duplicate email → 409."
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/contacts/duplicates",
+      "now": "Real email / phone / name+company matches per owner; no invented \"dup-temp\" pair."
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/contact_lists/{list_id}/contacts",
+      "now": "Empty list returns [] (was 3 random contacts)."
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/contact_lists/{list_id}/contacts",
+      "now": "Skips unknown ids and contacts already in the list; reports counts."
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/pipelines",
+      "now": "Real pipeline runs (ContactPipelineDB) with their research, pitch, slides and deck link."
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact/{contact_id}/pipeline/run",
+      "now": "Starts the real research → score → pitch → deck → attach pipeline."
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact/{contact_id}/pipeline/retry",
+      "now": "Clears failed runs and starts the real pipeline again."
+    },
+    {
+      "method": "GET",
+      "path": "/api/contact/{contact_id}/pipeline",
+      "now": "The contact's latest real run (status none if never run)."
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/backup",
+      "now": "Real backup: to BACKUP_DATABASE_URL, else a consistent SQLite snapshot in backend/backups/."
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/backup/status",
+      "now": "Real target, last backup and snapshots on disk."
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/webhook/test",
+      "now": "Really POSTs a test event to WEBHOOK_URL and reports status / latency / response."
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/export",
+      "now": "Real CSV file download with the Title column fixed and the owner added."
+    },
+    {
+      "method": "GET",
+      "path": "/api/models",
+      "now": "The OpenRouter models this server really uses, and what for."
+    }
+  ],
+  "demoData": [
+    "Switched off on 2026-09-30 (is_active = 0, not deleted; backup: apps/backend/eventscout.db.bak-2026-09-30-before-demo-retire): 3 seeded announcements and 4 seeded placeholder files. /api/broadcasts/active and /api/files/list now return only real rows.",
+    "Still in the database from the old demo seeder (SEED_DEMO_DATA, now off): 20 demo contacts owned by the admin account (+1 (555) phone numbers, event \"WHX 2026\") and 3 demo contact lists. They show in the admin console and in that account's app."
+  ],
+  "mobileClient": [
+    {
+      "function": "api.checkSession",
+      "line": "apps/mobile/src/lib/api.ts:437",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/auth/session",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3720",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/providers/SessionProvider.tsx"
+      ]
+    },
+    {
+      "function": "api.healthCheck",
+      "line": "apps/mobile/src/lib/api.ts:482",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/health",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/api_routes.py:607",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/App.tsx"
+      ]
+    },
+    {
+      "function": "api.getProfile",
+      "line": "apps/mobile/src/lib/api.ts:497",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/user/profile/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4686",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/ask/index.tsx",
+        "apps/mobile/app/(app)/contacts/[id]/edit.tsx",
+        "apps/mobile/app/(app)/contacts/index.tsx",
+        "apps/mobile/app/(app)/contacts/new.tsx",
+        "apps/mobile/app/(app)/events/[eventId].tsx",
+        "apps/mobile/app/(app)/feed/index.tsx",
+        "apps/mobile/app/(app)/me/index.tsx",
+        "apps/mobile/app/(auth)/onboarding/[step].tsx",
+        "apps/mobile/src/features/scan/ocr/saveOnDevice.ts"
+      ]
+    },
+    {
+      "function": "api.updateProfile",
+      "line": "apps/mobile/src/lib/api.ts:501",
+      "status": "used",
+      "routes": [
+        {
+          "method": "PUT",
+          "path": "/user/profile/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4707",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx",
+        "apps/mobile/app/(app)/me/index.tsx",
+        "apps/mobile/app/(auth)/onboarding/[step].tsx"
+      ]
+    },
+    {
+      "function": "api.getDashboard",
+      "line": "apps/mobile/src/lib/api.ts:506",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/dashboard",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4780",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/feed/index.tsx",
+        "apps/mobile/app/(app)/me/index.tsx"
+      ]
+    },
+    {
+      "function": "api.listContacts",
+      "line": "apps/mobile/src/lib/api.ts:512",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contacts",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:649",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/ask/index.tsx",
+        "apps/mobile/app/(app)/events/[eventId].tsx",
+        "apps/mobile/src/features/AppNavigator.tsx",
+        "apps/mobile/src/features/feed/hooks/useRankedFeed.ts"
+      ]
+    },
+    {
+      "function": "api.getContact",
+      "line": "apps/mobile/src/lib/api.ts:516",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contacts/${contactId}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1319",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/index.ts"
+      ]
+    },
+    {
+      "function": "api.createContact",
+      "line": "apps/mobile/src/lib/api.ts:521",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contacts",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1370",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/index.ts"
+      ]
+    },
+    {
+      "function": "api.updateContact",
+      "line": "apps/mobile/src/lib/api.ts:526",
+      "status": "used",
+      "routes": [
+        {
+          "method": "PATCH",
+          "path": "/api/contacts/${contactId}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1443",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/index.ts"
+      ]
+    },
+    {
+      "function": "api.findLinkedIn",
+      "line": "apps/mobile/src/lib/api.ts:536",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contacts/${contactId}/linkedin/search",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1541",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/components/LinkedInFinderCard.tsx"
+      ]
+    },
+    {
+      "function": "api.attachLinkedIn",
+      "line": "apps/mobile/src/lib/api.ts:541",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contacts/${contactId}/linkedin/attach",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1588",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/components/LinkedInFinderCard.tsx"
+      ]
+    },
+    {
+      "function": "api.deleteContact",
+      "line": "apps/mobile/src/lib/api.ts:547",
+      "status": "used",
+      "routes": [
+        {
+          "method": "DELETE",
+          "path": "/api/contacts/${contactId}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1647",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/scan/review.tsx",
+        "apps/mobile/src/features/contacts/index.ts"
+      ]
+    },
+    {
+      "function": "api.listDeletedContacts",
+      "line": "apps/mobile/src/lib/api.ts:552",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contacts/deleted",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:971",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/contacts/deleted.tsx",
+        "apps/mobile/app/(app)/contacts/index.tsx",
+        "apps/mobile/app/(app)/me/index.tsx"
+      ]
+    },
+    {
+      "function": "api.restoreContact",
+      "line": "apps/mobile/src/lib/api.ts:556",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contacts/deleted/${contactId}/restore",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1010",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/index.ts"
+      ]
+    },
+    {
+      "function": "api.purgeDeletedContact",
+      "line": "apps/mobile/src/lib/api.ts:560",
+      "status": "used",
+      "routes": [
+        {
+          "method": "DELETE",
+          "path": "/api/contacts/deleted/${contactId}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1036",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/contacts/deleted.tsx",
+        "apps/mobile/app/(app)/scan/review.tsx"
+      ]
+    },
+    {
+      "function": "api.emptyDeletedContacts",
+      "line": "apps/mobile/src/lib/api.ts:564",
+      "status": "used",
+      "routes": [
+        {
+          "method": "DELETE",
+          "path": "/api/contacts/deleted",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:986",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/contacts/deleted.tsx"
+      ]
+    },
+    {
+      "function": "api.getContactDuplicates",
+      "line": "apps/mobile/src/lib/api.ts:569",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contacts/${contactId}/duplicates",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1282",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/index.ts"
+      ]
+    },
+    {
+      "function": "api.listDuplicatePairs",
+      "line": "apps/mobile/src/lib/api.ts:573",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contacts/duplicates",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1232",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/contacts/index.tsx"
+      ]
+    },
+    {
+      "function": "api.checkDuplicates",
+      "line": "apps/mobile/src/lib/api.ts:577",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contacts/check-duplicates",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1259",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/contacts/[id]/edit.tsx",
+        "apps/mobile/app/(app)/contacts/new.tsx",
+        "apps/mobile/src/features/scan/ocr/saveOnDevice.ts"
+      ]
+    },
+    {
+      "function": "api.dismissDuplicate",
+      "line": "apps/mobile/src/lib/api.ts:584",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contacts/${contactId}/duplicates/${otherId}/dismiss",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1295",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/contacts/[id]/index.tsx",
+        "apps/mobile/src/features/contacts/components/DuplicateReviewSheet.tsx"
+      ]
+    },
+    {
+      "function": "api.createShareLink",
+      "line": "apps/mobile/src/lib/api.ts:590",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contacts/${contactId}/share-links",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/share_routes.py:101",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/components/ShareContactSheet.tsx"
+      ]
+    },
+    {
+      "function": "api.listShareLinks",
+      "line": "apps/mobile/src/lib/api.ts:594",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contacts/${contactId}/share-links",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/share_routes.py:142",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/components/ShareContactSheet.tsx"
+      ]
+    },
+    {
+      "function": "api.revokeShareLink",
+      "line": "apps/mobile/src/lib/api.ts:598",
+      "status": "used",
+      "routes": [
+        {
+          "method": "DELETE",
+          "path": "/api/contacts/${contactId}/share-links/${encodeURIComponent(token)}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/share_routes.py:160",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/contacts/components/ShareContactSheet.tsx"
+      ]
+    },
+    {
+      "function": "api.listEvents",
+      "line": "apps/mobile/src/lib/api.ts:603",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/events",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1663",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/me/index.tsx",
+        "apps/mobile/app/(auth)/onboarding/[step].tsx",
+        "apps/mobile/src/App.tsx",
+        "apps/mobile/src/features/AppNavigator.tsx"
+      ]
+    },
+    {
+      "function": "api.getEventSeats",
+      "line": "apps/mobile/src/lib/api.ts:614",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/events/${encodeURIComponent(eventId)}/seats",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:1690",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx"
+      ]
+    },
+    {
+      "function": "api.syncPush",
+      "line": "apps/mobile/src/lib/api.ts:619",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/sync/push",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:2525",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/AppNavigator.tsx",
+        "apps/mobile/src/sync/state.ts"
+      ]
+    },
+    {
+      "function": "api.syncPull",
+      "line": "apps/mobile/src/lib/api.ts:623",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/sync/pull",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:2651",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/AppNavigator.tsx",
+        "apps/mobile/src/sync/state.ts"
+      ]
+    },
+    {
+      "function": "api.getSyncState",
+      "line": "apps/mobile/src/lib/api.ts:627",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/sync/state",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:5247",
+          "fake": {
+            "kind": "fake",
+            "detail": "Marked \"Mock sync state\": always 0 pending / 0 failed and \"last synced\" = now. Not used by the apps any more (the phone reads its own outbox)."
+          }
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/App.tsx"
+      ]
+    },
+    {
+      "function": "api.getLiveEvents",
+      "line": "apps/mobile/src/lib/api.ts:638",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/live",
+          "exists": true,
+          "access": "admin",
+          "backend": "apps/backend/api_routes.py:2459",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Admin-only route: a rep would be refused."
+    },
+    {
+      "function": "api.getActivity",
+      "line": "apps/mobile/src/lib/api.ts:643",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/admin/activity",
+          "exists": true,
+          "access": "admin",
+          "backend": "apps/backend/api_routes.py:2797",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Admin-only route: a rep would be refused."
+    },
+    {
+      "function": "api.getAIModels",
+      "line": "apps/mobile/src/lib/api.ts:648",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/models",
+          "exists": true,
+          "access": "admin",
+          "backend": "apps/backend/api_routes.py:4934",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Admin-only route: a rep would be refused."
+    },
+    {
+      "function": "api.converseAI",
+      "line": "apps/mobile/src/lib/api.ts:653",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/converse",
+          "exists": true,
+          "access": "admin",
+          "backend": "apps/backend/api_routes.py:4969",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/AppNavigator.tsx"
+      ]
+    },
+    {
+      "function": "api.listExhibitors",
+      "line": "apps/mobile/src/lib/api.ts:662",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/exhibitors",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4076",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx",
+        "apps/mobile/app/(app)/feed/index.tsx"
+      ]
+    },
+    {
+      "function": "api.addBooth",
+      "line": "apps/mobile/src/lib/api.ts:667",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/exhibitors",
+          "exists": true,
+          "access": "admin",
+          "backend": "apps/backend/api_routes.py:4237",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx"
+      ]
+    },
+    {
+      "function": "api.updateBooth",
+      "line": "apps/mobile/src/lib/api.ts:672",
+      "status": "used",
+      "routes": [
+        {
+          "method": "PATCH",
+          "path": "/api/exhibitors/${id}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4275",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx"
+      ]
+    },
+    {
+      "function": "api.deleteBooth",
+      "line": "apps/mobile/src/lib/api.ts:677",
+      "status": "used",
+      "routes": [
+        {
+          "method": "DELETE",
+          "path": "/api/exhibitors/${id}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4301",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx"
+      ]
+    },
+    {
+      "function": "api.setBoothVisited",
+      "line": "apps/mobile/src/lib/api.ts:682",
+      "status": "used",
+      "routes": [
+        {
+          "method": "PUT",
+          "path": "/api/exhibitors/${id}/visit",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4315",
+          "fake": null
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/exhibitors/${id}/visit",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4327",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx"
+      ]
+    },
+    {
+      "function": "api.getExhibitorCategories",
+      "line": "apps/mobile/src/lib/api.ts:689",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/exhibitors/categories",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4165",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx"
+      ]
+    },
+    {
+      "function": "api.listEventFiles",
+      "line": "apps/mobile/src/lib/api.ts:695",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/files/list",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4419",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx",
+        "apps/mobile/app/(app)/me/index.tsx"
+      ]
+    },
+    {
+      "function": "api.downloadEventFile",
+      "line": "apps/mobile/src/lib/api.ts:699",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/files/${fileId}/download",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4507",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/events/[eventId].tsx",
+        "apps/mobile/app/(app)/me/index.tsx"
+      ]
+    },
+    {
+      "function": "api.getContactFiles",
+      "line": "apps/mobile/src/lib/api.ts:703",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contact/${contactId}/files",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4540",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/files/ContactFilesCard.tsx"
+      ]
+    },
+    {
+      "function": "api.downloadContactFile",
+      "line": "apps/mobile/src/lib/api.ts:707",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contact/files/${fileId}/download",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4628",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/files/ContactFilesCard.tsx"
+      ]
+    },
+    {
+      "function": "api.attachContactFile",
+      "line": "apps/mobile/src/lib/api.ts:712",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contact/${contactId}/files",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4573",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/files/ContactFilesCard.tsx"
+      ]
+    },
+    {
+      "function": "api.deleteContactFile",
+      "line": "apps/mobile/src/lib/api.ts:716",
+      "status": "used",
+      "routes": [
+        {
+          "method": "DELETE",
+          "path": "/api/contact/files/${fileId}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4608",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/files/ContactFilesCard.tsx"
+      ]
+    },
+    {
+      "function": "api.getActiveBroadcasts",
+      "line": "apps/mobile/src/lib/api.ts:722",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/broadcasts/active",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:3382",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Not called by any screen."
+    },
+    {
+      "function": "api.getMyBroadcasts",
+      "line": "apps/mobile/src/lib/api.ts:727",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/broadcasts/mine",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:3409",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/broadcasts/store.ts"
+      ]
+    },
+    {
+      "function": "api.scoreContact",
+      "line": "apps/mobile/src/lib/api.ts:782",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contact/${contactId}/score",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4724",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/contacts/[id]/index.tsx",
+        "apps/mobile/app/(app)/feed/index.tsx"
+      ]
+    },
+    {
+      "function": "api.scoreAllContacts",
+      "line": "apps/mobile/src/lib/api.ts:787",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contacts/score_all",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4781",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/contacts/index.tsx",
+        "apps/mobile/app/(app)/feed/index.tsx",
+        "apps/mobile/src/features/AppNavigator.tsx"
+      ]
+    },
+    {
+      "function": "api.enrichContact",
+      "line": "apps/mobile/src/lib/api.ts:791",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contact/${contactId}/enrich",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4853",
+          "fake": {
+            "kind": "stub",
+            "detail": "Always 501 \"not connected to a data provider\" (no enrichment provider is set up)."
+          }
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Stub: Always 501 \"not connected to a data provider\" (no enrichment provider is set up)."
+    },
+    {
+      "function": "api.getContactQR",
+      "line": "apps/mobile/src/lib/api.ts:796",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contact/${contactId}/qr",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/api_routes.py:4894",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/contacts/[id]/index.tsx"
+      ]
+    },
+    {
+      "function": "api.getMyCard",
+      "line": "apps/mobile/src/lib/api.ts:801",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/me/card",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/card_routes.py:120",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/me/index.tsx"
+      ]
+    },
+    {
+      "function": "api.getMyBusinessCard",
+      "line": "apps/mobile/src/lib/api.ts:806",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/me/business-card",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/card_routes.py:140",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/me/index.tsx"
+      ]
+    },
+    {
+      "function": "api.resetMyCardLink",
+      "line": "apps/mobile/src/lib/api.ts:811",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/me/card/reset-link",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/card_routes.py:157",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/me/index.tsx"
+      ]
+    },
+    {
+      "function": "api.runContactPipeline",
+      "line": "apps/mobile/src/lib/api.ts:818",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contact/${contactId}/pipeline/run",
+          "exists": true,
+          "access": "admin",
+          "backend": "apps/backend/api_routes.py:4044",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Admin-only route: a rep would be refused."
+    },
+    {
+      "function": "api.retryContactPipeline",
+      "line": "apps/mobile/src/lib/api.ts:822",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/contact/${contactId}/pipeline/retry",
+          "exists": true,
+          "access": "admin",
+          "backend": "apps/backend/api_routes.py:4051",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Admin-only route: a rep would be refused."
+    },
+    {
+      "function": "api.getContactPipeline",
+      "line": "apps/mobile/src/lib/api.ts:826",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/contact/${contactId}/pipeline",
+          "exists": true,
+          "access": "admin",
+          "backend": "apps/backend/api_routes.py:4057",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Admin-only route: a rep would be refused."
+    },
+    {
+      "function": "api.getLinkedInAuthUrl",
+      "line": "apps/mobile/src/lib/api.ts:831",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/auth/linkedin/url",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3231",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/auth/linkedin.ts"
+      ]
+    },
+    {
+      "function": "api.exchangeLinkedInCode",
+      "line": "apps/mobile/src/lib/api.ts:837",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/auth/linkedin/callback",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3244",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(auth)/callback.tsx",
+        "apps/mobile/src/features/auth/linkedin.ts"
+      ]
+    },
+    {
+      "function": "api.linkLinkedIn",
+      "line": "apps/mobile/src/lib/api.ts:844",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/auth/linkedin/link",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3361",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(auth)/callback.tsx",
+        "apps/mobile/src/features/auth/linkedin.ts"
+      ]
+    },
+    {
+      "function": "api.getLinkedInLinkStatus",
+      "line": "apps/mobile/src/lib/api.ts:848",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/auth/linkedin/link",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3341",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(auth)/onboarding/[step].tsx",
+        "apps/mobile/src/features/me/components/LinkedInConnectionCard.tsx"
+      ]
+    },
+    {
+      "function": "api.unlinkLinkedIn",
+      "line": "apps/mobile/src/lib/api.ts:853",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/auth/linkedin/unlink",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3476",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/me/components/LinkedInConnectionCard.tsx"
+      ]
+    },
+    {
+      "function": "api.requestPasswordReset",
+      "line": "apps/mobile/src/lib/api.ts:858",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/auth/password/forgot",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3583",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(auth)/forgot-password.tsx"
+      ]
+    },
+    {
+      "function": "api.resetPassword",
+      "line": "apps/mobile/src/lib/api.ts:863",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/auth/password/reset",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3650",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(auth)/forgot-password.tsx"
+      ]
+    },
+    {
+      "function": "api.setPassword",
+      "line": "apps/mobile/src/lib/api.ts:882",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/auth/password/set",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3442",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/me/components/LinkedInConnectionCard.tsx"
+      ]
+    },
+    {
+      "function": "api.joinInvite",
+      "line": "apps/mobile/src/lib/api.ts:886",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/auth/join/${inviteId}",
+          "exists": false,
+          "access": null,
+          "backend": null,
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Broken: the route does not exist."
+    },
+    {
+      "function": "api.refreshToken",
+      "line": "apps/mobile/src/lib/api.ts:891",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/auth/refresh",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3740",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/providers/SessionProvider.tsx"
+      ]
+    },
+    {
+      "function": "api.addContactFromImage",
+      "line": "apps/mobile/src/lib/api.ts:900",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/add_contact_from_image/?user_id=${encodeURIComponent(userId)}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:3792",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/scan/hooks/useScanSession.ts",
+        "apps/mobile/src/sync/state.ts"
+      ]
+    },
+    {
+      "function": "api.scanQRCode",
+      "line": "apps/mobile/src/lib/api.ts:927",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/scan_qr/?user_id=${encodeURIComponent(userId)}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:3821",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/scan/hooks/useScanSession.ts",
+        "apps/mobile/src/sync/state.ts"
+      ]
+    },
+    {
+      "function": "api.addContactLegacy",
+      "line": "apps/mobile/src/lib/api.ts:950",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/add_contact/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:3773",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Old duplicate of an API the app already uses."
+    },
+    {
+      "function": "api.searchContactsLegacy",
+      "line": "apps/mobile/src/lib/api.ts:957",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/search/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:3841",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Old duplicate of an API the app already uses."
+    },
+    {
+      "function": "api.converse",
+      "line": "apps/mobile/src/lib/api.ts:966",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/converse/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4391",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "viaApi": [
+        "converseStream"
+      ]
+    },
+    {
+      "function": "api.converseWithFiles",
+      "line": "apps/mobile/src/lib/api.ts:976",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/converse/with_files/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4448",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "viaApi": [
+        "converseStream"
+      ]
+    },
+    {
+      "function": "api.converseStream",
+      "line": "apps/mobile/src/lib/api.ts:1005",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/converse/with_files/stream/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4470",
+          "fake": null
+        },
+        {
+          "method": "POST",
+          "path": "/converse/stream/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4409",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/ask/index.tsx",
+        "apps/mobile/src/features/contacts/components/AskHalfSheet.tsx"
+      ]
+    },
+    {
+      "function": "api.transcribeAudio",
+      "line": "apps/mobile/src/lib/api.ts:1130",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/transcribe_audio/?user_id=${encodeURIComponent(userId)}",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:6554",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(app)/ask/index.tsx"
+      ]
+    },
+    {
+      "function": "api.register",
+      "line": "apps/mobile/src/lib/api.ts:1145",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/register/",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3138",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(auth)/invite/[token].tsx",
+        "apps/mobile/app/(auth)/register.tsx"
+      ]
+    },
+    {
+      "function": "api.login",
+      "line": "apps/mobile/src/lib/api.ts:1172",
+      "status": "used",
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/login/",
+          "exists": true,
+          "access": "public",
+          "backend": "apps/backend/app.py:3183",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/app/(auth)/login.tsx"
+      ]
+    },
+    {
+      "function": "api.exportContacts",
+      "line": "apps/mobile/src/lib/api.ts:1208",
+      "status": "used",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/export_contacts/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4493",
+          "fake": null
+        }
+      ],
+      "usedIn": [
+        "apps/mobile/src/features/AppNavigator.tsx",
+        "apps/mobile/src/features/me/export.ts"
+      ]
+    },
+    {
+      "function": "api.getUserProfile",
+      "line": "apps/mobile/src/lib/api.ts:1214",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/user/profile/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4686",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Old duplicate of an API the app already uses."
+    },
+    {
+      "function": "api.updateUserProfile",
+      "line": "apps/mobile/src/lib/api.ts:1218",
+      "status": "unused",
+      "routes": [
+        {
+          "method": "PUT",
+          "path": "/user/profile/",
+          "exists": true,
+          "access": "user",
+          "backend": "apps/backend/app.py:4707",
+          "fake": null
+        }
+      ],
+      "usedIn": [],
+      "whyUnused": "Old duplicate of an API the app already uses."
+    }
+  ],
+  "backendRoutes": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "file": "apps/backend/api_routes.py",
+      "line": 607,
+      "handler": "api_health",
+      "access": "public",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.healthCheck"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contacts",
+      "file": "apps/backend/api_routes.py",
+      "line": 649,
+      "handler": "list_contacts",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.listContacts"
+      ],
+      "adminIn": [
+        "apps/admin/src/features/grid/useContactsQuery.ts",
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contacts/deleted",
+      "file": "apps/backend/api_routes.py",
+      "line": 971,
+      "handler": "list_deleted_contacts",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.listDeletedContacts"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/contacts/deleted",
+      "file": "apps/backend/api_routes.py",
+      "line": 986,
+      "handler": "empty_deleted_contacts",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.emptyDeletedContacts"
+      ],
+      "adminIn": [
+        "apps/admin/src/features/grid/ContactDetailDrawer.tsx",
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contacts/deleted/{contact_id}/restore",
+      "file": "apps/backend/api_routes.py",
+      "line": 1010,
+      "handler": "restore_deleted_contact",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.restoreContact"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/contacts/deleted/{contact_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 1036,
+      "handler": "purge_deleted_contact",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.purgeDeletedContact"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contacts/duplicates",
+      "file": "apps/backend/api_routes.py",
+      "line": 1232,
+      "handler": "list_duplicate_pairs",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.listDuplicatePairs"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contacts/check-duplicates",
+      "file": "apps/backend/api_routes.py",
+      "line": 1259,
+      "handler": "check_duplicates",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.checkDuplicates"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contacts/{contact_id}/duplicates",
+      "file": "apps/backend/api_routes.py",
+      "line": 1282,
+      "handler": "get_contact_duplicates",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getContactDuplicates"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contacts/{contact_id}/duplicates/{other_id}/dismiss",
+      "file": "apps/backend/api_routes.py",
+      "line": 1295,
+      "handler": "dismiss_duplicate",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.dismissDuplicate"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contacts/{contact_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 1319,
+      "handler": "get_contact",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.getContact"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contacts",
+      "file": "apps/backend/api_routes.py",
+      "line": 1370,
+      "handler": "create_contact",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.createContact"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/contacts/{contact_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 1443,
+      "handler": "patch_contact",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.updateContact"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contacts/{contact_id}/linkedin/search",
+      "file": "apps/backend/api_routes.py",
+      "line": 1541,
+      "handler": "linkedin_search",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.findLinkedIn"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contacts/{contact_id}/linkedin/attach",
+      "file": "apps/backend/api_routes.py",
+      "line": 1588,
+      "handler": "linkedin_attach",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.attachLinkedIn"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/contacts/{contact_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 1647,
+      "handler": "delete_contact",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.deleteContact"
+      ],
+      "adminIn": [
+        "apps/admin/src/features/grid/ContactDetailDrawer.tsx",
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/events",
+      "file": "apps/backend/api_routes.py",
+      "line": 1663,
+      "handler": "list_events",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.listEvents"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/events/{event_id}/seats",
+      "file": "apps/backend/api_routes.py",
+      "line": 1690,
+      "handler": "get_event_seats",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getEventSeats"
+      ],
+      "status": "used",
+      "newlyUsedInMobile": true,
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/events",
+      "file": "apps/backend/api_routes.py",
+      "line": 1751,
+      "handler": "admin_list_events",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/events/detail",
+      "file": "apps/backend/api_routes.py",
+      "line": 1823,
+      "handler": "admin_event_detail",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/dashboard",
+      "file": "apps/backend/api_routes.py",
+      "line": 1921,
+      "handler": "get_admin_dashboard",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/segments",
+      "file": "apps/backend/api_routes.py",
+      "line": 2411,
+      "handler": "get_segments",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/segments/{dim}/contacts",
+      "file": "apps/backend/api_routes.py",
+      "line": 2444,
+      "handler": "get_segment_contacts",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/live",
+      "file": "apps/backend/api_routes.py",
+      "line": 2459,
+      "handler": "live_event_stream",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/routes/__root.tsx"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/sync/push",
+      "file": "apps/backend/api_routes.py",
+      "line": 2525,
+      "handler": "sync_push",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.syncPush",
+        "sync/engine.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/sync/pull",
+      "file": "apps/backend/api_routes.py",
+      "line": 2651,
+      "handler": "sync_pull",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.syncPull"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/activity",
+      "file": "apps/backend/api_routes.py",
+      "line": 2797,
+      "handler": "get_admin_activity",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/activity/calendar",
+      "file": "apps/backend/api_routes.py",
+      "line": 2813,
+      "handler": "get_admin_activity_calendar",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/contacts/deleted",
+      "file": "apps/backend/api_routes.py",
+      "line": 2834,
+      "handler": "list_admin_deleted_contacts",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/contacts/deleted/{contact_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 2847,
+      "handler": "get_admin_deleted_contact",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "file": "apps/backend/api_routes.py",
+      "line": 2935,
+      "handler": "list_admin_users",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users",
+      "file": "apps/backend/api_routes.py",
+      "line": 2951,
+      "handler": "create_admin_user",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/users/{user_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 2970,
+      "handler": "update_admin_user",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/me",
+      "file": "apps/backend/api_routes.py",
+      "line": 3056,
+      "handler": "get_my_account",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/me",
+      "file": "apps/backend/api_routes.py",
+      "line": 3063,
+      "handler": "update_my_account",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/me/password",
+      "file": "apps/backend/api_routes.py",
+      "line": 3109,
+      "handler": "change_my_password",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/sales-profile",
+      "file": "apps/backend/api_routes.py",
+      "line": 3184,
+      "handler": "get_admin_sales_profile",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/sales-profile",
+      "file": "apps/backend/api_routes.py",
+      "line": 3192,
+      "handler": "update_admin_sales_profile",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/users/{user_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 3225,
+      "handler": "delete_admin_user",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/users/merge",
+      "file": "apps/backend/api_routes.py",
+      "line": 3323,
+      "handler": "merge_users",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/broadcasts/active",
+      "file": "apps/backend/api_routes.py",
+      "line": 3382,
+      "handler": "get_active_broadcasts",
+      "access": "user",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newlyUsedInMobile": true,
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/broadcasts/mine",
+      "file": "apps/backend/api_routes.py",
+      "line": 3409,
+      "handler": "my_broadcasts",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getMyBroadcasts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/broadcasts/stream",
+      "file": "apps/backend/api_routes.py",
+      "line": 3429,
+      "handler": "my_broadcast_stream",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/broadcast",
+      "file": "apps/backend/api_routes.py",
+      "line": 3460,
+      "handler": "send_broadcast",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/broadcasts/{broadcast_id}/dismiss",
+      "file": "apps/backend/api_routes.py",
+      "line": 3517,
+      "handler": "dismiss_broadcast",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/broadcasts/history",
+      "file": "apps/backend/api_routes.py",
+      "line": 3534,
+      "handler": "broadcast_history",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/contacts/duplicates",
+      "file": "apps/backend/api_routes.py",
+      "line": 3585,
+      "handler": "find_duplicate_contacts",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/contacts/{contact_id}/duplicates",
+      "file": "apps/backend/api_routes.py",
+      "line": 3621,
+      "handler": "admin_contact_duplicates",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/contacts/duplicates/dismiss",
+      "file": "apps/backend/api_routes.py",
+      "line": 3659,
+      "handler": "dismiss_duplicate_pair",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/contacts/merge",
+      "file": "apps/backend/api_routes.py",
+      "line": 3685,
+      "handler": "merge_contacts",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/contacts/batch_delete",
+      "file": "apps/backend/api_routes.py",
+      "line": 3717,
+      "handler": "batch_delete_contacts",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/contact_lists",
+      "file": "apps/backend/api_routes.py",
+      "line": 3764,
+      "handler": "get_contact_lists",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/contact_lists",
+      "file": "apps/backend/api_routes.py",
+      "line": 3776,
+      "handler": "create_contact_list",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/contact_lists/{list_id}/contacts",
+      "file": "apps/backend/api_routes.py",
+      "line": 3806,
+      "handler": "get_list_contacts",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/contact_lists/{list_id}/contacts",
+      "file": "apps/backend/api_routes.py",
+      "line": 3818,
+      "handler": "add_contacts_to_list",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "note": "The admin console has no \"add contacts to list\" action yet.",
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/contact_lists/{list_id}/contacts/{contact_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 3840,
+      "handler": "remove_contact_from_list",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/contact_lists/{list_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 3855,
+      "handler": "rename_contact_list",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/contact_lists/{list_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 3868,
+      "handler": "delete_contact_list",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/pipelines",
+      "file": "apps/backend/api_routes.py",
+      "line": 3964,
+      "handler": "list_pipelines",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/pipelines/settings",
+      "file": "apps/backend/api_routes.py",
+      "line": 3985,
+      "handler": "update_pipeline_settings",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact/{contact_id}/pipeline/run",
+      "file": "apps/backend/api_routes.py",
+      "line": 4044,
+      "handler": "run_contact_pipeline",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/features/grid/ContactDetailDrawer.tsx",
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact/{contact_id}/pipeline/retry",
+      "file": "apps/backend/api_routes.py",
+      "line": 4051,
+      "handler": "retry_contact_pipeline",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contact/{contact_id}/pipeline",
+      "file": "apps/backend/api_routes.py",
+      "line": 4057,
+      "handler": "get_contact_pipeline",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exhibitors",
+      "file": "apps/backend/api_routes.py",
+      "line": 4076,
+      "handler": "list_exhibitors",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.listExhibitors"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/exhibitors/categories",
+      "file": "apps/backend/api_routes.py",
+      "line": 4165,
+      "handler": "list_exhibitor_categories",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getExhibitorCategories"
+      ],
+      "status": "used",
+      "newlyUsedInMobile": true,
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/exhibitors",
+      "file": "apps/backend/api_routes.py",
+      "line": 4237,
+      "handler": "add_booth",
+      "access": "admin",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.addBooth"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/exhibitors/{exhibitor_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 4275,
+      "handler": "update_booth",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.updateBooth"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newlyUsedInMobile": true,
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/exhibitors/{exhibitor_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 4301,
+      "handler": "delete_booth",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.deleteBooth"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/exhibitors/{exhibitor_id}/visit",
+      "file": "apps/backend/api_routes.py",
+      "line": 4315,
+      "handler": "mark_booth_visited",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.setBoothVisited"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/exhibitors/{exhibitor_id}/visit",
+      "file": "apps/backend/api_routes.py",
+      "line": 4327,
+      "handler": "unmark_booth_visited",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.setBoothVisited"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/import_exhibitors",
+      "file": "apps/backend/api_routes.py",
+      "line": 4348,
+      "handler": "import_exhibitors",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/files/list",
+      "file": "apps/backend/api_routes.py",
+      "line": 4419,
+      "handler": "list_event_files",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.listEventFiles"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newlyUsedInMobile": true,
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/files/upload",
+      "file": "apps/backend/api_routes.py",
+      "line": 4465,
+      "handler": "upload_event_file",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/files/{file_id}/download",
+      "file": "apps/backend/api_routes.py",
+      "line": 4507,
+      "handler": "download_event_file",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.downloadEventFile"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/files/{file_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 4527,
+      "handler": "delete_event_file",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contact/{contact_id}/files",
+      "file": "apps/backend/api_routes.py",
+      "line": 4540,
+      "handler": "get_contact_files",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.getContactFiles"
+      ],
+      "adminIn": [
+        "apps/admin/src/features/grid/ContactDetailDrawer.tsx",
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newlyUsedInMobile": true,
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact/{contact_id}/files",
+      "file": "apps/backend/api_routes.py",
+      "line": 4573,
+      "handler": "attach_contact_file",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.attachContactFile"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/contact/files/{file_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 4608,
+      "handler": "remove_contact_file",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.deleteContactFile"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contact/files/{file_id}/download",
+      "file": "apps/backend/api_routes.py",
+      "line": 4628,
+      "handler": "download_contact_file",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.downloadContactFile"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "newEndpoint": true,
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contact/{contact_id}/admin_score",
+      "file": "apps/backend/api_routes.py",
+      "line": 4678,
+      "handler": "get_admin_score",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact/{contact_id}/score",
+      "file": "apps/backend/api_routes.py",
+      "line": 4724,
+      "handler": "score_single_contact",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.scoreContact"
+      ],
+      "adminIn": [
+        "apps/admin/src/features/grid/ContactDetailDrawer.tsx"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contacts/score_all",
+      "file": "apps/backend/api_routes.py",
+      "line": 4781,
+      "handler": "score_all_contacts",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.scoreAllContacts"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contact/{contact_id}/enrich",
+      "file": "apps/backend/api_routes.py",
+      "line": 4853,
+      "handler": "enrich_contact",
+      "access": "user",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/features/grid/ContactDetailDrawer.tsx"
+      ],
+      "status": "used",
+      "fake": {
+        "kind": "stub",
+        "detail": "Always 501 \"not connected to a data provider\" (no enrichment provider is set up)."
+      },
+      "legacy": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/contact/{contact_id}/note",
+      "file": "apps/backend/api_routes.py",
+      "line": 4872,
+      "handler": "update_contact_admin_note",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/features/grid/ContactDetailDrawer.tsx",
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contact/{contact_id}/qr",
+      "file": "apps/backend/api_routes.py",
+      "line": 4894,
+      "handler": "get_contact_qr",
+      "access": "user",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.getContactQR"
+      ],
+      "adminIn": [
+        "apps/admin/src/features/grid/ContactDetailDrawer.tsx",
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/models",
+      "file": "apps/backend/api_routes.py",
+      "line": 4934,
+      "handler": "get_available_models",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/converse",
+      "file": "apps/backend/api_routes.py",
+      "line": 4969,
+      "handler": "converse_ai",
+      "access": "admin",
+      "usedBy": [
+        "mobile",
+        "admin"
+      ],
+      "mobileVia": [
+        "api.converseAI"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/converse/stream",
+      "file": "apps/backend/api_routes.py",
+      "line": 4985,
+      "handler": "converse_ai_stream",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/converse/stream/files",
+      "file": "apps/backend/api_routes.py",
+      "line": 4995,
+      "handler": "converse_ai_stream_files",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/transcribe",
+      "file": "apps/backend/api_routes.py",
+      "line": 5021,
+      "handler": "transcribe_question",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/backup",
+      "file": "apps/backend/api_routes.py",
+      "line": 5056,
+      "handler": "trigger_admin_backup",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/backup/status",
+      "file": "apps/backend/api_routes.py",
+      "line": 5117,
+      "handler": "get_backup_status",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/backup/snapshots/{file}",
+      "file": "apps/backend/api_routes.py",
+      "line": 5144,
+      "handler": "download_backup_snapshot",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/webhook/test",
+      "file": "apps/backend/api_routes.py",
+      "line": 5156,
+      "handler": "test_webhook",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/export",
+      "file": "apps/backend/api_routes.py",
+      "line": 5223,
+      "handler": "export_all_contacts_csv",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/sync/state",
+      "file": "apps/backend/api_routes.py",
+      "line": 5247,
+      "handler": "get_sync_state",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getSyncState"
+      ],
+      "status": "used",
+      "fake": {
+        "kind": "fake",
+        "detail": "Marked \"Mock sync state\": always 0 pending / 0 failed and \"last synced\" = now. Not used by the apps any more (the phone reads its own outbox)."
+      },
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/planner/events",
+      "file": "apps/backend/api_routes.py",
+      "line": 5429,
+      "handler": "planner_list_events",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/planner/events",
+      "file": "apps/backend/api_routes.py",
+      "line": 5435,
+      "handler": "planner_create_event",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/planner/events/{event_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 5452,
+      "handler": "planner_update_event",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/planner/events/{event_id}",
+      "file": "apps/backend/api_routes.py",
+      "line": 5481,
+      "handler": "planner_delete_event",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/planner/events/{event_id}/team",
+      "file": "apps/backend/api_routes.py",
+      "line": 5495,
+      "handler": "planner_set_team",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/planner/events/{event_id}/announce",
+      "file": "apps/backend/api_routes.py",
+      "line": 5533,
+      "handler": "planner_announce",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/planner/extract",
+      "file": "apps/backend/api_routes.py",
+      "line": 5557,
+      "handler": "planner_extract",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/planner/discovery",
+      "file": "apps/backend/api_routes.py",
+      "line": 5602,
+      "handler": "planner_discovery_status",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "file": "apps/backend/app.py",
+      "line": 2979,
+      "handler": "root",
+      "access": "public",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/health/",
+      "file": "apps/backend/app.py",
+      "line": 2984,
+      "handler": "health_check",
+      "access": "public",
+      "usedBy": [
+        "external"
+      ],
+      "externalUse": "Docker health check (docker-compose.yml)",
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/debug",
+      "file": "apps/backend/app.py",
+      "line": 3052,
+      "handler": "debug_info",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "note": "Public diagnostic output — remove or lock down.",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/user/validate",
+      "file": "apps/backend/app.py",
+      "line": 3096,
+      "handler": "validate_user",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/register/",
+      "file": "apps/backend/app.py",
+      "line": 3138,
+      "handler": "register_user",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.register"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/login/",
+      "file": "apps/backend/app.py",
+      "line": 3183,
+      "handler": "login_user",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.login"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/auth/linkedin/url",
+      "file": "apps/backend/app.py",
+      "line": 3231,
+      "handler": "get_linkedin_auth_endpoint",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getLinkedInAuthUrl"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/auth/linkedin/callback",
+      "file": "apps/backend/app.py",
+      "line": 3244,
+      "handler": "linkedin_oauth_callback",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.exchangeLinkedInCode"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/auth/linkedin/link",
+      "file": "apps/backend/app.py",
+      "line": 3341,
+      "handler": "get_linkedin_link_status",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getLinkedInLinkStatus"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/auth/linkedin/link",
+      "file": "apps/backend/app.py",
+      "line": 3361,
+      "handler": "link_linkedin_account",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.linkLinkedIn"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/auth/password/set",
+      "file": "apps/backend/app.py",
+      "line": 3442,
+      "handler": "set_account_password",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.setPassword"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/auth/linkedin/unlink",
+      "file": "apps/backend/app.py",
+      "line": 3476,
+      "handler": "unlink_linkedin_account",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.unlinkLinkedIn"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/auth/password/forgot",
+      "file": "apps/backend/app.py",
+      "line": 3583,
+      "handler": "request_password_reset",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.requestPasswordReset"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/auth/password/reset",
+      "file": "apps/backend/app.py",
+      "line": 3650,
+      "handler": "reset_password_with_code",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.resetPassword"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/auth/session",
+      "file": "apps/backend/app.py",
+      "line": 3720,
+      "handler": "check_session",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.checkSession"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/auth/refresh",
+      "file": "apps/backend/app.py",
+      "line": 3740,
+      "handler": "refresh_auth_token",
+      "access": "public",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.refreshToken"
+      ],
+      "status": "used",
+      "newlyUsedInMobile": true,
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/add_contact/",
+      "file": "apps/backend/app.py",
+      "line": 3773,
+      "handler": "add_contact_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/add_contact_from_image/",
+      "file": "apps/backend/app.py",
+      "line": 3792,
+      "handler": "add_contact_image_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.addContactFromImage"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/scan_qr/",
+      "file": "apps/backend/app.py",
+      "line": 3821,
+      "handler": "scan_qr_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.scanQRCode"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/generate_qr/",
+      "file": "apps/backend/app.py",
+      "line": 3832,
+      "handler": "generate_qr_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/search/",
+      "file": "apps/backend/app.py",
+      "line": 3841,
+      "handler": "search_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/list_contacts/",
+      "file": "apps/backend/app.py",
+      "line": 3853,
+      "handler": "list_contacts_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/contact/{contact_id}",
+      "file": "apps/backend/app.py",
+      "line": 3912,
+      "handler": "get_contact_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/contact/{contact_id}",
+      "file": "apps/backend/app.py",
+      "line": 3962,
+      "handler": "delete_contact_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "PUT",
+      "path": "/contact/{contact_id}",
+      "file": "apps/backend/app.py",
+      "line": 4008,
+      "handler": "update_contact_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/converse/",
+      "file": "apps/backend/app.py",
+      "line": 4391,
+      "handler": "converse_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.converse"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/converse/stream/",
+      "file": "apps/backend/app.py",
+      "line": 4409,
+      "handler": "converse_stream_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.converseStream"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/converse/with_files/",
+      "file": "apps/backend/app.py",
+      "line": 4448,
+      "handler": "converse_with_files_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.converseWithFiles"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/converse/with_files/stream/",
+      "file": "apps/backend/app.py",
+      "line": 4470,
+      "handler": "converse_with_files_stream_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.converseStream"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/export_contacts/",
+      "file": "apps/backend/app.py",
+      "line": 4493,
+      "handler": "export_contacts_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.exportContacts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/contact/{contact_id}/enrich",
+      "file": "apps/backend/app.py",
+      "line": 4602,
+      "handler": "enrich_contact_route",
+      "access": "user",
+      "usedBy": [
+        "external"
+      ],
+      "externalUse": "n8n enrichment webhook",
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/user/profile/",
+      "file": "apps/backend/app.py",
+      "line": 4686,
+      "handler": "get_user_profile_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getProfile"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "PUT",
+      "path": "/user/profile/",
+      "file": "apps/backend/app.py",
+      "line": 4707,
+      "handler": "update_user_profile_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.updateProfile"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/dashboard",
+      "file": "apps/backend/app.py",
+      "line": 4780,
+      "handler": "get_dashboard",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getDashboard"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/contact/{contact_id}/score",
+      "file": "apps/backend/app.py",
+      "line": 5150,
+      "handler": "score_contact_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/contacts/score_all",
+      "file": "apps/backend/app.py",
+      "line": 5201,
+      "handler": "score_all_contacts_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/dashboard",
+      "file": "apps/backend/app.py",
+      "line": 5258,
+      "handler": "dashboard_route",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getDashboard"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/shared_contacts/",
+      "file": "apps/backend/app.py",
+      "line": 5315,
+      "handler": "list_shared_contacts",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/models/",
+      "file": "apps/backend/app.py",
+      "line": 5356,
+      "handler": "list_models",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/import_exhibitors/",
+      "file": "apps/backend/app.py",
+      "line": 5375,
+      "handler": "import_exhibitors_route",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/exhibitors/",
+      "file": "apps/backend/app.py",
+      "line": 5428,
+      "handler": "list_exhibitors_route",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/exhibitors/categories/",
+      "file": "apps/backend/app.py",
+      "line": 5476,
+      "handler": "list_exhibitor_categories",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/users",
+      "file": "apps/backend/app.py",
+      "line": 5501,
+      "handler": "admin_list_users",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/contacts",
+      "file": "apps/backend/app.py",
+      "line": 5577,
+      "handler": "admin_list_contacts",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/activity",
+      "file": "apps/backend/app.py",
+      "line": 5681,
+      "handler": "admin_activity_feed",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/contact/{contact_id}",
+      "file": "apps/backend/app.py",
+      "line": 5720,
+      "handler": "admin_delete_contact",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/users/merge",
+      "file": "apps/backend/app.py",
+      "line": 5769,
+      "handler": "admin_merge_users",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/contacts/merge",
+      "file": "apps/backend/app.py",
+      "line": 5871,
+      "handler": "admin_merge_contacts",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/contacts/duplicates",
+      "file": "apps/backend/app.py",
+      "line": 5917,
+      "handler": "admin_find_duplicates",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/contacts/batch_delete",
+      "file": "apps/backend/app.py",
+      "line": 6036,
+      "handler": "admin_batch_delete_contacts",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/webhook/test",
+      "file": "apps/backend/app.py",
+      "line": 6074,
+      "handler": "test_webhook_connection",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/dashboard",
+      "file": "apps/backend/app.py",
+      "line": 6133,
+      "handler": "admin_dashboard",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/test_webhook",
+      "file": "apps/backend/app.py",
+      "line": 6227,
+      "handler": "admin_test_webhook",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/files/upload",
+      "file": "apps/backend/app.py",
+      "line": 6284,
+      "handler": "upload_event_file",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/files/list",
+      "file": "apps/backend/app.py",
+      "line": 6351,
+      "handler": "list_event_files",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/files/download/{file_id}",
+      "file": "apps/backend/app.py",
+      "line": 6398,
+      "handler": "download_event_file",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/files/{file_id}",
+      "file": "apps/backend/app.py",
+      "line": 6441,
+      "handler": "delete_event_file",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/contact/{contact_id}/audio_note",
+      "file": "apps/backend/app.py",
+      "line": 6479,
+      "handler": "add_audio_note",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/transcribe_audio/",
+      "file": "apps/backend/app.py",
+      "line": 6554,
+      "handler": "transcribe_audio",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.transcribeAudio"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/user/card/",
+      "file": "apps/backend/app.py",
+      "line": 6619,
+      "handler": "get_user_card",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "PUT",
+      "path": "/user/card/",
+      "file": "apps/backend/app.py",
+      "line": 6654,
+      "handler": "update_user_card",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/user/card/generate_token/",
+      "file": "apps/backend/app.py",
+      "line": 6718,
+      "handler": "generate_card_token",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/card/{token}",
+      "file": "apps/backend/app.py",
+      "line": 6779,
+      "handler": "view_card_public",
+      "access": "public",
+      "usedBy": [],
+      "status": "unused",
+      "note": "Old card page on a retired domain; the app uses /c/{token}.",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/contact/{contact_id}/accepted",
+      "file": "apps/backend/app.py",
+      "line": 6809,
+      "handler": "contact_accepted_webhook",
+      "access": "user",
+      "usedBy": [
+        "external"
+      ],
+      "externalUse": "n8n / ChampMail callback webhook",
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/admin/search",
+      "file": "apps/backend/app.py",
+      "line": 6888,
+      "handler": "admin_search_contacts",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/broadcast",
+      "file": "apps/backend/app.py",
+      "line": 6952,
+      "handler": "admin_send_broadcast",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/broadcasts/active",
+      "file": "apps/backend/app.py",
+      "line": 6989,
+      "handler": "get_active_broadcasts",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/broadcasts/{broadcast_id}/dismiss",
+      "file": "apps/backend/app.py",
+      "line": 7028,
+      "handler": "dismiss_broadcast",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "PUT",
+      "path": "/admin/contact/{contact_id}/note",
+      "file": "apps/backend/app.py",
+      "line": 7057,
+      "handler": "admin_update_contact_note",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/export",
+      "file": "apps/backend/app.py",
+      "line": 7092,
+      "handler": "admin_export_all_contacts",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/contact/{contact_id}/files",
+      "file": "apps/backend/app.py",
+      "line": 7179,
+      "handler": "upload_contact_file",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/contact/{contact_id}/files",
+      "file": "apps/backend/app.py",
+      "line": 7241,
+      "handler": "list_contact_files",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/contact/files/download/{file_id}",
+      "file": "apps/backend/app.py",
+      "line": 7281,
+      "handler": "download_contact_file",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/contact/files/{file_id}",
+      "file": "apps/backend/app.py",
+      "line": 7323,
+      "handler": "delete_contact_file",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/backup",
+      "file": "apps/backend/app.py",
+      "line": 7356,
+      "handler": "admin_trigger_backup",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/backup/status",
+      "file": "apps/backend/app.py",
+      "line": 7368,
+      "handler": "admin_backup_status",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/contact/{contact_id}/pipeline/run",
+      "file": "apps/backend/app.py",
+      "line": 7419,
+      "handler": "trigger_pipeline",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/contact/{contact_id}/pipeline/retry",
+      "file": "apps/backend/app.py",
+      "line": 7457,
+      "handler": "retry_pipeline",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/pipelines",
+      "file": "apps/backend/app.py",
+      "line": 7484,
+      "handler": "admin_list_pipelines",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/pipeline/settings",
+      "file": "apps/backend/app.py",
+      "line": 7544,
+      "handler": "admin_pipeline_settings",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/contact_lists",
+      "file": "apps/backend/app.py",
+      "line": 7571,
+      "handler": "create_contact_list",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/contact_lists",
+      "file": "apps/backend/app.py",
+      "line": 7591,
+      "handler": "get_contact_lists",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "POST",
+      "path": "/admin/contact_lists/{list_id}/contacts",
+      "file": "apps/backend/app.py",
+      "line": 7627,
+      "handler": "add_contacts_to_list",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/admin/contact_lists/{list_id}/contacts",
+      "file": "apps/backend/app.py",
+      "line": 7671,
+      "handler": "get_contacts_in_list",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/contact_lists/{list_id}",
+      "file": "apps/backend/app.py",
+      "line": 7716,
+      "handler": "delete_contact_list",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/admin/contact_lists/{list_id}/contacts/{contact_id}",
+      "file": "apps/backend/app.py",
+      "line": 7739,
+      "handler": "remove_contact_from_list",
+      "access": "admin",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/contact/{contact_id}/pipeline",
+      "file": "apps/backend/app.py",
+      "line": 7763,
+      "handler": "get_pipeline_status_enhanced",
+      "access": "user",
+      "usedBy": [],
+      "status": "unused",
+      "legacy": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/card",
+      "file": "apps/backend/card_routes.py",
+      "line": 120,
+      "handler": "get_my_card",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getMyCard"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/me/business-card",
+      "file": "apps/backend/card_routes.py",
+      "line": 140,
+      "handler": "get_my_business_card",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.getMyBusinessCard"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/me/card/reset-link",
+      "file": "apps/backend/card_routes.py",
+      "line": 157,
+      "handler": "reset_my_card_link",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.resetMyCardLink"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/c/{token}/contact.vcf",
+      "file": "apps/backend/card_routes.py",
+      "line": 176,
+      "handler": "my_card_vcard",
+      "access": "public",
+      "usedBy": [
+        "external"
+      ],
+      "externalUse": "Linked from the public card page",
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/c/{token}/card.png",
+      "file": "apps/backend/card_routes.py",
+      "line": 192,
+      "handler": "my_card_png",
+      "access": "public",
+      "usedBy": [
+        "external"
+      ],
+      "externalUse": "Linked from the public card page",
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/c/{token}",
+      "file": "apps/backend/card_routes.py",
+      "line": 204,
+      "handler": "my_card_page",
+      "access": "public",
+      "usedBy": [
+        "external"
+      ],
+      "externalUse": "Public \"my card\" page (link people open)",
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/crm",
+      "file": "apps/backend/crm_routes.py",
+      "line": 74,
+      "handler": "list_crms",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/crm/{key}/test",
+      "file": "apps/backend/crm_routes.py",
+      "line": 85,
+      "handler": "test_crm",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/crm/{key}/csv",
+      "file": "apps/backend/crm_routes.py",
+      "line": 98,
+      "handler": "crm_csv",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/crm/{key}/push",
+      "file": "apps/backend/crm_routes.py",
+      "line": 117,
+      "handler": "start_push",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/crm/jobs/{job_id}",
+      "file": "apps/backend/crm_routes.py",
+      "line": 142,
+      "handler": "get_job",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/crm/jobs/{job_id}/cancel",
+      "file": "apps/backend/crm_routes.py",
+      "line": 150,
+      "handler": "cancel_job",
+      "access": "admin",
+      "usedBy": [
+        "admin"
+      ],
+      "adminIn": [
+        "apps/admin/src/lib/api.ts"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/contacts/{contact_id}/share-links",
+      "file": "apps/backend/share_routes.py",
+      "line": 101,
+      "handler": "create_share_link",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.createShareLink"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/contacts/{contact_id}/share-links",
+      "file": "apps/backend/share_routes.py",
+      "line": 142,
+      "handler": "list_share_links",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.listShareLinks"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/contacts/{contact_id}/share-links/{token}",
+      "file": "apps/backend/share_routes.py",
+      "line": 160,
+      "handler": "revoke_share_link",
+      "access": "user",
+      "usedBy": [
+        "mobile"
+      ],
+      "mobileVia": [
+        "api.revokeShareLink"
+      ],
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/api/shared/{token}",
+      "file": "apps/backend/share_routes.py",
+      "line": 229,
+      "handler": "shared_contact_json",
+      "access": "public",
+      "usedBy": [],
+      "status": "unused",
+      "note": "JSON version of a shared contact; the /s/{token} page is rendered on the server instead.",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/s/{token}/contact.vcf",
+      "file": "apps/backend/share_routes.py",
+      "line": 235,
+      "handler": "shared_contact_vcard",
+      "access": "public",
+      "usedBy": [
+        "external"
+      ],
+      "externalUse": "Linked from the shared-contact page",
+      "status": "used",
+      "legacy": false
+    },
+    {
+      "method": "GET",
+      "path": "/s/{token}",
+      "file": "apps/backend/share_routes.py",
+      "line": 317,
+      "handler": "shared_contact_page",
+      "access": "public",
+      "usedBy": [
+        "external"
+      ],
+      "externalUse": "Public shared-contact page (link people open)",
+      "status": "used",
+      "legacy": false
+    }
+  ]
+}

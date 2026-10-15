@@ -1,0 +1,23 @@
+{
+  "extends": "../../packages/config/tsconfig/rn.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {
+      "react": ["./node_modules/@types/react"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "@es/types": ["../../packages/types/src/index.ts"],
+      "@es/types/*": ["../../packages/types/src/*"]
+    }
+  },
+  "include": [
+    "app/**/*",
+    "src/**/*",
+    "*.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/node_modules/*"
+  ]
+}
