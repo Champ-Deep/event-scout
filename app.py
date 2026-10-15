@@ -2978,9 +2978,8 @@ async def export_contacts_route(
     format: str = Query("csv", description="Export format: csv or json"),
     api_key: str = Depends(verify_api_key),
 ):
-    import csv
-    from io import StringIO
     from fastapi.responses import StreamingResponse
+    from export_csv import CONTACT_CSV_HEADERS, build_csv, contact_rows
 
     session = await get_db_session()
     try:
@@ -3023,30 +3022,10 @@ async def export_contacts_route(
                 })
             return {"status": "success", "total": len(contact_list), "contacts": contact_list}
 
-        # CSV export
-        output = StringIO()
-        writer = csv.writer(output)
-        writer.writerow([
-            "Name", "Email", "Phone", "LinkedIn", "Company", "Event",
-            "Notes", "Source", "Lead Score", "Lead Temperature",
-            "Research Summary", "Pitch Email Subject", "Gamma Deck URL",
-        ])
-        for c in contacts:
-            pip = pipeline_map.get(str(c.id))
-            writer.writerow([
-                c.name, c.email or "N/A", c.phone or "N/A",
-                c.linkedin or "N/A", c.company_name or "N/A",
-                getattr(c, 'event_name', '') or "",
-                (c.notes or "").replace("\n", " "), c.source or "manual",
-                c.lead_score or "", c.lead_temperature or "",
-                (pip.research_summary or "").replace("\n", " ") if pip else "",
-                (pip.pitch_email_subject or "") if pip else "",
-                (getattr(pip, 'gamma_deck_url', '') or "") if pip else "",
-            ])
-
-        output.seek(0)
+        # CSV export (UTF-8 BOM, formula-injection guard; headers auto-map
+        # into Harbinger's contacts ingest)
         return StreamingResponse(
-            iter([output.getvalue()]),
+            iter([build_csv(CONTACT_CSV_HEADERS, contact_rows(contacts, pipeline_map))]),
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=event_scout_contacts.csv"},
         )
@@ -5236,8 +5215,7 @@ async def admin_export_all_contacts(
 ):
     """Export all contacts across all users as CSV."""
     from fastapi.responses import StreamingResponse
-    import csv
-    import io
+    from export_csv import ADMIN_CSV_HEADERS, admin_contact_rows, build_csv
 
     session = await get_db_session()
     try:
@@ -5264,35 +5242,8 @@ async def admin_export_all_contacts(
                 if cid not in pipeline_map:  # keep only latest per contact
                     pipeline_map[cid] = p
 
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow([
-            "Name", "Email", "Phone", "LinkedIn", "Company", "Event",
-            "Notes", "Admin Notes", "Lead Score", "Lead Temperature",
-            "Source", "Scanned By", "Created At",
-            "Research Summary", "Pitch Angle", "Pitch Email Subject", "Gamma Deck URL",
-        ])
-
-        for c in contacts:
-            pip = pipeline_map.get(str(c.id))
-            writer.writerow([
-                c.name or "", c.email or "", c.phone or "", c.linkedin or "",
-                c.company_name or "", getattr(c, 'event_name', '') or "",
-                (c.notes or "").replace("\n", " "),
-                (getattr(c, 'admin_notes', '') or "").replace("\n", " "),
-                c.lead_score or "", c.lead_temperature or "",
-                c.source or "manual",
-                user_map.get(str(c.user_id), "Unknown"),
-                c.created_at.isoformat() if c.created_at else "",
-                (pip.research_summary or "").replace("\n", " ") if pip else "",
-                (pip.pitch_angle or "").replace("\n", " ") if pip else "",
-                (pip.pitch_email_subject or "") if pip else "",
-                (getattr(pip, 'gamma_deck_url', '') or "") if pip else "",
-            ])
-
-        output.seek(0)
         return StreamingResponse(
-            iter([output.getvalue()]),
+            iter([build_csv(ADMIN_CSV_HEADERS, admin_contact_rows(contacts, pipeline_map, user_map))]),
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment; filename=event_scout_all_contacts_{datetime.now().strftime('%Y%m%d')}.csv"}
         )
