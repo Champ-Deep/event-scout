@@ -314,6 +314,8 @@ class ExhibitorDB(Base):
     tags = Column(JSON, default=list)
     # None = from the admin's directory import; a user id = a booth a rep added from the app.
     added_by = Column(UUID(as_uuid=True), nullable=True)
+    source = Column(String(20), default="import")  # import | scrape | app; a rescrape replaces only "scrape" rows
+    profile_url = Column(String(500), default="")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     __table_args__ = (
@@ -518,6 +520,14 @@ class ManagedEventDB(Base):
     details = Column(JSON, default=dict)
     source = Column(String(20), nullable=False, default="manual")
     source_url = Column(String(500), default="")
+    # server-side scrape of `website` (event_scrape_service): the floor map link and the exhibitor directory page found
+    floor_map_url = Column(String(500), default="")
+    exhibitors_url = Column(String(500), default="")
+    scrape_status = Column(String(20), default="idle")  # idle | running | ok | partial | failed
+    scrape_method = Column(String(20), default="")      # heuristic | llm | mixed
+    scrape_error = Column(Text, default="")             # reason code + short message, no stack
+    scraped_at = Column(DateTime(timezone=True), nullable=True)
+    scrape_stats = Column(JSON, default=dict)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
@@ -721,6 +731,15 @@ async def _init_schema(eng, label="Primary"):
                     "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS job_title VARCHAR(255)",
                     "ALTER TABLE deleted_contacts ADD COLUMN IF NOT EXISTS reason VARCHAR(255)",
                     "ALTER TABLE exhibitors ADD COLUMN IF NOT EXISTS added_by UUID",
+                    "ALTER TABLE exhibitors ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'import'",
+                    "ALTER TABLE exhibitors ADD COLUMN IF NOT EXISTS profile_url VARCHAR(500) DEFAULT ''",
+                    "ALTER TABLE managed_events ADD COLUMN IF NOT EXISTS floor_map_url VARCHAR(500) DEFAULT ''",
+                    "ALTER TABLE managed_events ADD COLUMN IF NOT EXISTS exhibitors_url VARCHAR(500) DEFAULT ''",
+                    "ALTER TABLE managed_events ADD COLUMN IF NOT EXISTS scrape_status VARCHAR(20) DEFAULT 'idle'",
+                    "ALTER TABLE managed_events ADD COLUMN IF NOT EXISTS scrape_method VARCHAR(20) DEFAULT ''",
+                    "ALTER TABLE managed_events ADD COLUMN IF NOT EXISTS scrape_error TEXT DEFAULT ''",
+                    "ALTER TABLE managed_events ADD COLUMN IF NOT EXISTS scraped_at TIMESTAMP WITH TIME ZONE",
+                    "ALTER TABLE managed_events ADD COLUMN IF NOT EXISTS scrape_stats JSONB DEFAULT '{}'::jsonb",
                     "ALTER TABLE admin_broadcasts ADD COLUMN IF NOT EXISTS ended_at TIMESTAMP WITH TIME ZONE",
                     "ALTER TABLE admin_broadcasts ADD COLUMN IF NOT EXISTS event_id UUID",
                     "ALTER TABLE contact_pipelines ADD COLUMN IF NOT EXISTS admin_run BOOLEAN DEFAULT FALSE NOT NULL",
@@ -763,6 +782,15 @@ async def _init_schema(eng, label="Primary"):
                 exhibitor_cols = {row[1] for row in (await conn.execute(text("PRAGMA table_info(exhibitors)"))).fetchall()}
                 if exhibitor_cols and "added_by" not in exhibitor_cols:
                     await conn.execute(text("ALTER TABLE exhibitors ADD COLUMN added_by CHAR(32)"))
+                for col, ddl in (("source", "VARCHAR(20) DEFAULT 'import'"), ("profile_url", "VARCHAR(500) DEFAULT ''")):
+                    if exhibitor_cols and col not in exhibitor_cols:
+                        await conn.execute(text(f"ALTER TABLE exhibitors ADD COLUMN {col} {ddl}"))
+                event_cols = {row[1] for row in (await conn.execute(text("PRAGMA table_info(managed_events)"))).fetchall()}
+                for col, ddl in (("floor_map_url", "VARCHAR(500) DEFAULT ''"), ("exhibitors_url", "VARCHAR(500) DEFAULT ''"),
+                                 ("scrape_status", "VARCHAR(20) DEFAULT 'idle'"), ("scrape_method", "VARCHAR(20) DEFAULT ''"),
+                                 ("scrape_error", "TEXT DEFAULT ''"), ("scraped_at", "DATETIME"), ("scrape_stats", "JSON")):
+                    if event_cols and col not in event_cols:
+                        await conn.execute(text(f"ALTER TABLE managed_events ADD COLUMN {col} {ddl}"))
 
                 broadcast_cols = {row[1] for row in (await conn.execute(text("PRAGMA table_info(admin_broadcasts)"))).fetchall()}
                 if broadcast_cols and "ended_at" not in broadcast_cols:

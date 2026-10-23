@@ -35,6 +35,7 @@ from database import (
 from sanitize import safe_csv_writer  # noqa: E402
 import identity
 import event_identity
+import event_scrape_service
 import contact_view
 import contact_store
 import scoring
@@ -1830,6 +1831,9 @@ def kick_industry_classification() -> None:
     t = asyncio.create_task(classify_company_industries())
     _industry_tasks.add(t)
     t.add_done_callback(_industry_tasks.discard)
+
+
+event_scrape_service.notify = broadcast_live_event
 
 
 async def _dashboard_range(session: AsyncSession, days: int, tz_offset: int) -> Dict[str, Any]:
@@ -3895,7 +3899,7 @@ async def add_booth(payload: BoothPayload, session: AsyncSession = Depends(get_d
             booth=_one_line(payload.booth, 100), hall=_one_line(payload.hall, 100),
             category=_one_line(payload.category, 500), website=_one_line(payload.website, 500),
             description=(payload.description or "").strip(), country="", subcategory="",
-            products=[], tags=[], added_by=added_by, created_at=datetime.now(timezone.utc),
+            products=[], tags=[], added_by=added_by, source="app", created_at=datetime.now(timezone.utc),
         )
         session.add(row)
     else:
@@ -4863,6 +4867,7 @@ class PlannerEventPayload(BaseModel):
     industry: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = Field(None, max_length=5000)
     details: Optional[Dict[str, Any]] = None
+    floorMapUrl: Optional[str] = Field(None, max_length=500)  # the admin's own link; a rescrape never overwrites it
 
 
 class PlannerTeamPayload(BaseModel):
@@ -4944,6 +4949,9 @@ async def _planner_rows(session: AsyncSession, only: Optional[uuid.UUID] = None)
             "website": e.website or "", "organizer": e.organizer or "", "industry": e.industry or "",
             "description": e.description or "", "details": e.details or {},
             "source": e.source, "sourceUrl": e.source_url or "",
+            "floorMapUrl": e.floor_map_url or "", "exhibitorsUrl": e.exhibitors_url or "",
+            "scrape": {"status": e.scrape_status or "idle", "method": e.scrape_method or "", "error": e.scrape_error or "",
+                       "scrapedAt": _iso(e.scraped_at), "stats": e.scrape_stats or {}},
             "createdBy": users[e.created_by].name if e.created_by in users else None,
             "createdAt": _iso(e.created_at), "updatedAt": _iso(e.updated_at),
             "team": members, "files": files.get(_key(e.name), []), "contactsMet": met.get(_key(e.name), 0),
@@ -4983,6 +4991,8 @@ def _apply_event_fields(e: "ManagedEventDB", p: PlannerEventPayload) -> None:
             setattr(e, attr, _one_line(val, n))
     if p.website is not None:
         e.website = _clean_website(p.website)
+    if p.floorMapUrl is not None:
+        e.floor_map_url = _clean_website(p.floorMapUrl)
     if p.description is not None:
         e.description = p.description.strip()
     if p.details is not None:
@@ -5009,6 +5019,8 @@ async def planner_create_event(payload: PlannerEventPayload, session: AsyncSessi
     session.add(e)
     await session.commit()
     await broadcast_live_event("event_planned", {"id": str(e.id), "name": e.name})
+    if e.website:
+        event_scrape_service.kick_event_scrape(e.id)  # background; a scrape failure never fails the save
     return (await _planner_rows(session, e.id))[0]
 
 
@@ -5017,7 +5029,7 @@ async def planner_update_event(event_id: str, payload: PlannerEventPayload, sess
     """Update any detail. A rename also renames the event's files and the team's app event lists
     (contacts already met there keep the name they were captured with)."""
     e = await _load_planner_event(session, event_id)
-    old = e.name
+    old, old_site = e.name, e.website
     if payload.name is not None:
         name = _one_line(payload.name, 255)
         if not name:
@@ -5057,7 +5069,27 @@ async def planner_update_event(event_id: str, payload: PlannerEventPayload, sess
     e.updated_at = datetime.now(timezone.utc)
     await session.commit()
     await broadcast_live_event("event_planned", {"id": str(e.id), "name": e.name})
+    if e.website and e.website != old_site:
+        event_scrape_service.kick_event_scrape(e.id)
     return (await _planner_rows(session, e.id))[0]
+
+
+@api_router.post("/admin/planner/events/{event_id}/scrape", dependencies=[Depends(require_admin)], status_code=202)
+async def planner_scrape_event(event_id: str, session: AsyncSession = Depends(get_db)):
+    """Scrape the event's website again (retry, or after the site went live)."""
+    e = await _load_planner_event(session, event_id)
+    if not e.website:
+        raise HTTPException(status_code=400, detail="Add the event's website first")
+    if event_scrape_service.is_running(e.id):
+        raise HTTPException(status_code=409, detail="A scrape is already running for this event")
+    event_scrape_service.kick_event_scrape(e.id, manual=True)
+    return {"status": "running"}
+
+
+@api_router.get("/admin/planner/events/{event_id}/scrape", dependencies=[Depends(require_admin)])
+async def planner_scrape_status(event_id: str, session: AsyncSession = Depends(get_db)):
+    e = await _load_planner_event(session, event_id)
+    return (await _planner_rows(session, e.id))[0]["scrape"]
 
 
 @api_router.delete("/admin/planner/events/{event_id}", dependencies=[Depends(require_admin)])
@@ -5217,7 +5249,7 @@ async def my_planned_events(scope: Optional[str] = Query(None), session: AsyncSe
         lead = next((m["name"] for m in r["team"] if m["role"] == "lead"), None)
         out.append({
             **{k: r[k] for k in ("id", "name", "status", "startDate", "endDate", "venue", "address", "city", "country",
-                                 "website", "organizer", "industry", "description", "details", "updatedAt")},
+                                 "website", "organizer", "industry", "description", "details", "updatedAt", "floorMapUrl")},
             "myRole": mine.get(e.id),  # "lead" | "member" | None (in your list, not on the team)
             "lead": lead,
             "team": [{"name": m["name"], "role": m["role"]} for m in r["team"]],
