@@ -32,6 +32,7 @@ import google.generativeai as genai
 from sqlalchemy import select, update, delete, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import scan_analysis
 from database import (
     UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB, UserCardDB, EventFileDB,
     ContactFileDB, ContactPipelineDB, AdminBroadcastDB, ContactListDB, ContactListMemberDB, Base,
@@ -2549,6 +2550,55 @@ async def add_contact_image_route(
                 detail="AI processing timed out. Please try again."
             )
         raise HTTPException(status_code=500, detail=f"Failed to process card: {error_msg}")
+
+
+class ScanAnalyzeRequest(BaseModel):
+    contact: Contact
+    user_id: str
+
+
+@app.post("/scan/extract")
+async def scan_extract_route(
+    file: UploadFile = File(...),
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key),
+):
+    """Hi-Fi scan flow step 1: read the card, return fields, save nothing (the user confirms them first)."""
+    content = await file.read()
+    if len(content) < 1000:
+        raise HTTPException(status_code=400, detail="Image file is empty or corrupted.")
+    path = os.path.join(TEMP_DIR, f"{uuid.uuid4()}.png")
+    with open(path, "wb") as f:
+        f.write(content)
+    try:
+        try:
+            fields = await asyncio.wait_for(asyncio.to_thread(extract_contact_from_image_with_gemini, path), timeout=20)
+        except asyncio.TimeoutError:
+            fields = {}
+        keys = ("name", "email", "phone", "linkedin", "company_name")
+        if not any(fields.get(k, "N/A") != "N/A" for k in keys):
+            fields = await extract_contact_with_openrouter(path)
+        if not any(fields.get(k, "N/A") != "N/A" for k in keys):
+            raise HTTPException(status_code=422, detail="No contact information found in the image.")
+        return {"fields": {k: fields.get(k, "N/A") for k in keys}}
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+@app.post("/scan/analyze")
+async def scan_analyze_route(request: ScanAnalyzeRequest, api_key: str = Depends(verify_api_key)):
+    """Hi-Fi scan flow step 3: local, profile-personalised score and reasoning for unsaved fields."""
+    session = await get_db_session()
+    try:
+        res = await session.execute(select(UserProfileDB).where(UserProfileDB.user_id == uuid.UUID(request.user_id)))
+        row = res.scalar_one_or_none()
+        profile = row.profile_data if row else {}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user_id")
+    finally:
+        await session.close()
+    return await asyncio.to_thread(scan_analysis.analyze, request.contact.model_dump(), profile)
 
 
 @app.post("/scan_qr/")
