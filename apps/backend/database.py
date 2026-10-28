@@ -76,6 +76,7 @@ class UserDB(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False, server_default="false")
+    export_presets = Column(JSON, default=list)  # admin console export presets [{name, columns, filters}]
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     # LinkedIn OpenID Connect identity (`sub` claim) connected to this account, if any
     linkedin_sub = Column(String(255), unique=True, nullable=True, index=True)
@@ -705,6 +706,7 @@ async def _init_schema(eng, label="Primary"):
             if not is_sqlite:
                 migrations = [
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE NOT NULL",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS export_presets JSONB DEFAULT '[]'::jsonb",
                     "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS audio_notes JSONB DEFAULT '[]'::jsonb",
                     "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS admin_notes TEXT DEFAULT ''",
                     "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS photo_base64 TEXT",
