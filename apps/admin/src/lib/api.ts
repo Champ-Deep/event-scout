@@ -167,13 +167,19 @@ export const api = {
   downloadContactFile: (fileId: string) =>
     get<{ filename: string; mimeType: string; contentBase64: string }>(`/api/contact/files/${fileId}/download`).then(checked(fileContentSchema, 'GET /api/contact/files/{id}/download')),
   /** contacts CSV built on the server (no row cap): everything, or narrowed by event / rep / min score / list */
-  exportAll: async (f: { event?: string | undefined; userId?: string | undefined; minScore?: number | undefined; listId?: string | undefined } = {}): Promise<{ blob: Blob; filename: string; rows: number | null }> => {
-    const res = await apiFetch(`/api/admin/export${qs(f)}`);
+  exportAll: async (f: ExportFilters & { columns?: string[] } = {}): Promise<{ blob: Blob; filename: string; rows: number | null }> => {
+    if (f.columns && !f.columns.length) throw new ApiError('Select at least one column.', 400);
+    const res = await apiFetch(`/api/admin/export${qs({ ...f, columns: f.columns?.join(',') })}`);
     if (!res.ok) throw new ApiError(await errorText(res), res.status);
     const cd = res.headers.get('content-disposition') || '';
     const filename = /filename="([^"]+)"/.exec(cd)?.[1] || 'eventscout-contacts.csv';
     const rows = res.headers.get('x-row-count');
     return { blob: await res.blob(), filename, rows: rows == null ? null : Number(rows) };
+  },
+
+  exportPresets: {
+    get: () => get<ExportPresetConfig>('/api/admin/export-presets'),
+    put: (presets: ExportPreset[]) => put<ExportPresetConfig>('/api/admin/export-presets', { presets }),
   },
 
   // recently deleted (every rep's; restorable for 30 days, restored to the owner)
@@ -402,3 +408,5 @@ export const api = {
 };
 
 export type ExportFilters = { event?: string | undefined; userId?: string | undefined; minScore?: number | undefined; listId?: string | undefined };
+export type ExportPreset = { name: string; columns: string[]; filters: ExportFilters; builtin?: boolean };
+export type ExportPresetConfig = { columns: string[]; default: string[]; presets: ExportPreset[] };

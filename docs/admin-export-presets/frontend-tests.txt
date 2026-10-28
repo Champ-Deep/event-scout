@@ -1,0 +1,32 @@
+Now using node v24.13.1 (npm v11.10.1)
+
+> event-scout-admin@0.1.0 test /Users/deep/.worktrees/event-scout-admin-exports/apps/admin
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.2 [39m[90m/Users/deep/.worktrees/event-scout-admin-exports/apps/admin[39m
+
+ [32m✓[39m src/lib/levels.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/features/contacts/selection.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m src/lib/optimistic.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m src/lib/search.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m src/features/contacts/table.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/lib/contract.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/lib/changes.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/ui/format.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m src/features/contacts/pipelineSteps.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/features/contacts/draft.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/features/contacts/csv.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m src/features/exports/ContactExport.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 199[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m      Tests [22m [1m[32m112 passed[39m[22m[90m (112)[39m
+[2m   Start at [22m 03:02:10
+[2m   Duration [22m 1.38s[2m (environment 72%, transform 14%, import 10%, tests 3%)[22m
+
+
+> event-scout-admin@0.1.0 typecheck /Users/deep/.worktrees/event-scout-admin-exports/apps/admin
+> tsc --noEmit
+
+Error while loading conda entry point: anaconda-auth (No module named 'pydantic_core._pydantic_core')
+Error while loading conda entry point: conda-anaconda-tos (No module named 'pydantic_core._pydantic_core')
