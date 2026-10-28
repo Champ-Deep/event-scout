@@ -123,6 +123,12 @@ class TestContactRows:
         row = contact_rows([c], {})[0]
         assert row[6] == "a b"
 
+    def test_title_and_website_from_scan(self):
+        c = self._contact(title="VP Sales", links=[{"url": "acme.com", "label": "Website", "added_by": "scan"}])
+        row = contact_rows([c], {})[0]
+        assert row[13] == "VP Sales" and row[14] == "acme.com"
+        assert contact_rows([self._contact()], {})[0][13:] == ["", ""]
+
 
 class TestHarbingerHeaderMapping:
     def test_identity_headers_auto_map(self):
@@ -134,7 +140,8 @@ class TestHarbingerHeaderMapping:
 
     def test_no_header_maps_to_the_wrong_field(self):
         expected = {"Name": "personname", "Email": "email",
-                    "LinkedIn": "linkedin", "Company": "company"}
+                    "LinkedIn": "linkedin", "Company": "company",
+                    "Title": "title", "Website": "domain"}
         for h in CONTACT_CSV_HEADERS:
             got = _header_field(h)
             if h in expected:

@@ -1,0 +1,243 @@
+{
+ "summary": [
+  {
+   "candidate": "gemini:gemini-2.0-flash",
+   "n": 3,
+   "field_acc": {
+    "name": 0.0,
+    "title": 0.0,
+    "company_name": 0.0,
+    "email": 0.0,
+    "phone": 0.0,
+    "linkedin": 0.0,
+    "website": 0.0
+   },
+   "legacy_card_acc": 0.0,
+   "full_card_acc": 0.0,
+   "mean_field_acc": 0.0,
+   "lat_p50": 0.7049130001105368,
+   "lat_p95": 0.7049130001105368,
+   "cost_total": 0.0,
+   "errors": 3,
+   "first_error": "NOT_FOUND: This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for th"
+  },
+  {
+   "candidate": "or:google/gemini-2.5-flash",
+   "n": 3,
+   "field_acc": {
+    "name": 0.0,
+    "title": 0.0,
+    "company_name": 0.0,
+    "email": 0.0,
+    "phone": 0.0,
+    "linkedin": 0.0,
+    "website": 0.0
+   },
+   "legacy_card_acc": 0.0,
+   "full_card_acc": 0.0,
+   "mean_field_acc": 0.0,
+   "lat_p50": 0.4273781250230968,
+   "lat_p95": 0.4273781250230968,
+   "cost_total": 0.0,
+   "errors": 3,
+   "first_error": "{'message': 'User not found.', 'code': 401}"
+  },
+  {
+   "candidate": "tesseract:local",
+   "n": 3,
+   "field_acc": {
+    "name": 1.0,
+    "title": 1.0,
+    "company_name": 1.0,
+    "email": 0.6666666666666666,
+    "phone": 1.0,
+    "linkedin": 0.6666666666666666,
+    "website": 0.0
+   },
+   "legacy_card_acc": 0.6666666666666666,
+   "full_card_acc": 0.0,
+   "mean_field_acc": 0.7619047619047619,
+   "lat_p50": 0.7728755830321461,
+   "lat_p95": 0.7728755830321461,
+   "cost_total": 0.0,
+   "errors": 0,
+   "first_error": null
+  }
+ ],
+ "detail": {
+  "gemini:gemini-2.0-flash": [
+   {
+    "image": "c01_hard.jpg",
+    "latency": 0.534267625072971,
+    "cost": 0.0,
+    "error": "NOT_FOUND: This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for th",
+    "correct": {
+     "name": false,
+     "title": false,
+     "company_name": false,
+     "email": false,
+     "phone": false,
+     "linkedin": false,
+     "website": false
+    },
+    "pred": {}
+   },
+   {
+    "image": "c01_photo.jpg",
+    "latency": 0.7049130001105368,
+    "cost": 0.0,
+    "error": "NOT_FOUND: This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for th",
+    "correct": {
+     "name": false,
+     "title": false,
+     "company_name": false,
+     "email": false,
+     "phone": false,
+     "linkedin": false,
+     "website": false
+    },
+    "pred": {}
+   },
+   {
+    "image": "c01.png",
+    "latency": 0.8615774579811841,
+    "cost": 0.0,
+    "error": "NOT_FOUND: This model models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for th",
+    "correct": {
+     "name": false,
+     "title": false,
+     "company_name": false,
+     "email": false,
+     "phone": false,
+     "linkedin": false,
+     "website": false
+    },
+    "pred": {}
+   }
+  ],
+  "or:google/gemini-2.5-flash": [
+   {
+    "image": "c01_hard.jpg",
+    "latency": 0.4273781250230968,
+    "cost": 0.0,
+    "error": "{'message': 'User not found.', 'code': 401}",
+    "correct": {
+     "name": false,
+     "title": false,
+     "company_name": false,
+     "email": false,
+     "phone": false,
+     "linkedin": false,
+     "website": false
+    },
+    "pred": {}
+   },
+   {
+    "image": "c01_photo.jpg",
+    "latency": 0.39508508308790624,
+    "cost": 0.0,
+    "error": "{'message': 'User not found.', 'code': 401}",
+    "correct": {
+     "name": false,
+     "title": false,
+     "company_name": false,
+     "email": false,
+     "phone": false,
+     "linkedin": false,
+     "website": false
+    },
+    "pred": {}
+   },
+   {
+    "image": "c01.png",
+    "latency": 0.4902874589897692,
+    "cost": 0.0,
+    "error": "{'message': 'User not found.', 'code': 401}",
+    "correct": {
+     "name": false,
+     "title": false,
+     "company_name": false,
+     "email": false,
+     "phone": false,
+     "linkedin": false,
+     "website": false
+    },
+    "pred": {}
+   }
+  ],
+  "tesseract:local": [
+   {
+    "image": "c01.png",
+    "latency": 0.7872726668138057,
+    "cost": 0.0,
+    "error": null,
+    "correct": {
+     "name": true,
+     "title": true,
+     "company_name": true,
+     "email": true,
+     "phone": true,
+     "linkedin": true,
+     "website": false
+    },
+    "pred": {
+     "name": "Priya Raghunathan",
+     "title": "VP, Clinical Operations",
+     "company_name": "Medanta Health Systems",
+     "email": "priya.r@medanta-health.com",
+     "phone": "+91 98450 12345",
+     "linkedin": "linkedin.com/in/priyaraghunathan",
+     "website": "health.com"
+    }
+   },
+   {
+    "image": "c01_photo.jpg",
+    "latency": 0.7237013338599354,
+    "cost": 0.0,
+    "error": null,
+    "correct": {
+     "name": true,
+     "title": true,
+     "company_name": true,
+     "email": true,
+     "phone": true,
+     "linkedin": true,
+     "website": false
+    },
+    "pred": {
+     "name": "Priya Raghunathan",
+     "title": "VP, Clinical Operations",
+     "company_name": "Medanta Health Systems",
+     "email": "priya.r@medanta-health.com",
+     "phone": "+91 98450 12345",
+     "linkedin": "linkedin.com/in/priyaraghunathan",
+     "website": "health.com"
+    }
+   },
+   {
+    "image": "c01_hard.jpg",
+    "latency": 0.7728755830321461,
+    "cost": 0.0,
+    "error": null,
+    "correct": {
+     "name": true,
+     "title": true,
+     "company_name": true,
+     "email": false,
+     "phone": true,
+     "linkedin": false,
+     "website": false
+    },
+    "pred": {
+     "name": "Priya Raghunathan",
+     "title": "VP, Clinical Operations",
+     "company_name": "Medanta Health Systems",
+     "email": "",
+     "phone": "+91 98450 12345",
+     "linkedin": "",
+     "website": ""
+    }
+   }
+  ]
+ }
+}

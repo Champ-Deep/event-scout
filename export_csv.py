@@ -15,6 +15,7 @@ CONTACT_CSV_HEADERS = [
     "Name", "Email", "Phone", "LinkedIn", "Company", "Event",
     "Notes", "Source", "Lead Score", "Lead Temperature",
     "Research Summary", "Pitch Email Subject", "Gamma Deck URL",
+    "Title", "Website",  # Harbinger: Title -> title, Website -> domain
 ]
 
 ADMIN_CSV_HEADERS = [
@@ -58,8 +59,18 @@ def contact_rows(contacts, pipeline_map):
             (pip.research_summary or "").replace("\n", " ") if pip else "",
             (pip.pitch_email_subject or "") if pip else "",
             (getattr(pip, "gamma_deck_url", "") or "") if pip else "",
+            getattr(c, "title", "") or "",
+            website_of(c),
         ])
     return rows
+
+
+def website_of(contact):
+    """First link the scanner labelled Website, else empty."""
+    for link in getattr(contact, "links", None) or []:
+        if isinstance(link, dict) and link.get("label") == "Website" and link.get("url"):
+            return link["url"]
+    return ""
 
 
 def admin_contact_rows(contacts, pipeline_map, user_map):
