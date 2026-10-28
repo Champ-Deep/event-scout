@@ -1,0 +1,23 @@
+[
+  {
+    "width": 375,
+    "interaction_checks": "passed",
+    "editor_dash_count": 0,
+    "page_width": 375,
+    "header_overflow": []
+  },
+  {
+    "width": 768,
+    "interaction_checks": "passed",
+    "editor_dash_count": 0,
+    "page_width": 807,
+    "header_overflow": []
+  },
+  {
+    "width": 1440,
+    "interaction_checks": "passed",
+    "editor_dash_count": 0,
+    "page_width": 1440,
+    "header_overflow": []
+  }
+]

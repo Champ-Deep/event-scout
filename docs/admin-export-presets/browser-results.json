@@ -1,0 +1,2844 @@
+{
+  "header": "Name,Title,Company,Email,Phone,LinkedIn,Website,Event,Notes,Score,Level,Source",
+  "console_errors": [],
+  "viewports": [
+    {
+      "theme": "light",
+      "width": 375,
+      "scoped_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "heading",
+          "message": "no <h1> on the page",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        }
+      ],
+      "full_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.67:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.67:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"JSON\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "28x28px, minimum is 44px",
+          "where": "button.inline-flex.shrink-0 \"Toggle Sidebar\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "36x32px, minimum is 44px",
+          "where": "button.inline-flex.h-8"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "56x32px, minimum is 44px",
+          "where": "button.relative.inline-flex"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "32x32px, minimum is 44px",
+          "where": "button.flex.h-8"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "select.h-9.cursor-pointer \"The latest 500 events Last 7 days Last 30 da\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "351x36px, minimum is 44px",
+          "where": "select.h-9.cursor-pointer \"Hot & warm leads (70+) All contacts One even\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "button.flex.h-9 \"HubSpot CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "button.flex.h-9 \"Salesforce CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "button.flex.h-9 \"Zoho CRM CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "button.flex.h-9 \"Pipedrive CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "ios-zoom",
+          "message": "input font-size below 16px triggers zoom-on-focus in iOS Safari",
+          "where": "select.h-9.cursor-pointer \"The latest 500 events Last 7 days Last 30 da\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "ios-zoom",
+          "message": "input font-size below 16px triggers zoom-on-focus in iOS Safari",
+          "where": "select.h-9.cursor-pointer \"Hot & warm leads (70+) All contacts One even\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.inline-flex.shrink-0 \"Toggle Sidebar\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"CSV Team 2 persons\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"JSON Activity log Pick one below\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED HubSpot 0 contacts \u2192 contacts\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Salesforce 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Zoho CRM 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Pipedrive 0 contacts \u2192 persons\""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "glass-count",
+          "message": "4 blurred surfaces; cap at two per screen",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"not connected\" appears 4 times",
+          "where": ""
+        }
+      ],
+      "editor_overflow": []
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "scoped_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "overflow",
+          "message": "page scrolls horizontally: 807px content in a 768px viewport",
+          "where": ""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "heading",
+          "message": "no <h1> on the page",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        }
+      ],
+      "full_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.01:1 against its actual background, needs 4.5:1 (12px)",
+          "where": "span.truncate.text-xs \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa@example\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.32:1 against its actual background, needs 4.5:1 (11px)",
+          "where": "span.es-eyebrow.flex \"TODAY\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.67:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.67:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"JSON\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "tap-target",
+          "message": "16x1024px, minimum is 24px",
+          "where": "button.absolute.inset-y-0"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"left\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"right\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"OVERVIEW\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"LEADS\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"EVENT\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"TEAM\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"TOOLS\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_1h_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_1h_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_1h_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.absolute.inset-y-0"
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.inline-flex.shrink-0 \"Toggle Sidebar\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "overflow",
+          "message": "page scrolls horizontally: 807px content in a 768px viewport",
+          "where": "div.flex.h-8 \"TODAY 1 met 0 hot\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "header.sticky.top-0 \"Toggle Sidebar Search or jump to\u2026 K TODAY 1 \""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"CSV Team 2 persons\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"JSON Activity log Pick one below\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED HubSpot 0 contacts \u2192 contacts\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Salesforce 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Zoho CRM 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Pipedrive 0 contacts \u2192 persons\""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "glass-count",
+          "message": "4 blurred surfaces; cap at two per screen",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"not connected\" appears 4 times",
+          "where": ""
+        }
+      ],
+      "editor_overflow": []
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "scoped_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "heading",
+          "message": "no <h1> on the page",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        }
+      ],
+      "full_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.01:1 against its actual background, needs 4.5:1 (12px)",
+          "where": "span.truncate.text-xs \"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa@example\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.32:1 against its actual background, needs 4.5:1 (11px)",
+          "where": "span.es-eyebrow.flex \"TODAY\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.67:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.67:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"JSON\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "2.21:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "tap-target",
+          "message": "16x1000px, minimum is 24px",
+          "where": "button.absolute.inset-y-0"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"left\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"right\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"OVERVIEW\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"LEADS\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"EVENT\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"TEAM\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"TOOLS\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_1h_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_1h_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_1h_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.absolute.inset-y-0"
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.inline-flex.shrink-0 \"Toggle Sidebar\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"CSV Team 2 persons\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"JSON Activity log Pick one below\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED HubSpot 0 contacts \u2192 contacts\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Salesforce 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Zoho CRM 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Pipedrive 0 contacts \u2192 persons\""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "glass-count",
+          "message": "4 blurred surfaces; cap at two per screen",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "WARN",
+          "rule": "measure",
+          "message": "line length about 96 characters; cap body text near 65",
+          "where": "p.es-in.max-w-2xl \"Download your data as spreadsheets (CSV open\""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"not connected\" appears 4 times",
+          "where": ""
+        }
+      ],
+      "editor_overflow": []
+    },
+    {
+      "theme": "dark",
+      "width": 375,
+      "scoped_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "heading",
+          "message": "no <h1> on the page",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        }
+      ],
+      "full_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.03:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.03:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"JSON\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "28x28px, minimum is 44px",
+          "where": "button.inline-flex.shrink-0 \"Toggle Sidebar\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "36x32px, minimum is 44px",
+          "where": "button.inline-flex.h-8"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "56x32px, minimum is 44px",
+          "where": "button.relative.inline-flex"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "32x32px, minimum is 44px",
+          "where": "button.flex.h-8"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "select.h-9.cursor-pointer \"The latest 500 events Last 7 days Last 30 da\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "351x36px, minimum is 44px",
+          "where": "select.h-9.cursor-pointer \"Hot & warm leads (70+) All contacts One even\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "button.flex.h-9 \"HubSpot CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "button.flex.h-9 \"Salesforce CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "button.flex.h-9 \"Zoho CRM CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "tap-target",
+          "message": "309x36px, minimum is 44px",
+          "where": "button.flex.h-9 \"Pipedrive CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "ios-zoom",
+          "message": "input font-size below 16px triggers zoom-on-focus in iOS Safari",
+          "where": "select.h-9.cursor-pointer \"The latest 500 events Last 7 days Last 30 da\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "ios-zoom",
+          "message": "input font-size below 16px triggers zoom-on-focus in iOS Safari",
+          "where": "select.h-9.cursor-pointer \"Hot & warm leads (70+) All contacts One even\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.inline-flex.shrink-0 \"Toggle Sidebar\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"CSV Team 2 persons\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"JSON Activity log Pick one below\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED HubSpot 0 contacts \u2192 contacts\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Salesforce 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Zoho CRM 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Pipedrive 0 contacts \u2192 persons\""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "glass-count",
+          "message": "4 blurred surfaces; cap at two per screen",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"not connected\" appears 4 times",
+          "where": ""
+        }
+      ],
+      "editor_overflow": []
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "scoped_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "overflow",
+          "message": "page scrolls horizontally: 807px content in a 768px viewport",
+          "where": ""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "heading",
+          "message": "no <h1> on the page",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        }
+      ],
+      "full_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.03:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.03:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"JSON\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "tap-target",
+          "message": "16x1024px, minimum is 24px",
+          "where": "button.absolute.inset-y-0"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"left\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"right\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"OVERVIEW\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"LEADS\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"EVENT\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"TEAM\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"TOOLS\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_27_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_27_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_27_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.absolute.inset-y-0"
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.inline-flex.shrink-0 \"Toggle Sidebar\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "overflow",
+          "message": "page scrolls horizontally: 807px content in a 768px viewport",
+          "where": "div.flex.h-8 \"TODAY 1 met 0 hot\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "header.sticky.top-0 \"Toggle Sidebar Search or jump to\u2026 K TODAY 1 \""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"CSV Team 2 persons\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"JSON Activity log Pick one below\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED HubSpot 0 contacts \u2192 contacts\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Salesforce 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Zoho CRM 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Pipedrive 0 contacts \u2192 persons\""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "glass-count",
+          "message": "4 blurred surfaces; cap at two per screen",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"not connected\" appears 4 times",
+          "where": ""
+        }
+      ],
+      "editor_overflow": []
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "scoped_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "heading",
+          "message": "no <h1> on the page",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        }
+      ],
+      "full_audit": [
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.10:1 against its actual background, needs 4.5:1 (14px)",
+          "where": "span.relative.min-w-0 \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.03:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"CSV\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "contrast",
+          "message": "1.03:1 against its actual background, needs 4.5:1 (10.5px bold)",
+          "where": "span.inline-flex.items-center \"JSON\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "tap-target",
+          "message": "16x1000px, minimum is 24px",
+          "where": "button.absolute.inset-y-0"
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"left\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"right\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "div.fixed.inset-y-0 \"EventScout FLOOR CONTROL OVERVIEW Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"EventScout FLOOR CONTROL\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"OVERVIEW\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Live board\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Activity\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"LEADS\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Contacts\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Duplicates\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Recently deleted\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Lists\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI pipelines\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Sales profile\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"EVENT\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Events\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team files\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Announcements\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"TEAM\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Team & seats\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"margin\" forces layout every frame; use transform or opacity",
+          "where": "div.flex.h-8 \"TOOLS\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"AI assistant\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"Exports\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "a.peer/menu-button.flex \"System\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"width\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_27_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"height\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_27_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "FAIL",
+          "rule": "layout-animation",
+          "message": "animating \"padding\" forces layout every frame; use transform or opacity",
+          "where": "button#radix-_r_27_ \"EQ Export QA Admin aaaaaaaa-aaaa-4aaa-8aaa-a\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.absolute.inset-y-0"
+        },
+        {
+          "severity": "WARN",
+          "rule": "transition-all",
+          "message": "transition: all animates unknown properties; list them",
+          "where": "button.inline-flex.shrink-0 \"Toggle Sidebar\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"CSV Team 2 persons\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"JSON Activity log Pick one below\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED HubSpot 0 contacts \u2192 contacts\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Salesforce 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Zoho CRM 0 contacts \u2192 leads\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "flex-truncation",
+          "message": "flex child overflows; it needs min-width: 0 to allow truncation",
+          "where": "div.relative.isolate \"NOT CONNECTED Pipedrive 0 contacts \u2192 persons\""
+        },
+        {
+          "severity": "INFO",
+          "rule": "skip-link",
+          "message": "no \"skip to content\" link found",
+          "where": ""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "static-glass",
+          "message": "frosted glass on an element that never floats over scrolling content",
+          "where": "span.inline-flex.items-center \"NOT CONNECTED\""
+        },
+        {
+          "severity": "WARN",
+          "rule": "glass-count",
+          "message": "4 blurred surfaces; cap at two per screen",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "em-dash",
+          "message": "2 em-dash(es) in copy; a recognisable generated-text tell",
+          "where": ""
+        },
+        {
+          "severity": "WARN",
+          "rule": "measure",
+          "message": "line length about 96 characters; cap body text near 65",
+          "where": "p.es-in.max-w-2xl \"Download your data as spreadsheets (CSV open\""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"up\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"down\" appears 12 times",
+          "where": ""
+        },
+        {
+          "severity": "INFO",
+          "rule": "cta-repetition",
+          "message": "\"not connected\" appears 4 times",
+          "where": ""
+        }
+      ],
+      "editor_overflow": []
+    }
+  ]
+}

@@ -343,11 +343,73 @@ ADMIN_EXPORT_HEADER = ["ID", "Name", "Title", "Company", "Email", "Phone", "Link
 def admin_export_row(c: ContactDB, owner: str) -> list:
     """The console's CSV export row (ADMIN_EXPORT_HEADER). `c.console_score` = the admin score
     (set by api_routes.admin_export_contacts)."""
-    score = getattr(c, "console_score", None)
-    return [str(c.id), c.name, present(c.job_title) or "", present(c.company_name) or "", present(c.email) or "", present(c.phone) or "",
-            present(c.linkedin) or "", c.event_name or "", owner or "", "" if score is None else score,
-            level_for(score) or "", "" if c.lead_score is None else c.lead_score,
-            c.source or "", c.notes or "", iso(c.created_at) or ""]
+    return [ADMIN_EXPORT_COLUMNS[h](c, owner) for h in ADMIN_EXPORT_HEADER]
+
+
+def website_of(c: ContactDB) -> str:
+    """First link the scanner labelled Website, else empty."""
+    for link in c.links or []:
+        if isinstance(link, dict) and link.get("label") == "Website" and link.get("url"):
+            return link["url"]
+    return ""
+
+
+def _console_score(c):
+    return getattr(c, "console_score", None)
+
+
+# Every column an admin can put in a contact export, by its header. ADMIN_EXPORT_HEADER is the default
+# order; `columns=` on GET /api/admin/export picks and orders from this registry.
+ADMIN_EXPORT_COLUMNS = {
+    "ID": lambda c, o: str(c.id),
+    "Name": lambda c, o: c.name,
+    "Title": lambda c, o: present(c.job_title) or "",
+    "Company": lambda c, o: present(c.company_name) or "",
+    "Email": lambda c, o: present(c.email) or "",
+    "Phone": lambda c, o: present(c.phone) or "",
+    "LinkedIn": lambda c, o: present(c.linkedin) or "",
+    "Website": lambda c, o: website_of(c),
+    "Event": lambda c, o: c.event_name or "",
+    "Owner": lambda c, o: o or "",
+    "Score": lambda c, o: "" if _console_score(c) is None else _console_score(c),
+    "Level": lambda c, o: level_for(_console_score(c)) or "",
+    "Rep score": lambda c, o: "" if c.lead_score is None else c.lead_score,
+    "Source": lambda c, o: c.source or "",
+    "Notes": lambda c, o: c.notes or "",
+    "Added On": lambda c, o: iso(c.created_at) or "",
+}
+
+# Built-in preset: headers Harbinger's contacts import auto-maps (Name, Title, Company, Email, LinkedIn, Website -> domain).
+HARBINGER_PRESET = {"name": "ChampHarbinger", "builtin": True, "filters": {},
+                    "columns": ["Name", "Title", "Company", "Email", "Phone", "LinkedIn", "Website", "Event", "Notes", "Score", "Level", "Source"]}
+PRESET_FILTER_KEYS = ("event", "userId", "minScore", "listId")
+
+
+def parse_export_columns(raw: Optional[str]) -> List[str]:
+    """`columns=` query -> ordered headers. None/empty -> the default header. Unknown header -> ValueError."""
+    if not raw or not raw.strip():
+        return list(ADMIN_EXPORT_HEADER)
+    cols = [x.strip() for x in raw.split(",") if x.strip()]
+    bad = [x for x in cols if x not in ADMIN_EXPORT_COLUMNS]
+    if bad or not cols:
+        raise ValueError(f"Unknown export columns: {', '.join(bad) or '(none given)'}. Known: {', '.join(ADMIN_EXPORT_COLUMNS)}")
+    return list(dict.fromkeys(cols))  # keep order, drop repeats
+
+
+def validate_presets(presets) -> List[dict]:
+    """Admin's saved presets as stored: [{name, columns, filters}]. Raises ValueError on a bad one."""
+    if not isinstance(presets, list) or len(presets) > 50:
+        raise ValueError("presets must be a list of at most 50")
+    out, seen = [], set()
+    for p in presets:
+        name = str((p or {}).get("name", "")).strip()[:60]
+        if not name or name.lower() in seen or name == HARBINGER_PRESET["name"]:
+            raise ValueError(f"preset name missing, repeated or reserved: {name!r}")
+        seen.add(name.lower())
+        cols = parse_export_columns(",".join(str(c) for c in (p.get("columns") or [])))
+        filters = {k: v for k, v in (p.get("filters") or {}).items() if k in PRESET_FILTER_KEYS and v not in (None, "")}
+        out.append({"name": name, "columns": cols, "filters": filters})
+    return out
 
 
 def crm_view(c: ContactDB, owner: str) -> Dict[str, Any]:

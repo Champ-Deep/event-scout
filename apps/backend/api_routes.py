@@ -4822,20 +4822,48 @@ async def export_all_contacts_csv(
     userId: Optional[str] = Query(None, description="only this rep's contacts"),
     minScore: Optional[int] = Query(None, ge=0, le=100, description="only contacts scoring at least this (e.g. 70 = hot & warm)"),
     listId: Optional[str] = Query(None, description="only the members of this contact list"),
+    columns: Optional[str] = Query(None, description="comma-separated headers to include, in order (default: every column). See GET /api/admin/export-presets for the list"),
     session: AsyncSession = Depends(get_db),
 ):
     """Contacts as a CSV file (opens in Excel / Google Sheets): every contact, or narrowed by event,
     rep, minimum score or list. No row cap — the file always has every matching contact."""
     import csv
+    try:
+        headers = contact_view.parse_export_columns(columns)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     contacts, parts, owners = await admin_export_contacts(session, event, userId, minScore, listId)
     buf = io.StringIO()
     w = safe_csv_writer(buf)  # formula-injection safe (sanitize.py)
-    w.writerow(contact_view.ADMIN_EXPORT_HEADER)
+    w.writerow(headers)
     for c in contacts:
-        w.writerow(contact_view.admin_export_row(c, owners.get(c.user_id, "")))
+        owner = owners.get(c.user_id, "")
+        w.writerow([contact_view.ADMIN_EXPORT_COLUMNS[h](c, owner) for h in headers])
     return Response(content="\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="{export_filename(parts)}"',
                              "X-Row-Count": str(len(contacts)), "Access-Control-Expose-Headers": "Content-Disposition, X-Row-Count"})
+
+
+# Export presets: per admin, saved on their user row. The ChampHarbinger preset is built in and always first.
+@api_router.get("/admin/export-presets")
+async def list_export_presets(admin_id: uuid.UUID = Depends(require_admin), session: AsyncSession = Depends(get_db)):
+    """Every column the export can carry, the default order, and this admin's presets (built-in first)."""
+    saved = (await session.execute(select(UserDB.export_presets).where(UserDB.id == admin_id))).scalar_one_or_none() or []
+    return {"columns": list(contact_view.ADMIN_EXPORT_COLUMNS), "default": list(contact_view.ADMIN_EXPORT_HEADER),
+            "presets": [contact_view.HARBINGER_PRESET] + [dict(p, builtin=False) for p in saved]}
+
+
+@api_router.put("/admin/export-presets")
+async def save_export_presets(body: dict = Body(...), admin_id: uuid.UUID = Depends(require_admin),
+                              session: AsyncSession = Depends(get_db)):
+    """Replace this admin's saved presets: {"presets": [{name, columns, filters}]}. Built-in ones are not stored."""
+    try:
+        presets = contact_view.validate_presets([p for p in (body.get("presets") or []) if not (p or {}).get("builtin")])
+    except (ValueError, AttributeError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    await session.execute(update(UserDB).where(UserDB.id == admin_id).values(export_presets=presets))
+    await session.commit()
+    return await list_export_presets(admin_id, session)
 
 
 # ==================== ADMIN · EVENT PLANNER ====================

@@ -1,6 +1,5 @@
-// /exports — every file is built from the live database when you click:
-//   contacts (all · hot & warm · one event · one rep · a list)  GET /api/admin/export[?event|userId|minScore|listId]
-//                                                               (server-side CSV, no row cap, same columns every time)
+// /exports: every file is built from the live database when you click.
+//   contacts: configurable columns and filters via GET /api/admin/export
 //   team        GET /api/admin/users            activity  GET /api/admin/activity?limit=500[&start&end]
 // Pickers come from the API too: every event (GET /api/admin/events), people (users), lists.
 import React, { useEffect, useState } from 'react';
@@ -12,8 +11,9 @@ import { addDays, dayKey, localDayRange } from '../lib/dates';
 import { Icon, type IconName } from '../ui/icons';
 import { AnimatedNumber } from '../ui/micro';
 import { MOTION } from '../ui/tokens';
-import { PageHeader, Select, deep, errorMessage, fmtNum, ink, useUi } from '../ui/kit';
+import { Button, PageHeader, Select, deep, errorMessage, fmtNum, ink, useUi } from '../ui/kit';
 import { CrmSection } from '../features/exports/CrmSection';
+import { ContactExport } from '../features/exports/ContactExport';
 
 const csvCell = (v: unknown) => { const s = v == null ? '' : String(v); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const stamp = () => dayKey(new Date());
@@ -100,61 +100,21 @@ export function ExportsComponent() {
   // every event with contacts (not just the dashboard's top 6)
   const allEvents = useQuery(q.adminEvents());
   const events = (allEvents.data ?? []).filter((e) => e.contacts > 0).sort((a, b) => b.contacts - a.contacts);
-  const [event, setEvent] = useState('');
-  const [rep, setRep] = useState('');
-  const [list, setList] = useState('');
+
   const [activityDays, setActivityDays] = useState<'latest' | '7' | '30' | '90'>('latest');
   // set when the last period export hit the server's cap (it holds only the newest events)
   const [activityCapped, setActivityCapped] = useState<number | null>(null);
   const d = dash.data;
 
-  /** a contacts CSV from the server; tells the admin how many rows it really had */
-  const serverCsv = async (f: Parameters<typeof api.exportAll>[0]) => {
-    const { blob, filename, rows } = await api.exportAll(f);
-    if (rows === 0) { toast('info', 'Nothing to export', 'No contacts match.'); return; }
-    saveBlob(blob, filename);
-    toast('success', rows != null ? `Exported ${fmtNum(rows)} contact${rows === 1 ? '' : 's'}` : 'Export downloaded', filename);
-  };
-
   return (
     <>
-      <PageHeader title="Exports" description="Download your data as spreadsheets (CSV opens in Excel and Google Sheets) or JSON. Every file is built from the live database when you click — never cut off." />
+      <PageHeader title="Exports" description="Download your data as spreadsheets (CSV opens in Excel and Google Sheets) or JSON. Every file is built from the live database when you click." />
+      {allEvents.isError ? <div className="mb-3 flex flex-wrap items-center gap-2">
+        <p role="alert" className="text-sm text-destructive">Could not load events: {errorMessage(allEvents.error)}</p>
+        <Button onClick={() => void allEvents.refetch()}>Retry events</Button>
+      </div> : null}
+      <ContactExport events={events} users={users.data || []} lists={lists.data || []} />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <ExportCard index={0} icon="contacts" tint="var(--brand-600)" title="All contacts" format="CSV" count={d?.totalContacts}
-          description="Every contact in the workspace with title, company, email, phone, LinkedIn, event, owner, score, level, source and notes."
-          onExport={() => serverCsv({})} />
-
-        <ExportCard index={1} icon="flame" tint="#ef4444" title="Hot & warm leads" format="CSV" count={d ? d.levels.hot + d.levels.warm : undefined}
-          description="Every lead scoring 70 or more, best first — ready to import into your CRM."
-          onExport={() => serverCsv({ minScore: 70 })} />
-
-        <ExportCard index={2} icon="calendar" tint="#0ea5e9" title="One event" format="CSV" count={events.find((e) => e.name === event)?.contacts}
-          description="Everyone met at an event." disabled={!event}
-          onExport={() => serverCsv({ event })}>
-          <Select value={event} onChange={(e) => setEvent(e.target.value)} aria-label="Event" disabled={allEvents.isLoading}>
-            <option value="">{allEvents.isLoading ? 'Loading events…' : allEvents.isError ? "Couldn't load events" : events.length ? 'Choose an event…' : 'No events with contacts yet'}</option>
-            {events.map((e) => <option key={e.key} value={e.name}>{e.name} ({fmtNum(e.contacts)})</option>)}
-          </Select>
-        </ExportCard>
-
-        <ExportCard index={3} icon="user" tint="#10b981" title="One rep's contacts" format="CSV" count={users.data?.find((u) => u.id === rep)?.contactsCount}
-          description="Everything a single team member captured." disabled={!rep}
-          onExport={() => serverCsv({ userId: rep })}>
-          <Select value={rep} onChange={(e) => setRep(e.target.value)} aria-label="Rep">
-            <option value="">{users.data?.length ? 'Choose a person…' : 'No one yet'}</option>
-            {(users.data || []).map((u) => <option key={u.id} value={u.id}>{u.name} ({fmtNum(u.contactsCount)})</option>)}
-          </Select>
-        </ExportCard>
-
-        <ExportCard index={4} icon="list" tint="#d946ef" title="A list" format="CSV" count={lists.data?.find((l) => l.id === list)?.memberCount}
-          description="The members of one of your lists." disabled={!list}
-          onExport={() => serverCsv({ listId: list })}>
-          <Select value={list} onChange={(e) => setList(e.target.value)} aria-label="List">
-            <option value="">{lists.data?.length ? 'Choose a list…' : 'No lists yet'}</option>
-            {(lists.data || []).map((l) => <option key={l.id} value={l.id}>{l.name} ({fmtNum(l.memberCount)})</option>)}
-          </Select>
-        </ExportCard>
-
         <ExportCard index={5} icon="users" tint="#f59e0b" title="Team" format="CSV" count={users.data?.length} countLabel="person"
           description="Everyone who can sign in, with role, contacts, added today, last activity and when they joined."
           onExport={async () => {
@@ -192,7 +152,7 @@ export function ExportsComponent() {
           ) : null}
         </ExportCard>
       </div>
-      <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground"><Icon name="info" size={13} />Contact files are built on the server with every matching row, and use the same columns each time.</p>
+
       <CrmSection totalContacts={d?.totalContacts} hotWarm={d ? d.levels.hot + d.levels.warm : undefined}
         events={events} users={users.data || []} lists={lists.data || []} />
     </>
