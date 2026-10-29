@@ -32,6 +32,8 @@ import google.generativeai as genai
 from sqlalchemy import select, update, delete, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from lead_scoring import score_contact
+from exhibitor_ranking import rank_exhibitors
 from database import (
     UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB, UserCardDB, EventFileDB,
     ContactFileDB, ContactPipelineDB, AdminBroadcastDB, ContactListDB, ContactListMemberDB, Base,
@@ -1389,82 +1391,7 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
             os.remove(temp_filename)
 
 
-# --- LEAD SCORING ---
-def score_contact_with_gemini(contact_meta: dict, user_profile: dict) -> dict:
-    if not GEMINI_API_KEY or not gemini_configured:
-        return {
-            "score": 50, "temperature": "warm",
-            "reasoning": "Gemini not configured.",
-            "recommended_actions": ["Configure Gemini API for AI-powered scoring"],
-            "breakdown": {"profile_fit": 10, "role_relevance": 10, "company_fit": 10, "engagement": 10, "timing": 10}
-        }
-
-    prompt = f"""You are a lead scoring expert. Score this contact against the user's profile and event context.
-
-USER PROFILE:
-- Company: {user_profile.get('company_name', 'N/A')}
-- Job Title: {user_profile.get('job_title', 'N/A')}
-- Products/Services: {json.dumps(user_profile.get('products', []))}
-- Target Industries: {json.dumps(user_profile.get('target_industries', []))}
-- Target Roles: {json.dumps(user_profile.get('target_roles', []))}
-- Target Company Sizes: {json.dumps(user_profile.get('target_company_sizes', []))}
-- Target Geographies: {json.dumps(user_profile.get('target_geographies', []))}
-- Value Propositions: {json.dumps(user_profile.get('value_propositions', []))}
-- Event: {user_profile.get('current_event_name', 'N/A')}
-- Event Goals: {json.dumps(user_profile.get('event_goals', []))}
-
-CONTACT:
-- Name: {contact_meta.get('name', 'N/A')}
-- Company: {contact_meta.get('company_name', 'N/A')}
-- Email: {contact_meta.get('email', 'N/A')}
-- Phone: {contact_meta.get('phone', 'N/A')}
-- LinkedIn: {contact_meta.get('linkedin', 'N/A')}
-- Notes: {contact_meta.get('notes', '')}
-
-Score this contact on 5 dimensions (each 0-20, total 0-100):
-1. profile_fit 2. role_relevance 3. company_fit 4. engagement 5. timing
-
-Return ONLY a valid JSON object:
-{{"score": <0-100>, "temperature": "<hot|warm|cold>", "reasoning": "<2-3 sentences>", "recommended_actions": ["action1", "action2", "action3"], "breakdown": {{"profile_fit": <0-20>, "role_relevance": <0-20>, "company_fit": <0-20>, "engagement": <0-20>, "timing": <0-20>}}}}
-
-Rules: hot >= 70, warm = 40-69, cold < 40. Return ONLY raw JSON."""
-
-    model_names = ['gemini-2.5-flash', 'gemini-2.0-flash']
-    for model_name in model_names:
-        try:
-            model = genai.GenerativeModel(model_name)
-            import google.generativeai.types as genai_types
-            request_options = genai_types.RequestOptions(timeout=30)
-            response = model.generate_content(prompt, request_options=request_options)
-            if not response or not response.text:
-                continue
-            response_text = response.text.strip()
-            if response_text.startswith("```"):
-                parts = response_text.split("```")
-                response_text = parts[1] if len(parts) > 1 else response_text
-                if response_text.startswith("json"):
-                    response_text = response_text[4:]
-                response_text = response_text.strip()
-            if not response_text.startswith("{"):
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                if json_start != -1 and json_end > json_start:
-                    response_text = response_text[json_start:json_end]
-            result = json.loads(response_text)
-            score = result.get("score", 50)
-            result["temperature"] = "hot" if score >= 70 else ("warm" if score >= 40 else "cold")
-            return result
-        except Exception as e:
-            print(f"[SCORING] Error with {model_name}: {e}")
-            continue
-
-    return {
-        "score": 50, "temperature": "warm",
-        "reasoning": "Scoring temporarily unavailable.",
-        "recommended_actions": ["Retry scoring later"],
-        "breakdown": {"profile_fit": 10, "role_relevance": 10, "company_fit": 10, "engagement": 10, "timing": 10}
-    }
-
+# --- LEAD SCORING: see lead_scoring.py ---
 
 # --- INTELLIGENCE PIPELINE ---
 
@@ -1744,14 +1671,7 @@ async def pipeline_step_score(pipeline_id, contact_id: str, user_id: str):
             "notes": contact.notes or "", "source": contact.source or "scan",
         }
 
-        try:
-            score_result = await asyncio.wait_for(
-                asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile),
-                timeout=30
-            )
-        except asyncio.TimeoutError:
-            print("[PIPELINE] Scoring hard timeout (30s) — using default score")
-            score_result = {"score": 50, "temperature": "warm", "reasoning": "Scoring timed out - manual review needed", "breakdown": {}, "recommended_actions": ["Manual review needed"]}
+        score_result = score_contact(contact_meta, user_profile)
 
         # Save scores to contact
         contact.lead_score = score_result.get("score")
@@ -3216,13 +3136,7 @@ async def score_contact_route(
             "email": c.email or "N/A", "phone": c.phone or "N/A",
             "linkedin": c.linkedin or "N/A", "notes": c.notes or "",
         }
-        try:
-            score_result = await asyncio.wait_for(
-                asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile),
-                timeout=30
-            )
-        except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="Scoring timed out — Gemini API unresponsive")
+        score_result = score_contact(contact_meta, user_profile)
 
         # Save score to DB
         c.lead_score = score_result["score"]
@@ -3293,10 +3207,7 @@ async def score_all_contacts_route(
                     "email": c.email or "N/A", "phone": c.phone or "N/A",
                     "linkedin": c.linkedin or "N/A", "notes": c.notes or "",
                 }
-                score_result = await asyncio.wait_for(
-                    asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile),
-                    timeout=30
-                )
+                score_result = score_contact(contact_meta, user_profile)
                 c.lead_score = score_result["score"]
                 c.lead_temperature = score_result["temperature"]
                 c.lead_score_reasoning = score_result["reasoning"]
@@ -3538,6 +3449,46 @@ async def list_exhibitors_route(
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/exhibitors/ranked/")
+async def ranked_exhibitors_route(
+    user_id: uuid.UUID = Query(..., description="User ID"),
+    event: str = Query("WHX Dubai 2026"),
+    search: str = Query(""),
+    category: str = Query("", description="Comma-separated categories"),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    api_key: str = Depends(verify_api_key),
+):
+    """Return the ranked feed in score order, using the stored user profile."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ExhibitorDB).where(ExhibitorDB.event_name == event)
+        )
+        exhibitors = [
+            {
+                "id": str(e.id), "name": e.name,
+                "booth": e.booth or "", "hall": e.hall or "",
+                "category": e.category or "", "subcategory": e.subcategory or "",
+                "country": e.country or "", "website": e.website or "",
+                "description": e.description or "",
+                "products": e.products or [], "tags": e.tags or [],
+            }
+            for e in result.scalars().all()
+        ]
+        result = await session.execute(
+            select(UserProfileDB).where(UserProfileDB.user_id == user_id)
+        )
+        profile = result.scalar_one_or_none()
+        ranked = rank_exhibitors(
+            exhibitors, profile.profile_data if profile else {},
+            q=search, categories=category.split(","), offset=offset, limit=limit,
+        )
+        return {"status": "success", **ranked}
     finally:
         await session.close()
 

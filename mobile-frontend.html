@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#667eea">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -294,6 +294,45 @@
             color: #16a34a;
             border-color: #bbf7d0;
         }
+        /* Scout feed. 21st.dev klyv-filter-bar is a visual reference only. */
+        #scoutScreen { color: #0f172a; min-height: 100%; }
+        #contentArea:has(#scoutScreen:not(.hidden)) { overflow-anchor: none; }
+        .feed-column { max-width: 42rem; margin-inline: auto; }
+        #feed-header { position: sticky; top: 0; z-index: 30; background: #fff; padding-top: env(safe-area-inset-top); border-bottom: 1px solid #e2e8f0; }
+        #feed-search-bar { padding: 16px 16px 8px; }
+        #feed-search-bar h1 { font-size: 24px; font-weight: 700; line-height: 1.3; }
+        #feed-search-bar p, #feed-summary { font-size: 14px; color: #475569; }
+        #feed-search-bar label { display: block; font-size: 14px; font-weight: 600; margin-top: 12px; }
+        #feed-search { width: 100%; min-height: 44px; border: 1px solid #64748b; border-radius: 8px; padding: 10px 12px; color: #0f172a; background: #fff; font-size: 16px; }
+        #feed-search::placeholder { color: #475569; opacity: 1; }
+        #feed-filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 16px 12px; max-height: 28vh; overflow-y: auto; }
+        #scoutScreen button { min-height: 44px; min-width: 44px; font-size: 16px; }
+        .feed-chip { border: 1px solid var(--primary); color: var(--primary-dark); background: #fff; padding: 8px 14px; border-radius: 999px; overflow-wrap: anywhere; }
+        .feed-chip[aria-pressed="true"], .feed-action { background: var(--primary); color: #fff; }
+        .feed-action { padding: 10px 16px; border-radius: 8px; margin-top: 16px; }
+        #scoutScreen :focus-visible, #scoutNavBtn:focus-visible { outline: 3px solid var(--primary-dark); outline-offset: 3px; }
+        #feed-summary { padding: 16px; }
+        .feed-row { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; padding: 20px 16px; border-top: 1px solid #e2e8f0; background: #fff; content-visibility: auto; contain-intrinsic-size: auto 210px; }
+        .feed-rank { color: #475569; font-size: 14px; padding-top: 4px; }
+        .feed-row-heading { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+        .feed-row h2 { font-size: 18px; line-height: 1.4; font-weight: 700; overflow-wrap: anywhere; min-width: 0; }
+        .score-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 4px 8px; font-size: 14px; font-weight: 600; white-space: nowrap; color: #0f172a; background: #e2e8f0; }
+        .score-badge[data-temperature="hot"] { background: var(--secondary); color: #0f172a; }
+        .score-badge[data-temperature="warm"] { background: var(--warning); color: #0f172a; }
+        .feed-meta { color: #475569; font-size: 14px; margin: 6px 0 10px; overflow-wrap: anywhere; }
+        .feed-reason { font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+        .feed-reason-clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .feed-reason-missing { color: var(--danger); font-size: 19px; font-weight: 700; }
+        .feed-more { color: var(--primary-dark); text-decoration: underline; text-underline-offset: 3px; }
+        #feed-state { padding: 24px 16px; }
+        #feed-state h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        #feed-state p { line-height: 1.5; color: #475569; }
+        .feed-skeleton { border-top: 1px solid #e2e8f0; padding: 24px 0; }
+        .feed-skeleton span { display: block; height: 14px; margin: 12px 0; border-radius: 4px; background: #e2e8f0; }
+        .feed-skeleton span:first-child { width: 60%; height: 20px; }
+        #feed-sentinel { height: 1px; }
+        body:has(#scoutScreen:not(.hidden)) .nav-btn { transition: none; }
+        @media (prefers-reduced-motion: reduce) { #scoutScreen.fade-in { animation: none; } }
     </style>
 </head>
 
@@ -437,6 +476,27 @@
 
         <!-- Content Area (swappable screens) -->
         <div id="contentArea" class="flex-1 overflow-y-auto pb-20" style="scroll-padding-top: 120px">
+
+            <!-- SCOUT SCREEN -->
+            <section id="scoutScreen" class="content-screen hidden" aria-label="Ranked scouting feed">
+                <header id="feed-header">
+                    <div id="feed-search-bar" class="feed-column">
+                        <h1>Scout</h1>
+                        <p id="feed-event">Exhibitors ranked for your profile</p>
+                        <label for="feed-search">Search exhibitors</label>
+                        <input id="feed-search" type="search" autocomplete="off" placeholder="Name, category or tag">
+                        <!-- route mode mounts here, after map work -->
+                        <div id="feed-route-mode-slot" hidden></div>
+                    </div>
+                    <div id="feed-filters" class="feed-column" role="group" aria-label="Exhibitor categories"></div>
+                </header>
+                <div class="feed-column">
+                    <p id="feed-summary" role="status" aria-live="polite" aria-atomic="true"></p>
+                    <ol id="feed-list" aria-label="Exhibitors in score order"></ol>
+                    <div id="feed-state" role="status" aria-live="polite"></div>
+                    <div id="feed-sentinel" aria-hidden="true"></div>
+                </div>
+            </section>
 
             <!-- CONTACTS SCREEN -->
             <div id="contactsScreen" class="content-screen">
@@ -1327,6 +1387,11 @@
                     <i class="fas fa-calendar-check text-2xl mb-1"></i>
                     <span class="text-xs">Expo</span>
                 </button>
+                <button id="scoutNavBtn" onclick="switchScreen('scout')"
+                    class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                    <i class="fas fa-compass text-2xl mb-1" aria-hidden="true"></i>
+                    <span class="text-xs">Scout</span>
+                </button>
                 <button id="adminNavBtn" onclick="switchScreen('admin')"
                     class="nav-btn hidden flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-shield-alt text-2xl mb-1"></i>
@@ -1589,6 +1654,244 @@
             _voiceAudioBlob: null,
         };
 
+        // ==================== SCOUT FEED ====================
+        const feedPreviewParam = new URLSearchParams(location.search).get('feedstate');
+        const feedPreviewState = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
+            && ['empty', 'loading', 'populated', 'error', 'offline', 'noresults'].includes(feedPreviewParam)
+            ? feedPreviewParam : '';
+        const scoutFeed = {
+            token: 0, busy: false, offset: 0, total: 0, hasMore: true,
+            search: '', selected: new Set(), categories: null, event: '', user: '',
+            controller: null, timer: null, observer: null, seed: null, initialized: false,
+        };
+
+        function renderScoreBadge(score) {
+            const value = Number(score);
+            if (!Number.isFinite(value) || value < 0 || value > 100) {
+                console.error('[Scout] Invalid score');
+                return '<span class="score-badge">Score unavailable</span>';
+            }
+            const temperature = value >= 70 ? 'hot' : value >= 40 ? 'warm' : 'cold';
+            return `<span class="score-badge" data-temperature="${temperature}" data-score="${value}">${value} ${temperature[0].toUpperCase() + temperature.slice(1)}</span>`;
+        }
+
+        function renderExhibitorRow(item, rank) {
+            const reason = typeof item.reason === 'string' ? item.reason.trim() : '';
+            if (!reason) console.error('[Scout] Missing exhibitor reason', item.id);
+            const meta = [item.booth ? `Booth ${item.booth}` : '', item.hall ? `Hall ${item.hall}` : ''].filter(Boolean).join(' / ');
+            return `<li class="feed-row">
+                <span class="feed-rank" aria-label="Rank ${rank}">${rank}</span>
+                <div><div class="feed-row-heading"><h2>${escapeHtml(item.name || 'Unnamed exhibitor')}</h2>${renderScoreBadge(item.score)}</div>
+                <p class="feed-meta">${escapeHtml(meta || 'Booth and hall not listed')}</p>
+                <p id="feed-reason-${rank}" class="feed-reason feed-reason-clamped ${reason ? '' : 'feed-reason-missing'}">${escapeHtml(reason || 'Reason unavailable')}</p>
+                ${reason ? `<button type="button" class="feed-more" aria-label="Show full reason for rank ${rank}" aria-expanded="false" aria-controls="feed-reason-${rank}">More<span class="sr-only"> about ${escapeHtml(item.name || 'this exhibitor')}</span></button>` : ''}</div>
+            </li>`;
+        }
+
+        function renderFilterChips() {
+            const container = document.getElementById('feed-filters');
+            container.replaceChildren();
+            ['', ...(scoutFeed.categories || [])].forEach(category => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'feed-chip';
+                button.textContent = category || 'All';
+                button.setAttribute('aria-pressed', String(category ? scoutFeed.selected.has(category) : !scoutFeed.selected.size));
+                button.addEventListener('click', () => {
+                    if (!category) scoutFeed.selected.clear();
+                    else if (scoutFeed.selected.has(category)) scoutFeed.selected.delete(category);
+                    else scoutFeed.selected.add(category);
+                    // Keep the active button mounted so keyboard focus survives filtering.
+                    [...container.children].forEach((child, index) => child.setAttribute('aria-pressed',
+                        String(index ? scoutFeed.selected.has(child.textContent) : !scoutFeed.selected.size)));
+                    resetScoutFeed();
+                });
+                container.append(button);
+            });
+        }
+
+        function renderFeedState(state) {
+            const node = document.getElementById('feed-state');
+            node.dataset.state = state;
+            const active = [scoutFeed.search ? `search "${scoutFeed.search}"` : '', ...scoutFeed.selected].filter(Boolean).join(', ');
+            const states = {
+                empty: '<h2>No exhibitors yet</h2><p>Ask your event admin to import exhibitors for this event. They will appear here ranked for your profile.</p>',
+                loading: scoutFeed.offset ? '<p>Loading more exhibitors...</p>' : '<p>Ranking exhibitors for you...</p>' + '<div class="feed-skeleton" aria-hidden="true"><span></span><span></span><span></span></div>'.repeat(3),
+                error: '<h2>Could not load exhibitors</h2><p>The server could not return the feed. Try again.</p><button class="feed-action" type="button" data-feed-action="retry">Retry</button>',
+                offline: '<h2>You are offline</h2><p>Check your connection. Any exhibitors already loaded stay here. We will retry when you are back online.</p><button class="feed-action" type="button" data-feed-action="retry">Retry connection</button>',
+                noresults: `<h2>No matching exhibitors</h2><p>No results for ${escapeHtml(active || 'the active filters')}. Try a different search or clear your filters.</p><button class="feed-action" type="button" data-feed-action="clear">Clear filters</button>`,
+                end: `<p>You have seen all ${scoutFeed.total} exhibitors</p>`,
+                populated: '',
+            };
+            node.innerHTML = states[state] || '';
+        }
+
+        async function scoutFeedRequest(kind, signal) {
+            if (feedPreviewState) {
+                if (feedPreviewState === 'offline') throw new TypeError('Preview offline');
+                if (feedPreviewState === 'error') throw new Error('Preview server error');
+                if (kind === 'categories') return { categories: ['Medical Imaging', 'Furniture'] };
+                if (feedPreviewState === 'empty') return { items: [], total: 0, has_more: false };
+                if (!scoutFeed.seed) {
+                    const response = await fetch('tests/fixtures/scout-ranked.json', { signal });
+                    if (!response.ok) throw new Error('Preview fixture missing');
+                    scoutFeed.seed = await response.json();
+                }
+                // The fixture is generated by rank_exhibitors, never scored or sorted here.
+                const query = scoutFeed.search.trim().toLowerCase();
+                const items = scoutFeed.seed.filter(item =>
+                    (!query || [item.name, item.category, ...(item.tags || [])].join(' ').toLowerCase().includes(query))
+                    && (!scoutFeed.selected.size || [...scoutFeed.selected].some(category =>
+                        [item.category, item.subcategory].join(' ').toLowerCase().includes(category.toLowerCase()))));
+                return { items: items.slice(scoutFeed.offset, scoutFeed.offset + 20), total: items.length, has_more: scoutFeed.offset + 20 < items.length };
+            }
+            if (!navigator.onLine) throw new TypeError('Offline');
+            const params = new URLSearchParams({ event: scoutFeed.event });
+            if (kind === 'ranked') {
+                Object.entries({ user_id: scoutFeed.user, search: scoutFeed.search,
+                    category: [...scoutFeed.selected].join(','), offset: scoutFeed.offset, limit: 20 })
+                    .forEach(([key, value]) => params.set(key, value));
+            }
+            const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/${kind}/?${params}`, {
+                headers: { 'X-API-Key': CONFIG.API_KEY }, signal,
+            });
+            if (!response.ok) throw new Error(`Feed HTTP ${response.status}`);
+            const data = await response.json();
+            if (data.status !== 'success') throw new Error('Invalid feed response');
+            return data;
+        }
+
+        async function loadScoutPage() {
+            if (scoutFeed.busy || !scoutFeed.hasMore || AppState.activeScreen !== 'scout') return;
+            scoutFeed.busy = true;
+            const token = scoutFeed.token;
+            scoutFeed.controller = new AbortController();
+            const signal = scoutFeed.controller.signal;
+            renderFeedState('loading');
+            if (feedPreviewState === 'loading') return;
+            try {
+                const [data, categories] = await Promise.all([
+                    scoutFeedRequest('ranked', signal),
+                    scoutFeed.categories === null ? scoutFeedRequest('categories', signal) : null,
+                ]);
+                if (token !== scoutFeed.token) return;
+                if (!Array.isArray(data.items) || !Number.isInteger(data.total) || data.total < 0
+                    || typeof data.has_more !== 'boolean' || (data.has_more && !data.items.length)
+                    || data.items.some(item => !item || typeof item !== 'object')
+                    || (categories && (!Array.isArray(categories.categories) || categories.categories.some(c => typeof c !== 'string')))) {
+                    throw new Error('Invalid ranked feed payload');
+                }
+                if (categories) {
+                    scoutFeed.categories = categories.categories;
+                    renderFilterChips();
+                }
+                document.getElementById('feed-list').insertAdjacentHTML('beforeend', data.items.map((item, index) => renderExhibitorRow(item, scoutFeed.offset + index + 1)).join(''));
+                scoutFeed.offset += data.items.length;
+                scoutFeed.total = data.total;
+                scoutFeed.hasMore = data.has_more;
+                document.getElementById('feed-summary').textContent = `${data.total} exhibitors / highest score first`;
+                renderFeedState(!data.total ? (scoutFeed.search || scoutFeed.selected.size ? 'noresults' : 'empty') : data.has_more ? 'populated' : 'end');
+            } catch (error) {
+                if (token !== scoutFeed.token || error.name === 'AbortError') return;
+                document.getElementById('feed-summary').textContent = `${scoutFeed.offset} exhibitors loaded`;
+                renderFeedState(error instanceof TypeError || !navigator.onLine ? 'offline' : 'error');
+            } finally {
+                if (token === scoutFeed.token) scoutFeed.busy = false;
+            }
+        }
+
+        function resetScoutFeed(delay = 0) {
+            scoutFeed.token++;
+            scoutFeed.controller?.abort();
+            clearTimeout(scoutFeed.timer);
+            scoutFeed.busy = false;
+            scoutFeed.offset = 0;
+            scoutFeed.total = 0;
+            scoutFeed.hasMore = true;
+            document.getElementById('feed-list').replaceChildren();
+            document.getElementById('feed-summary').textContent = 'Updating exhibitors...';
+            document.getElementById('contentArea').scrollTop = 0;
+            renderFeedState('loading');
+            // Block the sentinel while the search debounce is pending.
+            scoutFeed.busy = true;
+            scoutFeed.timer = setTimeout(() => { scoutFeed.busy = false; loadScoutPage(); }, delay);
+        }
+
+        async function startScoutFeed() {
+            if (scoutFeed.user !== (AppState.currentUser?.user_id || '')) {
+                scoutFeed.token++;
+                scoutFeed.controller?.abort();
+                clearTimeout(scoutFeed.timer);
+                scoutFeed.busy = true;
+                document.getElementById('feed-list').replaceChildren();
+                document.getElementById('feed-summary').textContent = 'Updating exhibitors...';
+                renderFeedState('loading');
+            }
+            if (!scoutFeed.initialized) {
+                scoutFeed.initialized = true;
+                document.getElementById('feed-search').addEventListener('input', event => {
+                    scoutFeed.search = event.target.value;
+                    resetScoutFeed(300);
+                });
+                document.getElementById('feed-state').addEventListener('click', event => {
+                    const action = event.target.closest('[data-feed-action]')?.dataset.feedAction;
+                    if (action === 'clear') {
+                        scoutFeed.search = '';
+                        scoutFeed.selected.clear();
+                        document.getElementById('feed-search').value = '';
+                        renderFilterChips();
+                        resetScoutFeed();
+                        document.getElementById('feed-search').focus();
+                    } else if (action === 'retry') loadScoutPage();
+                });
+                document.getElementById('feed-list').addEventListener('click', event => {
+                    const button = event.target.closest('.feed-more');
+                    if (!button) return;
+                    const expanded = button.getAttribute('aria-expanded') !== 'true';
+                    button.setAttribute('aria-expanded', String(expanded));
+                    button.setAttribute('aria-label', `${expanded ? 'Collapse' : 'Show full'} reason for rank ${button.getAttribute('aria-controls').split('-').pop()}`);
+                    button.firstChild.textContent = expanded ? 'Less' : 'More';
+                    document.getElementById(button.getAttribute('aria-controls')).classList.toggle('feed-reason-clamped', !expanded);
+                });
+                scoutFeed.observer = new IntersectionObserver(entries => {
+                    if (entries.some(entry => entry.isIntersecting) && ['populated', 'loading'].includes(document.getElementById('feed-state').dataset.state)) loadScoutPage();
+                }, { root: document.getElementById('contentArea'), rootMargin: '300px' });
+                scoutFeed.observer.observe(document.getElementById('feed-sentinel'));
+                window.addEventListener('online', () => {
+                    if (document.getElementById('feed-state').dataset.state === 'offline') {
+                        if (scoutFeed.hasMore) loadScoutPage();
+                        else renderFeedState(scoutFeed.total ? 'end' : scoutFeed.search || scoutFeed.selected.size ? 'noresults' : 'empty');
+                    }
+                });
+                window.addEventListener('offline', () => {
+                    scoutFeed.token++;
+                    scoutFeed.controller?.abort();
+                    clearTimeout(scoutFeed.timer);
+                    scoutFeed.busy = false;
+                    if (AppState.activeScreen === 'scout') renderFeedState('offline');
+                });
+            }
+            if (!feedPreviewState && navigator.onLine) await loadUserProfile();
+            const event = AppState.userProfile?.current_event_name || 'WHX Dubai 2026';
+            const user = AppState.currentUser?.user_id || '';
+            if (AppState.activeScreen !== 'scout') return;
+            document.getElementById('feed-event').textContent = feedPreviewState ? 'Local preview / 120-row test dataset' : event;
+            if (scoutFeed.event !== event || scoutFeed.user !== user) {
+                scoutFeed.event = event;
+                scoutFeed.user = user;
+                scoutFeed.categories = null;
+                scoutFeed.selected.clear();
+                if (feedPreviewState === 'noresults') {
+                    scoutFeed.search = 'zzzz';
+                    document.getElementById('feed-search').value = 'zzzz';
+                }
+                renderFilterChips();
+                resetScoutFeed();
+            } else if (scoutFeed.hasMore && ['offline', 'loading', 'populated'].includes(document.getElementById('feed-state').dataset.state)) {
+                loadScoutPage();
+            }
+        }
+
         // ==================== INITIALIZATION ====================
         async function validateUserSession() {
             /** Validate that the current user_id exists in database. Prevents foreign key errors. */
@@ -1623,6 +1926,12 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            if (feedPreviewState) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                await switchScreen('scout');
+                return;
+            }
             // Check for saved session FIRST (instant, no network call)
             const savedUser = localStorage.getItem('eventScoutUser');
             if (savedUser) {
@@ -1861,7 +2170,7 @@
             });
 
             // Highlight the correct nav button
-            const navMap = { contacts: 0, scan: 1, chat: 2, expo: 3, admin: 4, profile: 5 };
+            const navMap = { contacts: 0, scan: 1, chat: 2, expo: 3, scout: 4, admin: 5, profile: 6 };
             const navBtns = document.querySelectorAll('.nav-btn');
             const idx = navMap[screenName];
             if (idx !== undefined && navBtns[idx]) {
@@ -1876,7 +2185,9 @@
             history.pushState({ screen: screenName }, '', `#${screenName}`);
 
             // Initialize screen-specific features
-            if (screenName === 'profile') {
+            if (screenName === 'scout') {
+                await startScoutFeed();
+            } else if (screenName === 'profile') {
                 document.getElementById('totalContacts').textContent = AppState.contacts.length;
                 loadDashboardStats();
                 loadDigitalCard();
