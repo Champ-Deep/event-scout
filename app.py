@@ -1979,7 +1979,11 @@ async def run_contact_pipeline(contact_id: str, user_id: str):
 
 # --- FASTAPI APP ---
 app = FastAPI(title="Contact Assistant API - Multi-User (PostgreSQL)", version="2.1.0-admin-cmd")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
+                   expose_headers=["X-Total-Count", "Content-Disposition"])
+
+import sys, admin_api  # admin dashboard endpoints (docs/admin-dashboard-spec.md)
+app.include_router(admin_api.build_router(sys.modules[__name__]))
 
 
 @app.on_event("startup")
@@ -2015,6 +2019,8 @@ async def startup_event():
     if not db_ok:
         print("[STARTUP] WARNING: Database initialization failed!")
         return
+
+    await admin_api.load_settings(sys.modules[__name__])  # persisted admin settings override env defaults
 
     # Rebuild FAISS indices from Postgres
     print("[STARTUP] Rebuilding FAISS indices from PostgreSQL...")
