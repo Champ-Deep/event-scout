@@ -629,6 +629,9 @@
                     <!-- Controls - fixed at bottom, always visible -->
                     <div class="bg-gray-900/95 backdrop-blur-sm px-4 pt-3 pb-20 safe-area-inset-bottom"
                         style="flex-shrink:0;">
+                        <button onclick="ScanFlow.open()" class="w-full mb-3 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm active:bg-blue-700">
+                            <i class="fas fa-bolt mr-1"></i>Scan to score
+                        </button>
                         <div class="flex justify-center gap-5 items-center">
                             <button onclick="uploadFromGallery()"
                                 class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
@@ -6899,6 +6902,8 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             document.getElementById('chatInput').placeholder = 'Ask about your contacts...';
         }
     </script>
+    <script src="score-card.js"></script>
+    <script src="scan-flow.js"></script>
 </body>
 
 </html>
