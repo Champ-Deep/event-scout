@@ -166,7 +166,7 @@ async def test_redirect_to_private_address_is_rejected_and_never_requested():
         return httpx.Response(302, headers={"location": "http://10.0.0.5/admin"})
 
     assert await reason("https://gulfexpo.example/", handler) == "blocked_url"
-    assert seen == ["https://gulfexpo.example/"]
+    assert seen == ["https://93.184.216.34/"]  # connected to the validated IP; the private hop was never requested
 
 
 async def test_relative_redirect_followed_and_final_url_recorded():
@@ -223,3 +223,53 @@ async def test_body_capped_at_2mb():
     big = "a" * (es._MAX_BYTES + 5000)
     async with client(lambda r: httpx.Response(200, text=big, headers={"content-type": "text/html"})) as c:
         assert len((await es.fetch_page("https://gulfexpo.example/", client=c)).html) == es._MAX_BYTES
+
+
+async def test_connection_is_pinned_to_the_validated_ip_so_dns_rebinding_cannot_swap_it(monkeypatch):
+    answers = iter([["93.184.216.34"], ["127.0.0.1"]])  # a rebinding resolver: public first, loopback on any re-lookup
+    lookups, seen = [], []
+
+    async def resolve(host):
+        lookups.append(host)
+        return next(answers)
+
+    def handler(req):
+        seen.append((req.url.host, req.headers["host"], req.extensions["sni_hostname"]))
+        return httpx.Response(200, text="<p>ok</p>", headers={"content-type": "text/html"})
+
+    monkeypatch.setattr(es, "_resolve", resolve)
+    async with client(handler) as c:
+        await es.fetch_page("https://gulfexpo.example/x", client=c)
+    assert lookups == ["gulfexpo.example"]  # resolved once; the request never re-resolves
+    assert seen == [("93.184.216.34", "gulfexpo.example", "gulfexpo.example")]
+
+
+async def test_each_redirect_hop_is_resolved_and_pinned_on_its_own(monkeypatch):
+    table = {"gulfexpo.example": ["93.184.216.34"], "cdn.example": ["2606:4700::1111", "1.1.1.1"]}
+    seen = []
+
+    async def resolve(host):
+        return table[host]
+
+    def handler(req):
+        seen.append((req.url.host, req.headers["host"]))
+        if req.headers["host"] == "gulfexpo.example":
+            return httpx.Response(302, headers={"location": "http://cdn.example:80/p"})
+        return httpx.Response(200, text="<p>ok</p>", headers={"content-type": "text/html"})
+
+    monkeypatch.setattr(es, "_resolve", resolve)
+    async with client(handler) as c:
+        await es.fetch_page("https://gulfexpo.example/", client=c)
+    assert seen == [("93.184.216.34", "gulfexpo.example"), ("1.1.1.1", "cdn.example:80")]  # IPv4 preferred
+
+
+async def test_ipv6_literal_is_bracketed_when_pinned():
+    seen = []
+
+    def handler(req):
+        seen.append(str(req.url))
+        return httpx.Response(200, text="<p>ok</p>", headers={"content-type": "text/html"})
+
+    async with client(handler) as c:
+        await es.fetch_page("http://[2606:4700::1111]/", client=c)
+    assert seen == ["http://[2606:4700::1111]/"]

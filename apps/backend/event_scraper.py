@@ -96,9 +96,9 @@ def _public(addr: str) -> bool:
     return ip.is_global and not ip.is_multicast
 
 
-async def _check_url(url: str) -> str:
-    """Raise unless `url` is a plain http(s) URL whose host is public. Returns the host.
-    shortcut: validate-then-connect leaves a DNS-rebinding window; pin the IP in a custom transport to close it."""
+async def _check_url(url: str) -> tuple:
+    """Raise unless `url` is a plain http(s) URL whose host is public. Returns (host, ip): the caller must connect
+    to that validated `ip` (see _get_once), so a second DNS answer can never redirect the request (DNS rebinding)."""
     try:
         parts = urlsplit(url.strip())
         port = parts.port
@@ -118,7 +118,7 @@ async def _check_url(url: str) -> str:
         addrs = await _resolve(host)
     if not addrs or not all(_public(a) for a in addrs):
         raise ScrapeError("blocked_url", f"{host} is not a public address")
-    return host
+    return host, min(addrs, key=lambda a: ":" in a)  # IPv4 first: many hosts have no IPv6 route
 
 
 async def _throttle(host: str) -> None:
@@ -132,10 +132,14 @@ def _user_agent() -> str:
     return f"EventScoutBot/1.0 (+{os.environ.get('PUBLIC_BASE_URL', '').rstrip('/')})"
 
 
-async def _get_once(client: httpx.AsyncClient, url: str):
-    """(status, headers, text) for one GET, body capped at 2 MB. No redirect following."""
+async def _get_once(client: httpx.AsyncClient, url: str, ip: str):
+    """(status, headers, text) for one GET, body capped at 2 MB. No redirect following. Connects to the already
+    validated `ip` with the original Host header and TLS server name, so no second DNS lookup happens."""
+    parts = urlsplit(url)
+    pinned = parts._replace(netloc=(f"[{ip}]" if ":" in ip else ip) + (f":{parts.port}" if parts.port else "")).geturl()
     try:
-        async with client.stream("GET", url, follow_redirects=False) as resp:
+        async with client.stream("GET", pinned, headers={"Host": parts.netloc}, extensions={"sni_hostname": parts.hostname},
+                                 follow_redirects=False) as resp:
             body = bytearray()
             async for chunk in resp.aiter_bytes():
                 body += chunk
@@ -153,11 +157,11 @@ async def _get_once(client: httpx.AsyncClient, url: str):
         raise ScrapeError("unreachable", f"{type(e).__name__}: {url}") from e
 
 
-async def _get(client: httpx.AsyncClient, url: str):
-    status, headers, text = await _get_once(client, url)
+async def _get(client: httpx.AsyncClient, url: str, ip: str):
+    status, headers, text = await _get_once(client, url, ip)
     if status in _RETRY_STATUS:
         await asyncio.sleep(_RETRY_DELAY)
-        status, headers, text = await _get_once(client, url)
+        status, headers, text = await _get_once(client, url, ip)
     return status, headers, text
 
 
@@ -175,8 +179,9 @@ async def fetch_page(url: str, *, client: Optional[httpx.AsyncClient] = None) ->
     try:
         cur = url.strip()
         for _ in range(_MAX_REDIRECTS + 1):
-            await _throttle(await _check_url(cur))
-            status, headers, text = await _get(client, cur)
+            host, ip = await _check_url(cur)
+            await _throttle(host)
+            status, headers, text = await _get(client, cur, ip)
             if status in (301, 302, 303, 307, 308) and headers.get("location"):
                 cur = urljoin(cur, headers["location"])
                 continue
