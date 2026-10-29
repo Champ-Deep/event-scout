@@ -478,15 +478,37 @@
                                 oninput="handleSearch()">
                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                         </div>
-                        <!-- Date filter pills -->
-                        <div class="flex gap-1.5 mt-2 overflow-x-auto pb-0.5 no-scrollbar" id="contactsDateFilters">
-                            <button onclick="setContactsDateFilter('')" id="cdf-all" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-blue-600 text-white font-medium">All</button>
-                            <button onclick="setContactsDateFilter('today')" id="cdf-today" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Today</button>
-                            <button onclick="setContactsDateFilter('yesterday')" id="cdf-yesterday" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Yesterday</button>
-                            <button onclick="setContactsDateFilter('last_week')" id="cdf-last_week" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Last 7 Days</button>
-                            <button onclick="setContactsDateFilter('last_month')" id="cdf-last_month" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">This Month</button>
+                        <!-- Date filter pills + Select icon -->
+                        <div class="flex items-center gap-2 mt-2">
+                            <div class="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar flex-1" id="contactsDateFilters">
+                                <button onclick="setContactsDateFilter('')" id="cdf-all" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-blue-600 text-white font-medium">All</button>
+                                <button onclick="setContactsDateFilter('today')" id="cdf-today" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Today</button>
+                                <button onclick="setContactsDateFilter('yesterday')" id="cdf-yesterday" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Yesterday</button>
+                                <button onclick="setContactsDateFilter('last_week')" id="cdf-last_week" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Last 7 Days</button>
+                                <button onclick="setContactsDateFilter('last_month')" id="cdf-last_month" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">This Month</button>
+                            </div>
+                            <!-- Select toggle — always visible, top-right of filter row -->
+                            <button id="selectModeBtn" onclick="toggleSelectMode()"
+                                class="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 active:bg-gray-200 transition font-medium">
+                                <i class="fas fa-check-square"></i>
+                                <span id="selectModeBtnLabel">Select</span>
+                            </button>
                         </div>
-                        <p id="contactsFilterCount" class="text-xs text-gray-400 mt-1 hidden"></p>
+
+                        <!-- Smart action strip: appears when a date filter is active -->
+                        <div id="contactsActionStrip" class="hidden mt-2 flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+                            <p id="actionStripLabel" class="text-xs font-semibold text-blue-800"></p>
+                            <div class="flex items-center gap-2">
+                                <button onclick="selectAllAndExport('csv')"
+                                    class="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-semibold active:bg-blue-700 transition">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                                <button onclick="openExportsSheet()"
+                                    class="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-blue-200 text-blue-700 text-xs rounded-lg font-medium active:bg-blue-50 transition">
+                                    <i class="fas fa-folder-open"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -503,8 +525,8 @@
                     </div>
                 </div>
 
-                <!-- Contact List -->
-                <div id="contactsList" class="divide-y divide-gray-200 pt-4">
+                <!-- Contact List (pb-28 gives room for bulk bar in select mode) -->
+                <div id="contactsList" class="divide-y divide-gray-200 pt-4 pb-28">
                     <!-- Contacts will be rendered here -->
                 </div>
 
@@ -513,6 +535,34 @@
                     class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg active:scale-95 transition z-30 touch-feedback">
                     <i class="fas fa-plus text-xl"></i>
                 </button>
+
+                <!-- Bulk Selection Bar (visible only in select mode) -->
+                <div id="contactsSelectBar" class="hidden fixed bottom-16 left-0 right-0 bg-white border-t-2 border-blue-200 shadow-xl z-35 px-4 py-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="handleSelectAllCheckbox(this)"
+                                    class="w-4 h-4 rounded accent-blue-600 cursor-pointer">
+                                <span class="text-xs text-blue-700 font-semibold whitespace-nowrap">All (<span id="selectableCount">0</span>)</span>
+                            </label>
+                            <span class="text-xs text-gray-500 whitespace-nowrap font-medium"><span id="selectedCount">0</span> selected</span>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <button onclick="promptExport('csv')"
+                                class="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg font-semibold active:bg-green-700 transition flex items-center gap-1.5">
+                                <i class="fas fa-download"></i> CSV
+                            </button>
+                            <button onclick="promptExport('json')"
+                                class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-semibold active:bg-blue-700 transition flex items-center gap-1.5">
+                                <i class="fas fa-download"></i> JSON
+                            </button>
+                            <button onclick="toggleSelectMode()"
+                                class="px-2.5 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg active:bg-gray-200 transition font-medium">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- SCAN SCREEN -->
@@ -956,6 +1006,19 @@
                             </div>
                             <i class="fas fa-download text-gray-400"></i>
                         </button>
+                    </div>
+
+                    <!-- My Exports Section -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-semibold text-gray-900">My Exports</h3>
+                            <button onclick="loadExports()" class="text-xs text-blue-600 active:opacity-70 font-medium">
+                                <i class="fas fa-sync-alt mr-1"></i>Refresh
+                            </button>
+                        </div>
+                        <div id="myExportsList">
+                            <p class="text-sm text-gray-400 text-center py-4">Loading exports...</p>
+                        </div>
                     </div>
 
                     <button onclick="handleLogout()"
@@ -1587,6 +1650,9 @@
             _voiceContactId: null,
             _voiceTranscript: '',
             _voiceAudioBlob: null,
+            selectMode: false,
+            selectedContactIds: new Set(),
+            exports: [],
         };
 
         // ==================== INITIALIZATION ====================
@@ -1880,6 +1946,7 @@
                 document.getElementById('totalContacts').textContent = AppState.contacts.length;
                 loadDashboardStats();
                 loadDigitalCard();
+                loadExports();
             } else if (screenName === 'scan') {
                 // Only reset scan state if no active scans are running
                 const hasActiveScans = activeScanCount > 0 || scanImageQueue.length > 0;
@@ -1975,15 +2042,27 @@
                         AppState.contacts = data.contacts;
                         renderContacts(AppState.contacts);
                         renderHotLeads();
-                        // Update count label
+                        // Update count label + smart action strip
                         const countEl = document.getElementById('contactsFilterCount');
+                        const strip = document.getElementById('contactsActionStrip');
+                        const stripLabel = document.getElementById('actionStripLabel');
+                        const total = data.total_contacts ?? data.total ?? data.contacts.length;
                         if (countEl) {
-                            const total = data.total_contacts ?? data.total ?? data.contacts.length;
                             if (df) {
                                 countEl.textContent = `${total} contact${total !== 1 ? 's' : ''} found`;
                                 countEl.classList.remove('hidden');
                             } else {
                                 countEl.classList.add('hidden');
+                            }
+                        }
+                        // Show action strip whenever a date filter is active
+                        if (strip && stripLabel) {
+                            const filterNames = { today: 'Today', yesterday: 'Yesterday', last_week: 'Last 7 Days', last_month: 'This Month' };
+                            if (df && total > 0) {
+                                stripLabel.textContent = `${total} contact${total !== 1 ? 's' : ''} · ${filterNames[df] || df}`;
+                                strip.classList.remove('hidden');
+                            } else {
+                                strip.classList.add('hidden');
                             }
                         }
                     } else {
@@ -2030,10 +2109,14 @@
                 const score = contact.lead_score;
                 const temp = contact.lead_temperature;
                 const scoreColor = temp === 'hot' ? 'bg-red-500' : temp === 'warm' ? 'bg-orange-400' : temp === 'cold' ? 'bg-gray-400' : '';
+                const isSelected = AppState.selectMode && AppState.selectedContactIds.has(contact.id);
+                const selectedClass = isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : '';
 
                 return `
-                <div class="contact-card bg-white rounded-xl shadow-sm active:shadow-md mb-2 mx-2 transition-all duration-200" data-id="${contact.id}" onclick="openContactDetail('${contact.id}')">
+                <div class="contact-card bg-white rounded-xl shadow-sm active:shadow-md mb-2 mx-2 transition-all duration-200 ${selectedClass}" data-id="${contact.id}" onclick="openContactDetail('${contact.id}')">
                     <div class="flex items-start p-4 gap-3">
+                        <!-- Select mode checkbox (pointer-events-none so tap always reaches the card onclick) -->
+                        ${AppState.selectMode ? `<div class="flex-shrink-0 flex items-center self-center pr-1"><input type="checkbox" class="contact-select-cb w-5 h-5 rounded accent-blue-600 pointer-events-none" ${isSelected ? 'checked' : ''}></div>` : ''}
                         <!-- Avatar with score badge -->
                         <div class="relative flex-shrink-0 mt-0.5">
                             ${contact.photo_base64
@@ -3375,6 +3458,11 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         // ==================== CONTACT DETAIL VIEW ====================
         let _swipeVoiceTriggered = 0;
         function openContactDetail(contactId) {
+            // In select mode, tap = toggle selection (never open detail)
+            if (AppState.selectMode) {
+                toggleContactSelection(contactId);
+                return;
+            }
             // Skip if voice recording was just triggered by swipe
             if (Date.now() - _swipeVoiceTriggered < 500) return;
             const contact = AppState.contacts.find(c => c.id === contactId);
@@ -6587,7 +6675,374 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             if (chatVoiceRecognition) { chatVoiceRecognition.onend = null; try { chatVoiceRecognition.stop(); } catch (e) { } chatVoiceRecognition = null; }
             document.getElementById('chatInput').placeholder = 'Ask about your contacts...';
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // SELECT MODE  (Single Responsibility: manages contact selection state)
+        // ─────────────────────────────────────────────────────────────────────
+
+        function toggleSelectMode() {
+            AppState.selectMode = !AppState.selectMode;
+            AppState.selectedContactIds = new Set();
+            const btn = document.getElementById('selectModeBtn');
+            const label = document.getElementById('selectModeBtnLabel');
+            const bar = document.getElementById('contactsSelectBar');
+            const fab = document.getElementById('contactsFab');
+            if (AppState.selectMode) {
+                btn.className = 'flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-blue-600 text-white active:bg-blue-700 transition font-medium';
+                label.textContent = 'Selecting';
+                bar.classList.remove('hidden');
+                fab.classList.add('hidden');
+                const strip = document.getElementById('contactsActionStrip');
+                if (strip) strip.classList.add('hidden');
+            } else {
+                btn.className = 'flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 active:bg-gray-200 transition font-medium';
+                label.textContent = 'Select';
+                bar.classList.add('hidden');
+                fab.classList.remove('hidden');
+                // Re-show action strip if a date filter is still active
+                const strip = document.getElementById('contactsActionStrip');
+                if (strip && window._contactsDateFilter && AppState.contacts.length > 0) {
+                    strip.classList.remove('hidden');
+                }
+            }
+            updateSelectionBar();
+            renderContacts(AppState.contacts);
+        }
+
+        // One-tap export: grabs all currently visible (filtered) contacts, saves + downloads
+        async function selectAllAndExport(format) {
+            if (AppState.contacts.length === 0) { showToast('No contacts to export', 'error'); return; }
+            const filterNames = { '': 'All', today: 'Today', yesterday: 'Yesterday', last_week: 'Last 7 Days', last_month: 'This Month' };
+            const filterLabel = filterNames[window._contactsDateFilter || ''] || 'All';
+            showToast(`Saving ${AppState.contacts.length} contacts…`, 'info');
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contact_ids: AppState.contacts.map(c => c.id), format, filter_label: filterLabel }),
+                    }
+                );
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+                const data = await res.json();
+                await downloadExport(data.id, data.filename);
+                showToast(`Downloaded: ${data.filename}`, 'success');
+                await loadExports();
+            } catch (err) {
+                console.error('selectAllAndExport error:', err);
+                showToast('Export failed', 'error');
+            }
+        }
+
+        function toggleContactSelection(contactId) {
+            if (!AppState.selectMode) return;
+            if (AppState.selectedContactIds.has(contactId)) {
+                AppState.selectedContactIds.delete(contactId);
+            } else {
+                AppState.selectedContactIds.add(contactId);
+            }
+            updateSelectionBar();
+            const card = document.querySelector(`.contact-card[data-id="${contactId}"]`);
+            if (card) {
+                const isNowSelected = AppState.selectedContactIds.has(contactId);
+                card.classList.toggle('ring-2', isNowSelected);
+                card.classList.toggle('ring-blue-500', isNowSelected);
+                card.classList.toggle('bg-blue-50', isNowSelected);
+                const cb = card.querySelector('.contact-select-cb');
+                if (cb) cb.checked = isNowSelected;
+            }
+        }
+
+        function selectAllVisible() {
+            AppState.contacts.forEach(c => AppState.selectedContactIds.add(c.id));
+            updateSelectionBar();
+            renderContacts(AppState.contacts);
+        }
+
+        function updateSelectionBar() {
+            const selEl = document.getElementById('selectedCount');
+            const allEl = document.getElementById('selectableCount');
+            if (selEl) selEl.textContent = AppState.selectedContactIds.size;
+            if (allEl) allEl.textContent = AppState.contacts.length;
+            updateSelectAllCheckbox();
+        }
+
+        function updateSelectAllCheckbox() {
+            const cb = document.getElementById('selectAllCheckbox');
+            if (!cb) return;
+            const total = AppState.contacts.length;
+            const selected = AppState.selectedContactIds.size;
+            if (selected === 0 || total === 0) {
+                cb.checked = false;
+                cb.indeterminate = false;
+            } else if (selected >= total) {
+                cb.checked = true;
+                cb.indeterminate = false;
+            } else {
+                cb.checked = false;
+                cb.indeterminate = true;
+            }
+        }
+
+        function handleSelectAllCheckbox(cb) {
+            if (cb.checked) {
+                selectAllVisible();
+            } else {
+                AppState.selectedContactIds = new Set();
+                updateSelectionBar();
+                renderContacts(AppState.contacts);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // EXPORT OPERATIONS  (each function has one job)
+        // ─────────────────────────────────────────────────────────────────────
+
+        function promptExport(format) {
+            const contactIds = AppState.selectedContactIds.size > 0
+                ? Array.from(AppState.selectedContactIds)
+                : AppState.contacts.map(c => c.id);
+            if (contactIds.length === 0) { showToast('No contacts to export', 'error'); return; }
+
+            const today = new Date().toISOString().slice(0, 10);
+            const defaultName = `contacts_${today}`;
+            const btnColor = format === 'csv' ? 'bg-green-600 active:bg-green-700' : 'bg-blue-600 active:bg-blue-700';
+
+            const modal = document.createElement('div');
+            modal.id = 'exportNameModal';
+            modal.className = 'fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/60';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl slide-up">
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">Name Your Export</h3>
+                    <p class="text-xs text-gray-400 mb-4">${contactIds.length} contact${contactIds.length !== 1 ? 's' : ''} · ${format.toUpperCase()}</p>
+                    <div class="relative mb-5">
+                        <input type="text" id="exportFileName" value="${defaultName}"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-16"
+                            placeholder="File name..." maxlength="80">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">.${format}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="document.getElementById('exportNameModal').remove()"
+                            class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold active:bg-gray-200">
+                            Cancel
+                        </button>
+                        <button onclick="confirmExport('${format}')"
+                            class="flex-1 py-2.5 ${btnColor} text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            setTimeout(() => {
+                const inp = document.getElementById('exportFileName');
+                if (inp) { inp.focus(); inp.select(); }
+            }, 80);
+        }
+
+        async function confirmExport(format) {
+            const modal = document.getElementById('exportNameModal');
+            const inp = document.getElementById('exportFileName');
+            const raw = inp ? inp.value.trim() : '';
+            const baseName = (raw.replace(/[^\w\s\-]/g, '').trim().replace(/\s+/g, '_') || 'contacts');
+            const downloadFilename = `${baseName}.${format}`;
+            if (modal) modal.remove();
+
+            const contactIds = AppState.selectedContactIds.size > 0
+                ? Array.from(AppState.selectedContactIds)
+                : AppState.contacts.map(c => c.id);
+
+            showToast('Creating export…', 'info');
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contact_ids: contactIds,
+                            format,
+                            filter_label: `Selected ${contactIds.length}`,
+                        }),
+                    }
+                );
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+                const data = await res.json();
+                await downloadExport(data.id, downloadFilename);
+                showToast(`Downloaded: ${downloadFilename}`, 'success');
+                if (AppState.selectMode) toggleSelectMode();
+                await loadExports();
+            } catch (err) {
+                console.error('confirmExport error:', err);
+                showToast('Export failed', 'error');
+            }
+        }
+
+        async function createExport(format) {
+            const contactIds = AppState.selectedContactIds.size > 0
+                ? Array.from(AppState.selectedContactIds)
+                : AppState.contacts.map(c => c.id);
+
+            if (contactIds.length === 0) {
+                showToast('No contacts to export', 'error');
+                return;
+            }
+
+            const filterLabels = {
+                '': 'All', 'today': 'Today', 'yesterday': 'Yesterday',
+                'last_week': 'Last 7 Days', 'last_month': 'This Month'
+            };
+            const filterLabel = AppState.selectedContactIds.size > 0
+                ? `Selected ${contactIds.length}`
+                : (filterLabels[window._contactsDateFilter] || 'All');
+
+            showToast('Creating export file...', 'info');
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contact_ids: contactIds, format, filter_label: filterLabel }),
+                    }
+                );
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+                const data = await res.json();
+                showToast(`Export saved: ${data.filename}`, 'success');
+                if (AppState.selectMode) toggleSelectMode();
+                await loadExports();
+            } catch (err) {
+                console.error('createExport error:', err);
+                showToast('Export creation failed', 'error');
+            }
+        }
+
+        async function loadExports() {
+            if (!AppState.currentUser) return;
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                if (!res.ok) return;
+                const data = await res.json();
+                AppState.exports = data.exports || [];
+                renderExports(AppState.exports);
+                renderExportsSheet(AppState.exports);
+            } catch (err) {
+                console.error('loadExports error:', err);
+            }
+        }
+
+        function _buildExportRow(exp) {
+            const date = new Date(exp.created_at).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            const badge = exp.format === 'csv'
+                ? '<span class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">CSV</span>'
+                : '<span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">JSON</span>';
+            const safeFilename = exp.filename.replace(/'/g, "\\'");
+            return `
+            <div class="flex items-center gap-2 py-2.5 border-b border-gray-100 last:border-0">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">${badge}<span class="text-xs text-gray-500 truncate">${escapeHtml(exp.filter_label)}</span></div>
+                    <p class="text-xs text-gray-400 mt-0.5">${exp.contact_count} contacts · ${date}</p>
+                    <p class="text-xs text-gray-300 truncate">${escapeHtml(exp.filename)}</p>
+                </div>
+                <button onclick="downloadExport('${exp.id}','${safeFilename}')"
+                    class="w-9 h-9 flex items-center justify-center text-blue-600 active:bg-blue-50 rounded-lg transition flex-shrink-0" title="Download">
+                    <i class="fas fa-download text-sm"></i>
+                </button>
+                <button onclick="deleteExport('${exp.id}')"
+                    class="w-9 h-9 flex items-center justify-center text-red-400 active:bg-red-50 rounded-lg transition flex-shrink-0" title="Delete">
+                    <i class="fas fa-trash text-sm"></i>
+                </button>
+            </div>`;
+        }
+
+        function renderExports(exports) {
+            const container = document.getElementById('myExportsList');
+            if (!container) return;
+            if (!exports.length) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No exports yet. Use Select mode to create one!</p>';
+                return;
+            }
+            container.innerHTML = exports.map(_buildExportRow).join('');
+        }
+
+        function renderExportsSheet(exports) {
+            const container = document.getElementById('exportsSheetList');
+            if (!container) return;
+            if (!exports.length) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">No exports yet. Use Select mode on the contacts screen to create one!</p>';
+                return;
+            }
+            container.innerHTML = exports.map(_buildExportRow).join('');
+        }
+
+        async function downloadExport(exportId, filename) {
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/${exportId}/download?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                if (!res.ok) throw new Error('Download failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename; a.click();
+                URL.revokeObjectURL(url);
+                showToast('Downloaded!', 'success');
+            } catch (err) {
+                console.error('downloadExport error:', err);
+                showToast('Download failed', 'error');
+            }
+        }
+
+        async function deleteExport(exportId) {
+            if (!confirm('Delete this export file?')) return;
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/${exportId}?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    { method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                if (!res.ok) throw new Error('Delete failed');
+                showToast('Export deleted', 'success');
+                await loadExports();
+            } catch (err) {
+                console.error('deleteExport error:', err);
+                showToast('Delete failed', 'error');
+            }
+        }
+
+        function openExportsSheet() {
+            loadExports();
+            document.getElementById('exportsSheet').classList.remove('hidden');
+        }
+
+        function closeExportsSheet() {
+            document.getElementById('exportsSheet').classList.add('hidden');
+        }
     </script>
+
+    <!-- ── My Exports Bottom Sheet ── -->
+    <div id="exportsSheet" class="hidden fixed inset-0 z-50 flex flex-col justify-end">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeExportsSheet()"></div>
+        <div class="relative bg-white rounded-t-2xl shadow-2xl max-h-[75vh] flex flex-col slide-up">
+            <div class="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
+                <h3 class="text-lg font-bold text-gray-900"><i class="fas fa-folder-open text-blue-500 mr-2"></i>My Exports</h3>
+                <button onclick="closeExportsSheet()" class="w-8 h-8 flex items-center justify-center text-gray-400 active:bg-gray-100 rounded-full">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="px-5 pb-2 pt-2 border-b border-gray-100">
+                <p class="text-xs text-gray-400">Export files are saved on the server — come back anytime to download them.</p>
+            </div>
+            <div id="exportsSheetList" class="flex-1 overflow-y-auto px-5 py-2">
+                <p class="text-sm text-gray-400 text-center py-6">Loading...</p>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
