@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.lakeb2b.eventscout",
+    "sha256_cert_fingerprints": ["73:55:31:9D:90:1F:D8:F9:E2:54:9E:53:A3:46:76:B0:C7:49:CE:0B:82:D4:5E:F9:56:3E:71:07:5E:A0:7C:65"]
+  }
+}]
