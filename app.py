@@ -90,6 +90,7 @@ class Contact(BaseModel):
     phone: str
     linkedin: str
     company_name: str = "N/A"
+    title: str = ""
     notes: str = ""
     links: List[Dict[str, str]] = []
     event_name: Optional[str] = None
@@ -848,15 +849,30 @@ def scan_qr_image(image_path: str) -> str:
     return decoded_objects[0].data.decode("utf-8")
 
 
-# --- IMAGE TEXT EXTRACTION WITH GEMINI ---
+# --- IMAGE TEXT EXTRACTION (OCR) ---
+# Benchmarked 2026-10-29 on bench/cards (39 images): see bench/results. Claude Haiku 5.5 via OpenRouter
+# read every field on every card; gemini-2.0-flash is retired by Google and the direct Gemini key is quota-bound.
+OCR_EMPTY = {"name": "N/A", "email": "N/A", "phone": "N/A", "linkedin": "N/A", "company_name": "N/A", "title": "N/A", "website": "N/A"}
+OCR_PROMPT = """Read this business card photo and extract the contact fields.
+Return ONLY a JSON object with exactly these keys:
+{"name": "", "title": "", "company_name": "", "email": "", "phone": "", "linkedin": "", "website": ""}
+Rules: copy text exactly as printed (keep +country codes, punctuation in emails and URLs). Use "" for a field that is not on the card. Do not guess or invent anything. No markdown, no commentary."""
+
+
+def _merge_ocr_fields(fields: dict, extracted: dict) -> None:
+    for key in OCR_EMPTY:
+        if key in extracted and extracted[key] and str(extracted[key]).strip() and extracted[key] != "N/A":
+            fields[key] = str(extracted[key]).strip()
+
+
 def extract_contact_from_image_with_gemini(image_path: str) -> dict:
-    fields = {"name": "N/A", "email": "N/A", "phone": "N/A", "linkedin": "N/A", "company_name": "N/A"}
+    fields = dict(OCR_EMPTY)
     if not GEMINI_API_KEY or not gemini_configured:
         print("[GEMINI] API key not configured")
         return fields
 
-    # Use stable model for better reliability
-    model_names = ['gemini-2.0-flash', 'gemini-1.5-flash']
+    # Google retires dated flash models within months; the -latest alias survives those cuts.
+    model_names = ['gemini-flash-lite-latest', 'gemini-2.5-flash-lite']
     img = Image.open(image_path)
     print(f"[GEMINI] Image opened: {img.size}, mode={img.mode}")
 
@@ -873,19 +889,7 @@ def extract_contact_from_image_with_gemini(image_path: str) -> dict:
         img.thumbnail((max_dim, max_dim), Image.LANCZOS)
         print(f"[GEMINI] Image resized to: {img.size}")
 
-    prompt = """You are an expert at reading business cards. Look at this image carefully and extract ALL contact information you can find.
-
-This is a business card or contact information image. Extract the following fields:
-- name: The person's full name (first and last name)
-- email: Their email address (look for @ symbol)
-- phone: Their phone number (look for digits, +, -, parentheses)
-- linkedin: Their LinkedIn URL or profile (look for linkedin.com or "LinkedIn:")
-- company_name: Their company or organization name
-
-Return ONLY a valid JSON object with exactly these keys. Use "N/A" for any field you cannot find:
-{"name": "...", "email": "...", "phone": "...", "linkedin": "...", "company_name": "..."}
-
-CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explanation."""
+    prompt = OCR_PROMPT
 
     last_error = None
     model_errors = []
@@ -924,9 +928,7 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
                 else:
                     raise Exception("No JSON object found in response")
 
-            for key in fields:
-                if key in extracted and extracted[key] and str(extracted[key]).strip() and extracted[key] != "N/A":
-                    fields[key] = str(extracted[key]).strip()
+            _merge_ocr_fields(fields, extracted)
 
             print(f"[GEMINI] Extracted with {model_name}: {fields}")
             fields["_source"] = f"gemini:{model_name}"
@@ -956,10 +958,10 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
     return fields
 
 
-# --- OPENROUTER VISION FALLBACK FOR OCR ---
+# --- OPENROUTER VISION OCR (primary) ---
 async def extract_contact_with_openrouter(image_path: str) -> dict:
-    """Fallback OCR using OpenRouter vision model when Gemini fails entirely."""
-    fields = {"name": "N/A", "email": "N/A", "phone": "N/A", "linkedin": "N/A", "company_name": "N/A"}
+    """Primary OCR through OpenRouter; Gemini direct is the fallback (see add_contact_from_image)."""
+    fields = dict(OCR_EMPTY)
     if not OPENROUTER_API_KEY:
         print("[OPENROUTER-OCR] No API key configured")
         return fields
@@ -968,17 +970,12 @@ async def extract_contact_with_openrouter(image_path: str) -> dict:
     with open(image_path, "rb") as f:
         img_b64 = base64.b64encode(f.read()).decode()
 
-    prompt = """You are an expert at reading business cards. Extract ALL contact information from this image.
+    prompt = OCR_PROMPT
 
-Return ONLY a valid JSON object with exactly these keys. Use "N/A" for any field you cannot find:
-{"name": "...", "email": "...", "phone": "...", "linkedin": "...", "company_name": "..."}
-
-CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explanation."""
-
-    # Try multiple models via OpenRouter
+    # bench/results 2026-10-29: haiku 100% of fields, gemini-3.5-flash-lite 97%, both ~$0.0003 per card
     or_models = [
-        "google/gemini-2.5-flash",      # Gemini via OpenRouter (different quota pool)
-        "anthropic/claude-sonnet-4-5",   # Claude Sonnet as fallback
+        "anthropic/claude-haiku-5.5",
+        "google/gemini-3.5-flash-lite",
     ]
 
     for or_model in or_models:
@@ -1003,7 +1000,7 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
                             ]
                         }],
                         "max_tokens": 500,
-                        "temperature": 0.1,
+                        "temperature": 0,
                     },
                 )
 
@@ -1035,9 +1032,7 @@ CRITICAL: Return ONLY the raw JSON object. No markdown, no backticks, no explana
                     response_text = response_text[json_start:json_end]
 
             extracted = json.loads(response_text)
-            for key in fields:
-                if key in extracted and extracted[key] and str(extracted[key]).strip() and extracted[key] != "N/A":
-                    fields[key] = str(extracted[key]).strip()
+            _merge_ocr_fields(fields, extracted)
 
             print(f"[OPENROUTER-OCR] Extracted with {or_model}: {fields}")
             fields["_source"] = f"openrouter:{or_model}"
@@ -1188,6 +1183,7 @@ async def add_contact_logic(contact: Contact, user_id: str, source: str = "manua
             phone=contact.phone,
             linkedin=contact.linkedin,
             company_name=contact.company_name,
+            title=contact.title or "",
             notes=contact.notes,
             links=contact.links or [],
             source=source,
@@ -1301,36 +1297,35 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
         print(f"[SCAN] Photo thumbnail creation failed (non-fatal): {photo_err}")
 
     try:
-        # Run synchronous Gemini OCR in thread pool with hard timeout
-        # Gemini SDK timeout is unreliable — asyncio.wait_for enforces a real deadline
-        try:
-            fields = await asyncio.wait_for(
-                asyncio.to_thread(extract_contact_from_image_with_gemini, temp_filename),
-                timeout=20
-            )
-        except asyncio.TimeoutError:
-            print("[SCAN] Gemini OCR hard timeout (20s) — skipping to OpenRouter")
-            fields = {"name": "N/A", "email": "N/A", "phone": "N/A", "linkedin": "N/A", "company_name": "N/A"}
-            fields["_errors"] = ["Gemini timeout (20s hard limit)"]
-        has_info = any(v != "N/A" for k, v in fields.items() if k not in ("linkedin", "_errors", "_source"))
-        gemini_errors = fields.pop("_errors", [])
-        gemini_source = fields.pop("_source", None)
+        def _has_info(f):
+            return any(f.get(k, "N/A") != "N/A" for k in ("name", "email", "phone", "company_name"))
 
-        # If Gemini failed, try OpenRouter as fallback
-        if not has_info:
-            print(f"[SCAN] Gemini returned no info. Errors: {gemini_errors}. Trying OpenRouter fallback...")
-            fields = await extract_contact_with_openrouter(temp_filename)
-            has_info = any(v != "N/A" for k, v in fields.items() if k not in ("linkedin", "_errors", "_source"))
-            or_source = fields.pop("_source", None)
-            if has_info:
-                print(f"[SCAN] OpenRouter fallback succeeded via {or_source}")
-            else:
-                # Both Gemini and OpenRouter failed — report all errors
-                all_errors = gemini_errors.copy()
-                all_errors.append("OpenRouter fallback also returned no contact info")
-                error_detail = f"No contact information found in image. Models tried: {', '.join(all_errors)}"
-                print(f"[SCAN] All OCR models failed. {error_detail}")
-                raise HTTPException(status_code=400, detail=error_detail)
+        # OpenRouter first (benchmarked best, paid quota); Gemini direct is the fallback.
+        fields = await extract_contact_with_openrouter(temp_filename)
+        errors = []
+        source = fields.pop("_source", None)
+        if not _has_info(fields):
+            errors.append("OpenRouter returned no contact info")
+            try:
+                fields = await asyncio.wait_for(
+                    asyncio.to_thread(extract_contact_from_image_with_gemini, temp_filename),
+                    timeout=20
+                )
+            except asyncio.TimeoutError:
+                fields = dict(OCR_EMPTY, _errors=["Gemini timeout (20s hard limit)"])
+            errors += fields.pop("_errors", [])
+            source = fields.pop("_source", None)
+        if not _has_info(fields):
+            error_detail = f"No contact information found in image. Models tried: {', '.join(errors)}"
+            print(f"[SCAN] All OCR models failed. {error_detail}")
+            raise HTTPException(status_code=400, detail=error_detail)
+        print(f"[SCAN] OCR succeeded via {source}")
+
+        website = fields.pop("website", "N/A")
+        if website != "N/A":
+            fields["links"] = [{"url": website, "label": "Website", "added_by": "scan"}]
+        if fields.get("title") == "N/A":
+            fields["title"] = ""
 
         # DISABLED: LinkedIn auto-lookup generates hallucinated/fake URLs
         # Only use LinkedIn if actually found on the business card via OCR
@@ -2624,6 +2619,7 @@ async def list_contacts_route(
                 "lead_temperature": c.lead_temperature,
                 "lead_score_reasoning": c.lead_score_reasoning or "",
                 "event_name": getattr(c, 'event_name', '') or "",
+                "title": getattr(c, 'title', '') or "",
                 "admin_notes": getattr(c, 'admin_notes', '') or "",
                 "photo_base64": getattr(c, 'photo_base64', None),
                 "qr_base64": get_qr_base64(str(c.id)),
@@ -2674,6 +2670,7 @@ async def get_contact_route(
             "lead_score_breakdown": c.lead_score_breakdown or {},
             "lead_recommended_actions": c.lead_recommended_actions or [],
             "event_name": getattr(c, 'event_name', '') or "",
+            "title": getattr(c, 'title', '') or "",
             "admin_notes": getattr(c, 'admin_notes', '') or "",
             "photo_base64": getattr(c, 'photo_base64', None),
             "qr_base64": get_qr_base64(contact_id),
@@ -2978,9 +2975,8 @@ async def export_contacts_route(
     format: str = Query("csv", description="Export format: csv or json"),
     api_key: str = Depends(verify_api_key),
 ):
-    import csv
-    from io import StringIO
     from fastapi.responses import StreamingResponse
+    from export_csv import CONTACT_CSV_HEADERS, build_csv, contact_rows
 
     session = await get_db_session()
     try:
@@ -3023,30 +3019,10 @@ async def export_contacts_route(
                 })
             return {"status": "success", "total": len(contact_list), "contacts": contact_list}
 
-        # CSV export
-        output = StringIO()
-        writer = csv.writer(output)
-        writer.writerow([
-            "Name", "Email", "Phone", "LinkedIn", "Company", "Event",
-            "Notes", "Source", "Lead Score", "Lead Temperature",
-            "Research Summary", "Pitch Email Subject", "Gamma Deck URL",
-        ])
-        for c in contacts:
-            pip = pipeline_map.get(str(c.id))
-            writer.writerow([
-                c.name, c.email or "N/A", c.phone or "N/A",
-                c.linkedin or "N/A", c.company_name or "N/A",
-                getattr(c, 'event_name', '') or "",
-                (c.notes or "").replace("\n", " "), c.source or "manual",
-                c.lead_score or "", c.lead_temperature or "",
-                (pip.research_summary or "").replace("\n", " ") if pip else "",
-                (pip.pitch_email_subject or "") if pip else "",
-                (getattr(pip, 'gamma_deck_url', '') or "") if pip else "",
-            ])
-
-        output.seek(0)
+        # CSV export (UTF-8 BOM, formula-injection guard; headers auto-map
+        # into Harbinger's contacts ingest)
         return StreamingResponse(
-            iter([output.getvalue()]),
+            iter([build_csv(CONTACT_CSV_HEADERS, contact_rows(contacts, pipeline_map))]),
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=event_scout_contacts.csv"},
         )
@@ -5236,8 +5212,7 @@ async def admin_export_all_contacts(
 ):
     """Export all contacts across all users as CSV."""
     from fastapi.responses import StreamingResponse
-    import csv
-    import io
+    from export_csv import ADMIN_CSV_HEADERS, admin_contact_rows, build_csv
 
     session = await get_db_session()
     try:
@@ -5264,35 +5239,8 @@ async def admin_export_all_contacts(
                 if cid not in pipeline_map:  # keep only latest per contact
                     pipeline_map[cid] = p
 
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow([
-            "Name", "Email", "Phone", "LinkedIn", "Company", "Event",
-            "Notes", "Admin Notes", "Lead Score", "Lead Temperature",
-            "Source", "Scanned By", "Created At",
-            "Research Summary", "Pitch Angle", "Pitch Email Subject", "Gamma Deck URL",
-        ])
-
-        for c in contacts:
-            pip = pipeline_map.get(str(c.id))
-            writer.writerow([
-                c.name or "", c.email or "", c.phone or "", c.linkedin or "",
-                c.company_name or "", getattr(c, 'event_name', '') or "",
-                (c.notes or "").replace("\n", " "),
-                (getattr(c, 'admin_notes', '') or "").replace("\n", " "),
-                c.lead_score or "", c.lead_temperature or "",
-                c.source or "manual",
-                user_map.get(str(c.user_id), "Unknown"),
-                c.created_at.isoformat() if c.created_at else "",
-                (pip.research_summary or "").replace("\n", " ") if pip else "",
-                (pip.pitch_angle or "").replace("\n", " ") if pip else "",
-                (pip.pitch_email_subject or "") if pip else "",
-                (getattr(pip, 'gamma_deck_url', '') or "") if pip else "",
-            ])
-
-        output.seek(0)
         return StreamingResponse(
-            iter([output.getvalue()]),
+            iter([build_csv(ADMIN_CSV_HEADERS, admin_contact_rows(contacts, pipeline_map, user_map))]),
             media_type="text/csv",
             headers={"Content-Disposition": f"attachment; filename=event_scout_all_contacts_{datetime.now().strftime('%Y%m%d')}.csv"}
         )

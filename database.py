@@ -85,6 +85,7 @@ class ContactDB(Base):
     linkedin = Column(String(500), default="N/A")
     linkedin_source = Column(String(20), default="card")  # 'card' or 'ai_detected'
     company_name = Column(String(255), default="N/A")
+    title = Column(String(255), default="")  # job title from the card
     notes = Column(Text, default="")
     links = Column(JSON, default=list)  # [{url, label, added_by}]
     source = Column(String(50), default="manual")  # 'manual', 'scan', 'qr'
@@ -434,6 +435,7 @@ async def _init_schema(eng, label="Primary"):
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS admin_notes TEXT DEFAULT ''",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS photo_base64 TEXT",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS event_name VARCHAR(255) DEFAULT ''",
+                "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT ''",
                 "ALTER TABLE contact_pipelines ADD COLUMN IF NOT EXISTS gamma_deck_url TEXT",
                 "ALTER TABLE admin_broadcasts ADD COLUMN IF NOT EXISTS recipient_ids JSONB",
             ]
