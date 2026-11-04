@@ -392,7 +392,9 @@ def _lists(node, path, out):
             _lists(v, path + (str(k),), out)
     elif isinstance(node, list):
         rows = [x for x in node if isinstance(x, dict)]
-        if len(rows) >= 2 and len(rows) >= 0.6 * len(node):
+        # Bare schema.org ListItems (name + url, no Organization inside) are breadcrumbs / sitelinks, not exhibitors.
+        bare = all(r.get("@type") == "ListItem" and not isinstance(r.get("item"), dict) for r in rows)
+        if len(rows) >= 2 and len(rows) >= 0.6 * len(node) and not bare:
             def named(r):
                 r = r["item"] if isinstance(r.get("item"), dict) else r
                 return any(_s(v) for k, v in r.items() if _K(k) in _JSON_FIELDS["name"])
@@ -497,6 +499,7 @@ def _from_tables(page: FetchedPage) -> List[dict]:
 _BOOTH_TXT = re.compile(r"\b(?:booth|stand)\s*(?:no\.?|number|#|:)?\s*([A-Za-z]{0,3}[-\s]?\d[\w\-/]*)", re.I)
 _HALL_TXT = re.compile(r"\bhall\s*([A-Za-z0-9]+)", re.I)
 _CARD_TAGS = {"div", "li", "article", "section", "a"}
+_SIGNAL = ("booth", "hall", "category", "country")
 
 
 def _cls(rx: str):
@@ -542,6 +545,9 @@ def _from_cards(page: FetchedPage) -> List[dict]:
             if sum(len(e.get_text(" ", strip=True)) for e in els) / len(els) > 500:
                 continue
             rows = [_card(e, page, site) for e in els]
+            # A real exhibitor list carries booth/hall/category/country (not just the name again) on a fifth of its cards; bare name+link groups are menus.
+            if sum(1 for r in rows if any(r[f] and r[f] != r["name"] for f in _SIGNAL)) < 0.2 * len(rows):
+                continue
             if sum(1 for r in rows if _row(r, page.final_url)) >= 0.8 * len(els):
                 best = rows
     return best

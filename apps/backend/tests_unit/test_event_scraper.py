@@ -33,6 +33,26 @@ def test_card_grid_layout():
     assert rows[3].profile_url == "" and rows[3].website == ""  # nav links never leak into cards
 
 
+def test_menu_links_outside_nav_tags_are_not_exhibitors():
+    # gulfood / ces / dmexco: a div-built menu of bare name+link items looked like a card grid
+    assert es.extract_exhibitors([page("site_menu.html", SITE + "/")]) == []
+
+
+def test_breadcrumb_and_sitelink_json_are_not_exhibitors():
+    assert es.extract_exhibitors([page("sitelinks_ldjson.html", SITE + "/")]) == []
+
+
+def test_faq_cards_whose_category_is_their_own_title_are_not_exhibitors():
+    assert es.extract_exhibitors([page("faq_cards.html", SITE + "/faq")]) == []
+
+
+def test_real_card_grid_beats_a_larger_menu():
+    menu = (FIX / "site_menu.html").read_text().split("<main>")[0].split("<body>")[1]
+    html = (FIX / "expo_cards_p1.html").read_text().replace("<body>", "<body>" + menu, 1)
+    rows = es.extract_exhibitors([es.FetchedPage(url=SITE, final_url=SITE, status=200, html=html, content_type="text/html")])
+    assert [r.name for r in rows] == ["Acme Robotics", "Bluewave Energy", "Cedar Foods", "Delta Logistics", "Echo Labs"]
+
+
 def test_table_layout():
     rows = es.extract_exhibitors([page("summit_table.html", "https://summit.example/exhibitors")])
     assert view(rows) == [("Medix Devices", "4.2-B", "Hall 4"), ("Novacare Pharma", "5.1-A", "Hall 5"),
