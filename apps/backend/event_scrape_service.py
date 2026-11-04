@@ -134,7 +134,8 @@ async def run_scrape(event_id: uuid.UUID, *, manual: bool = False, fetch=None, l
             e = (await s.execute(select(database.ManagedEventDB).where(database.ManagedEventDB.id == event_id))).scalar_one()
             status = _status(res)
             if status != "failed":
-                await _save_rows(s, e.name, res.exhibitors)
+                if res.exhibitors:  # a partial rescrape with no directory must not wipe the earlier scraped rows
+                    await _save_rows(s, e.name, res.exhibitors)
                 if res.floor_map and (not e.floor_map_url or e.floor_map_url == (e.scrape_stats or {}).get("floor_map_url_scraped")):
                     e.floor_map_url = res.floor_map.url[:500]
                 e.exhibitors_url = (res.exhibitors_url or e.exhibitors_url or "")[:500]

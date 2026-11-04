@@ -230,3 +230,30 @@ async def test_needs_js_not_reported_for_a_static_page_or_a_shell_that_yielded_c
     shell = '<html><body><div id="root"></div><a href="https://cdn.example/floor-plan.pdf">Floor plan</a></body></html>'
     found = await svc.scrape_event_site(SITE, fetch=_html_page(shell))
     assert found.floor_map is not None and not (found.error or "").startswith("needs_js")
+
+
+async def test_route_made_floor_map_and_app_booth_survive_rescrapes(db):
+    """Data entered through the real routes (planner PATCH, POST /exhibitors) is never touched by a scrape."""
+    admin = await make_user(db, admin=True)
+    created = await create(db, admin)
+    await settle()
+    async with db() as s:
+        await api_routes.planner_update_event(created["id"], api_routes.PlannerEventPayload(floorMapUrl="https://admin.example/map.pdf"), s)
+        await api_routes.add_booth(api_routes.BoothPayload(event="Gulf Expo 2026", name="Walk-up Co", booth="Z9"), s, admin, None)
+    for _ in range(2):
+        await svc.run_scrape(uuid.UUID(created["id"]), manual=True)
+    assert (await planner_row(db, created["id"]))["floorMapUrl"] == "https://admin.example/map.pdf"
+    booths = {b["name"]: b for b in await discovery(db, "Gulf Expo 2026")}
+    assert booths["Walk-up Co"]["booth"] == "Z9" and booths["Walk-up Co"]["userAdded"] is True and len(booths) == 8
+
+
+async def test_partial_rescrape_without_exhibitors_keeps_earlier_scraped_rows(db, monkeypatch):
+    """Site still shows a floor plan but the directory page is down: old scraped exhibitors must not be wiped."""
+    admin = await make_user(db, admin=True)
+    created = await create(db, admin)
+    await settle()
+    assert len(await discovery(db, "Gulf Expo 2026")) == 7, "setup scrape"
+    monkeypatch.setattr(event_scraper, "fetch_page", fake_site({SITE: "expo_home.html", SITE + "/": "expo_home.html", SITE + "/venue/floor-plan": "js_shell.html"}))
+    out = await svc.run_scrape(uuid.UUID(created["id"]), manual=True)
+    assert out["exhibitors"] == 0 and out["status"] == "partial", out
+    assert len(await discovery(db, "Gulf Expo 2026")) == 7, "rescrape wiped rows"
