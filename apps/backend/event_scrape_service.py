@@ -71,7 +71,7 @@ async def scrape_event_site(url: str, *, event: str = "", fetch=None, llm=None, 
 
     fire, reason = event_floormap.needs_llm(res.exhibitors, res.floor_map)
     if not heuristic and event_scraper.is_js_shell(pages[0]):
-        res.error = "needs_js: the site renders in the browser and no JS fetcher is configured"
+        res.error = "needs_js: the site renders in the browser; the optional JS tier is not wired, so no JS render was attempted"
     elif fire and use_llm:
         if not ai_client.ai_configured:
             res.warnings.append("ai_not_configured")

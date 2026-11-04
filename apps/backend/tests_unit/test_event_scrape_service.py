@@ -207,3 +207,26 @@ async def test_manual_scrape_route_guards(db):
         assert await api_routes.planner_scrape_event(site["id"], s) == {"status": "running"}
         assert (await api_routes.planner_scrape_status(site["id"], s))["status"] in ("running", "ok")
     await settle()
+
+
+# needs_js is the honest "JS tier unavailable" signal: only for an empty JS shell with nothing found, never a claim a JS render ran.
+def _html_page(html):
+    async def fetch(url, **_):
+        return event_scraper.FetchedPage(url=url, final_url=url, status=200, html=html, content_type="text/html")
+    return fetch
+
+
+async def test_needs_js_only_for_an_empty_js_shell_and_says_no_js_render_ran(monkeypatch):
+    monkeypatch.setenv("LAKESTREAM_URL", "https://lakestream.invalid")  # reserved, ignored: setting it must not change the outcome
+    monkeypatch.setenv("LAKESTREAM_API_KEY", "x")
+    res = await svc.scrape_event_site(SITE, fetch=fake_site({SITE: "js_shell.html"}))
+    assert res.error.startswith("needs_js") and "not wired" in res.error and "no JS render was attempted" in res.error
+    assert res.exhibitors == [] and res.floor_map is None and res.method == "none"
+
+
+async def test_needs_js_not_reported_for_a_static_page_or_a_shell_that_yielded_content():
+    static = await svc.scrape_event_site(SITE, fetch=_html_page("<html><body><p>Welcome to our event.</p></body></html>"))
+    assert static.error.startswith("no_content")
+    shell = '<html><body><div id="root"></div><a href="https://cdn.example/floor-plan.pdf">Floor plan</a></body></html>'
+    found = await svc.scrape_event_site(SITE, fetch=_html_page(shell))
+    assert found.floor_map is not None and not (found.error or "").startswith("needs_js")
