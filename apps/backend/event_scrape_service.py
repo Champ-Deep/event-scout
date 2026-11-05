@@ -64,9 +64,9 @@ async def scrape_event_site(url: str, *, event: str = "", fetch=None, llm=None, 
         res.error = str(e)
         return res
     res.pages_fetched = len(pages)
-    res.exhibitors = event_scraper.extract_exhibitors(pages)
+    res.exhibitors = event_scraper.extract_exhibitors(pages, event)
     res.floor_map = event_floormap.extract_floor_map(pages)
-    res.exhibitors_url = next((p.final_url for p in pages if event_scraper.extract_exhibitors([p])), None)
+    res.exhibitors_url = next((p.final_url for p in pages if event_scraper.extract_exhibitors([p], event)), None)
     heuristic, llm_added = bool(res.exhibitors or res.floor_map), False
 
     fire, reason = event_floormap.needs_llm(res.exhibitors, res.floor_map)

@@ -1,0 +1,164 @@
+{
+ "hlth": {
+  "start_url": "https://hlth.com/",
+  "fetched_with": "event_scraper.crawl (real SSRF-guarded fetch_page, unmodified), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "hlth_0.html.gz",
+    "final_url": "https://hlth.com/",
+    "bytes": 359433,
+    "sha256": "2b0544c817618427a96eda781b9180dcf2190dbeab8e96d4a09d9ba7ce6bc561",
+    "fetched_at_utc": "2026-11-05T21:57:21Z"
+   },
+   {
+    "file": "hlth_1.html.gz",
+    "final_url": "https://hlth.com/members",
+    "bytes": 12419,
+    "sha256": "309516e0c9a472402e3ff0bddd870a93d77c6865f5efde39e9efca5321779fda",
+    "fetched_at_utc": "2026-11-05T21:57:21Z"
+   },
+   {
+    "file": "hlth_2.html.gz",
+    "final_url": "https://hlth.com/sponsor-opportunities",
+    "bytes": 267044,
+    "sha256": "b2b921849a33c74ddb65fdf8c4786637e743ae6fcda45bdcf58649e43f1ca656",
+    "fetched_at_utc": "2026-11-05T21:57:21Z"
+   }
+  ]
+ },
+ "fabtech": {
+  "start_url": "https://www.fabtechexpo.com/",
+  "fetched_with": "event_scraper.crawl (real SSRF-guarded fetch_page, unmodified), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "fabtech_0.html.gz",
+    "final_url": "https://www.fabtechexpo.com/",
+    "bytes": 221752,
+    "sha256": "f37fded60339ac87014090ed0b5b0090eb48c578c0bf1c9695bc9d6e6a6a5ed6",
+    "fetched_at_utc": "2026-11-05T21:57:07Z"
+   },
+   {
+    "file": "fabtech_1.html.gz",
+    "final_url": "https://www.fabtechexpo.com/exhibit/exhibitor-resources",
+    "bytes": 197745,
+    "sha256": "6a932a2f018f38ad4f36d7235a44a03bec20fd498812f6b6b04be925bb1bae0f",
+    "fetched_at_utc": "2026-11-05T21:57:07Z"
+   },
+   {
+    "file": "fabtech_2.html.gz",
+    "final_url": "https://www.fabtechexpo.com/exhibit/eac",
+    "bytes": 162734,
+    "sha256": "d420dcc7d2e6aca8f6cf505f40dc5fd336276d562d036376ca2a0f02d7decfeb",
+    "fetched_at_utc": "2026-11-05T21:57:07Z"
+   },
+   {
+    "file": "fabtech_3.html.gz",
+    "final_url": "https://www.fabtechexpo.com/plan-your-visit",
+    "bytes": 208816,
+    "sha256": "d8e91398fc1a6a5a3f765615ce6278a3e1cba4763f77ceb348de88b7f2a46f40",
+    "fetched_at_utc": "2026-11-05T21:57:07Z"
+   }
+  ]
+ },
+ "packexpo": {
+  "start_url": "https://www.packexpolasvegas.com/",
+  "fetched_with": "event_scraper.crawl (real SSRF-guarded fetch_page, unmodified), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "packexpo_0.html.gz",
+    "final_url": "https://www.packexpolasvegas.com/",
+    "bytes": 44870,
+    "sha256": "8c03b5ee100956fba683ae26eb4f17e1e0fafd2553d3c60c4f48f82f19df5d66",
+    "fetched_at_utc": "2026-11-05T21:57:09Z"
+   },
+   {
+    "file": "packexpo_1.html.gz",
+    "final_url": "https://www.packexpolasvegas.com/exhibiting",
+    "bytes": 35555,
+    "sha256": "b9cb25ed99d32638645d2b05ec13c91009fc27c8339df7ae98ef1046c0a54f8a",
+    "fetched_at_utc": "2026-11-05T21:57:09Z"
+   },
+   {
+    "file": "packexpo_2.html.gz",
+    "final_url": "https://www.packexpolasvegas.com/exhibiting/reserve-my-booth",
+    "bytes": 34363,
+    "sha256": "bfe7fc5f6b36b17267f62bf1f970cd48bf38f60a1f7e7fb63ea91d0137d7987c",
+    "fetched_at_utc": "2026-11-05T21:57:09Z"
+   }
+  ]
+ },
+ "inbound": {
+  "start_url": "https://www.inbound.com/",
+  "fetched_with": "event_scraper.crawl (real SSRF-guarded fetch_page, unmodified), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "inbound_0.html.gz",
+    "final_url": "https://unbound.hubspot.com/",
+    "bytes": 718501,
+    "sha256": "69e970fa9c7568cb8b46f86df8c5c1dfbf10e9b64289e97228f2887d96485ff8",
+    "fetched_at_utc": "2026-11-05T21:57:12Z"
+   },
+   {
+    "file": "inbound_1.html.gz",
+    "final_url": "https://unbound.hubspot.com/sponsors",
+    "bytes": 1143230,
+    "sha256": "72c930e0f786441d82d257be7fde6a4d92e2ba862f5788bc39550ddbd657156e",
+    "fetched_at_utc": "2026-11-05T21:57:12Z"
+   }
+  ]
+ },
+ "dax": {
+  "start_url": "https://www.daxshow.com/exhibit_list_and_show_special/169/",
+  "fetched_with": "event_scraper.crawl (real SSRF-guarded fetch_page, unmodified), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "dax_0.html.gz",
+    "final_url": "https://www.daxshow.com/exhibit_list_and_show_special/169/",
+    "bytes": 73379,
+    "sha256": "95c86aea51dc8f4dfaeb3875af24f8b5c320fd5a4e6be8d74908891edab8806e",
+    "fetched_at_utc": "2026-11-05T21:59:00Z"
+   },
+   {
+    "file": "dax_1.html.gz",
+    "final_url": "https://www.daxshow.com/exhibitor_information/",
+    "bytes": 68122,
+    "sha256": "758edbbe373a9d366ee6fc3e3e77044087c533360272c15697d915e5e4f85f92",
+    "fetched_at_utc": "2026-11-05T21:59:00Z"
+   },
+   {
+    "file": "dax_2.html.gz",
+    "final_url": "https://www.daxshow.com/",
+    "bytes": 66999,
+    "sha256": "3f6e29e260551a7ac17f52b629380201caa88ce8082963ba6c0c71eb8af3768a",
+    "fetched_at_utc": "2026-11-05T21:59:00Z"
+   }
+  ]
+ },
+ "automate": {
+  "start_url": "https://www.automate.org/",
+  "fetched_with": "event_scraper.crawl (real SSRF-guarded fetch_page, unmodified), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "automate_0.html.gz",
+    "final_url": "https://www.automate.org/",
+    "bytes": 102415,
+    "sha256": "7585338bbf9d0ea05b3d5cf4c309f5e9159507cf0fc23dd3fdfe397c6a522e65",
+    "fetched_at_utc": "2026-11-05T21:59:05Z"
+   },
+   {
+    "file": "automate_1.html.gz",
+    "final_url": "https://www.automate.org/companies",
+    "bytes": 111055,
+    "sha256": "38a3b32ab8c7e70b63b717365bcd19ae5829fb084f9dffef5016b174da7e02f9",
+    "fetched_at_utc": "2026-11-05T21:59:05Z"
+   },
+   {
+    "file": "automate_2.html.gz",
+    "final_url": "https://www.automate.org/mexico/companies",
+    "bytes": 110413,
+    "sha256": "453913a1368447f3f9fd64243bd0cfb0a9492295482ac831944d36bfcafdbeb9",
+    "fetched_at_utc": "2026-11-05T21:59:05Z"
+   }
+  ]
+ }
+}

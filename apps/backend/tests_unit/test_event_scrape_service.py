@@ -15,7 +15,7 @@ import api_routes
 import database
 import event_scrape_service as svc
 import event_scraper
-from conftest import make_user
+from conftest import make_user, real_pages, real_start_url
 
 FIX = pathlib.Path(__file__).parent / "fixtures"
 SITE = "https://gulfexpo.example"
@@ -272,3 +272,68 @@ async def test_faq_only_site_creates_no_discovery_exhibitors_and_keeps_app_rows(
     assert [b["name"] for b in await discovery(db, "Gulf Expo 2026")] == ["Walk-up Co"]
     async with db() as s:
         assert {x.source for x in (await s.execute(select(database.ExhibitorDB))).scalars()} == {"app"}
+
+
+# ------------------------------------------------------------------ real pages that fooled 82814b4 (persisted end to end)
+
+
+def real_site(site):
+    """fetch() that serves the pages the real crawl saw (fixtures/real), home page first."""
+    pages = {p.final_url: p for p in real_pages(site)}
+    pages[real_start_url(site)] = real_pages(site)[0]
+
+    async def fetch(url, **_):
+        if url not in pages:
+            raise event_scraper.ScrapeError("unreachable", url)
+        return pages[url]
+    return fetch
+
+
+async def seed_other_rows(db, admin, event):
+    async with db() as s:
+        await api_routes.add_booth(api_routes.BoothPayload(event=event, name="Walk-up Co", booth="Z9"), s, admin, None)
+        s.add(database.ExhibitorDB(id=uuid.uuid4(), event_name=event, name="Imported Co", booth="I1", products=[], tags=[], source="import"))
+        await s.commit()
+
+
+@pytest.mark.parametrize("site,name", [("hlth", "HLTH 2026"), ("fabtech", "FABTECH 2027")])
+async def test_real_non_directory_sites_persist_no_exhibitors_and_leave_app_and_import_rows(db, monkeypatch, site, name):
+    monkeypatch.setattr(event_scraper, "fetch_page", real_site(site))
+    admin = await make_user(db, admin=True)
+    created = await create(db, admin, website=real_start_url(site), name=name)
+    await settle()
+    await seed_other_rows(db, admin, name)
+    out = await svc.run_scrape(uuid.UUID(created["id"]), manual=True)
+    assert out["exhibitors"] == 0 and out["status"] != "ok", out
+    assert sorted(b["name"] for b in await discovery(db, name)) == ["Imported Co", "Walk-up Co"]
+    async with db() as s:
+        assert {x.source for x in (await s.execute(select(database.ExhibitorDB))).scalars()} == {"app", "import"}
+
+
+async def test_real_packexpo_scrape_stores_the_viewer_and_a_manual_floor_map_still_wins(db, monkeypatch):
+    monkeypatch.setattr(event_scraper, "fetch_page", real_site("packexpo"))
+    admin = await make_user(db, admin=True)
+    created = await create(db, admin, website=real_start_url("packexpo"), name="PACK EXPO Las Vegas 2026")
+    await settle()
+    assert (await planner_row(db, created["id"]))["floorMapUrl"] == "https://packexpo27.mapyourshow.com/8_0/exhview/index.cfm"
+    async with db() as s:
+        await api_routes.planner_update_event(created["id"], api_routes.PlannerEventPayload(floorMapUrl="https://admin.example/map.pdf"), s)
+    await svc.run_scrape(uuid.UUID(created["id"]), manual=True)
+    assert (await planner_row(db, created["id"]))["floorMapUrl"] == "https://admin.example/map.pdf"
+
+
+async def test_real_inbound_scrape_stores_no_logo_as_floor_map(db, monkeypatch):
+    monkeypatch.setattr(event_scraper, "fetch_page", real_site("inbound"))
+    admin = await make_user(db, admin=True)
+    created = await create(db, admin, website=real_start_url("inbound"), name="INBOUND 2026")
+    await settle()
+    assert not (await planner_row(db, created["id"]))["floorMapUrl"]
+
+
+async def test_real_dax_directory_persists_30_exhibitors_with_its_png_map(db, monkeypatch):
+    monkeypatch.setattr(event_scraper, "fetch_page", real_site("dax"))
+    admin = await make_user(db, admin=True)
+    created = await create(db, admin, website=real_start_url("dax"), name="DAX Kansas City 2026")
+    await settle()
+    assert len(await discovery(db, "DAX Kansas City 2026")) == 30
+    assert (await planner_row(db, created["id"]))["floorMapUrl"].endswith("KC Floorplan 2026.png")

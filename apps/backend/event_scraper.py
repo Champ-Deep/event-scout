@@ -302,8 +302,8 @@ async def crawl(url: str, *, fetch: Callable = fetch_page, max_pages: int = MAX_
     return pages
 
 
-async def scrape_exhibitors(url: str, *, fetch: Callable = fetch_page) -> List[ScrapedExhibitor]:
-    return extract_exhibitors(await crawl(url, fetch=fetch))
+async def scrape_exhibitors(url: str, *, fetch: Callable = fetch_page, event: str = "") -> List[ScrapedExhibitor]:
+    return extract_exhibitors(await crawl(url, fetch=fetch), event)
 
 
 def is_js_shell(page: FetchedPage) -> bool:
@@ -331,6 +331,8 @@ def _row(raw: dict, base: str) -> Optional[ScrapedExhibitor]:
     if len(name) < 2 or name.lower() in _NAV_WORDS or not re.search(r"[^\W\d_]", name):
         return None
     out = {f: _clean(raw.get(f), f) for f in ("category", "country", "description")}
+    if re.search(r"[\d|]", out["country"]):  # a date / time / venue string read from a "location" element, not a country
+        out["country"] = ""
     out["booth"] = _clean(_booth(str(raw.get("booth") or "")), "booth")
     out["hall"] = _clean(raw.get("hall"), "hall")
     for f in ("website", "profile_url"):
@@ -394,7 +396,8 @@ def _lists(node, path, out):
         rows = [x for x in node if isinstance(x, dict)]
         # Bare schema.org ListItems (name + url, no Organization inside) are breadcrumbs / sitelinks, not exhibitors.
         bare = all(r.get("@type") == "ListItem" and not isinstance(r.get("item"), dict) for r in rows)
-        if len(rows) >= 2 and len(rows) >= 0.6 * len(node) and not bare:
+        page_graph = any(r.get("@type") in ("WebSite", "WebPage") for r in rows)  # the site's own @graph: it describes itself
+        if len(rows) >= 2 and len(rows) >= 0.6 * len(node) and not bare and not page_graph:
             def named(r):
                 r = r["item"] if isinstance(r.get("item"), dict) else r
                 return any(_s(v) for k, v in r.items() if _K(k) in _JSON_FIELDS["name"])
@@ -503,6 +506,13 @@ _CARD_TAGS = {"div", "li", "article", "section", "a"}
 _SIGNAL = ("booth", "hall", "category", "country")
 
 
+def _evidenced(raws: List[dict], base: str) -> List[ScrapedExhibitor]:
+    """The valid rows of one candidate list, or [] unless a fifth of them carry booth/hall/category/country (not just
+    the name again). A real exhibitor directory has such fields; bare name lists are menus, logo walls, sessions."""
+    rows = [r for r in (_row(raw, base) for raw in raws) if r]
+    return rows if sum(1 for r in rows if any(getattr(r, f) and getattr(r, f) != r.name for f in _SIGNAL)) >= 0.2 * len(rows) else []
+
+
 def _cls(rx: str):
     pat = re.compile(rx, re.I)
     return lambda c: bool(c) and bool(pat.search(c))
@@ -550,10 +560,7 @@ def _from_cards(page: FetchedPage) -> List[dict]:
             if sum("?" in e.get_text() for e in els) >= 0.5 * len(els):
                 continue
             rows = [_card(e, page, site) for e in els]
-            # A real exhibitor list carries booth/hall/category/country (not just the name again) on a fifth of its cards; bare name+link groups are menus.
-            if sum(1 for r in rows if any(r[f] and r[f] != r["name"] for f in _SIGNAL)) < 0.2 * len(rows):
-                continue
-            if sum(1 for r in rows if _row(r, page.final_url)) >= 0.8 * len(els):
+            if len(_evidenced(rows, page.final_url)) >= 0.8 * len(els):
                 best = rows
     return best
 
@@ -561,19 +568,17 @@ def _from_cards(page: FetchedPage) -> List[dict]:
 # ------------------------------------------------------------------------------------------------ public
 
 
-def extract_exhibitors(pages: List[FetchedPage]) -> List[ScrapedExhibitor]:
-    """Per page the first method that finds rows (embedded JSON, tables with a company column, repeated cards);
-    rows from all pages merged and de-duplicated by lower-cased single-spaced name (first seen wins)."""
+def extract_exhibitors(pages: List[FetchedPage], event: str = "") -> List[ScrapedExhibitor]:
+    """Per page the first method whose rows pass _evidenced (embedded JSON, tables with a company column, repeated
+    cards); rows from all pages merged and de-duplicated by lower-cased single-spaced name (first seen wins). A row
+    named like the event itself (`event`, years ignored) is the site's own title, not an exhibitor."""
+    own = _key(re.sub(r"\b\d{4}\b", "", event))
     out, seen = [], set()
     for page in pages:
-        raws = _from_json(page)
-        if not any(_row(r, page.final_url) for r in raws):
-            raws = _from_tables(page)
-        if not any(_row(r, page.final_url) for r in raws):
-            raws = _from_cards(page) if "json" not in page.content_type else []
-        for raw in raws:
-            row = _row(raw, page.final_url)
-            if row and _key(row.name) not in seen:
+        rows = _evidenced(_from_json(page), page.final_url) or _evidenced(_from_tables(page), page.final_url) or \
+            (_evidenced(_from_cards(page), page.final_url) if "json" not in page.content_type else [])
+        for row in rows:
+            if _key(row.name) not in seen and (not own or _key(re.sub(r"\b\d{4}\b", "", row.name)) != own):
                 seen.add(_key(row.name))
                 out.append(row)
     return out

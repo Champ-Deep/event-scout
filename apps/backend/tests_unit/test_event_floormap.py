@@ -6,6 +6,7 @@ import pytest
 
 import ai_client
 import event_floormap as fm
+from conftest import real_pages
 
 
 def page(html, url="https://expo.example.com/"):
@@ -36,6 +37,29 @@ def test_google_maps_sitemap_and_bare_map_links_are_not_floor_maps():
 
 def test_script_text_and_non_http_are_ignored():
     assert fm.extract_floor_map([page('<script>var a="<a href=\\"/floor-plan.pdf\\">floor plan</a>"</script>')]) is None
+
+
+def test_packexpo_view_floor_plans_mapyourshow_link_beats_a_ui_icon():
+    r = fm.extract_floor_map(real_pages("packexpo"))
+    assert (r.kind, r.url) == ("viewer", "https://packexpo27.mapyourshow.com/8_0/exhview/index.cfm")
+
+
+def test_inbound_sponsor_logo_is_not_a_floor_map():
+    assert fm.extract_floor_map(real_pages("inbound")) is None
+
+
+def test_real_dax_and_fabtech_maps_unchanged():
+    assert fm.extract_floor_map(real_pages("dax")).url == "https://daxshows.s3.amazonaws.com/images/20260218185412KC Floorplan 2026.png"
+    assert fm.extract_floor_map(real_pages("fabtech")).kind == "viewer"
+
+
+def test_weak_icon_and_logo_images_are_rejected_and_strong_links_outrank_bare_images():
+    assert fm.extract_floor_map([page('<img src="/a/map.png" alt="Map"><img src="/a/floor-plan-icon.svg" alt="Floor plan">'
+                                      '<img src="/s/Map_My_Customers.png" alt="Map My Customers logo">')]) is None
+    html = '<img src="/hall-floor-plan.png" alt="Floor plan"><a href="/visit/floor-plans">View Floor Plans</a>'
+    assert fm.extract_floor_map([page(html)]).url == "https://expo.example.com/visit/floor-plans"
+    assert fm.extract_floor_map([page(html.replace("/visit/floor-plans", "https://x.mapyourshow.com/8_0/"))]).kind == "viewer"
+    assert fm.extract_floor_map([page('<img src="/hall-floor-plan.png" alt="Floor plan">')]).kind == "image"  # a lone real image map stays
 
 
 def rows(n, rich=True):

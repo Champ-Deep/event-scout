@@ -6,6 +6,7 @@ import httpx
 import pytest
 
 import event_scraper as es
+from conftest import real_pages
 
 FIX = pathlib.Path(__file__).parent / "fixtures"
 SITE = "https://gulfexpo.example"
@@ -98,6 +99,45 @@ def test_limits_and_nav_words():
     rows = es._row({"name": long, "booth": "Booth No. 12", "website": "javascript:void(0)"}, SITE)
     assert len(rows.name) == 500 and rows.booth == "12" and rows.website == ""
     assert es._row({"name": "Home"}, SITE) is None and es._row({"name": "2026"}, SITE) is None
+
+
+# ------------------------------------------------------------------ real pages (held-out review of 82814b4)
+
+
+def test_hlth_sessions_events_and_site_name_are_not_exhibitors():
+    # hlth.com: embedded JSON of sessions/events + its own ld+json name; session cards whose "location" is a date/venue string
+    assert es.extract_exhibitors(real_pages("hlth"), "HLTH 2026") == []
+    assert es.extract_exhibitors(real_pages("hlth")) == []
+
+
+def test_fabtech_name_only_ld_json_organizations_are_not_exhibitors():
+    # fabtechexpo.com: the show's owning associations (AWS, FMA, SME, PMA, IFCA) as logo-wall Organization JSON, name + logo + url only
+    assert es.extract_exhibitors(real_pages("fabtech")) == []
+
+
+def test_site_own_ld_json_graph_is_not_an_exhibitor_list():
+    assert es.extract_exhibitors(real_pages("automate")[:1]) == []  # WebSite + Organization of automate.org itself
+
+
+def test_date_and_venue_strings_are_not_a_country():
+    assert es._row({"name": "Acme", "country": "05 Nov 2026 | Houston | 06:00 PM - 09:00 PM CST"}, SITE).country == ""
+    assert es._row({"name": "Acme", "country": "Michigan, United States"}, SITE).country == "Michigan, United States"
+
+
+def test_a_row_named_like_the_event_is_dropped():
+    rows = es.extract_exhibitors([page("expo_cards_p1.html")], "Acme Robotics 2026")
+    assert [r.name for r in rows] == ["Bluewave Energy", "Cedar Foods", "Delta Logistics", "Echo Labs"]
+
+
+def test_real_dax_directory_still_gives_30_exhibitors_all_with_booths():
+    rows = es.extract_exhibitors(real_pages("dax"))
+    assert len(rows) == 30 and all(r.booth for r in rows)
+
+
+def test_real_automate_company_cards_still_extract_with_countries():
+    rows = es.extract_exhibitors(real_pages("automate"))
+    assert len(rows) == 15 and all(r.country for r in rows)
+    assert not {"Automate.org", "Association for Advancing Automation"} & {r.name for r in rows}
 
 
 # ------------------------------------------------------------------ links and crawl

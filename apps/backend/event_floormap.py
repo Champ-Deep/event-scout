@@ -26,10 +26,11 @@ LLM_COVERAGE_THRESHOLD = 0.5  # LakeStream _AUTO_AI_THRESHOLD
 LLM_CHUNK_CHARS = 30_000
 LLM_MAX_CALLS = 3
 
-_VIEWER_HOSTS = ("expocad", "a2zinc", "a2z.", "map-dynamics", "mapdynamics", "cadmapper", "mapsindoors", "expofp")
+_VIEWER_HOSTS = ("expocad", "a2zinc", "a2z.", "map-dynamics", "mapdynamics", "cadmapper", "mapsindoors", "expofp", "mapyourshow")
 _NOT_A_FLOOR_MAP = re.compile(r"google\.[a-z.]+/maps|goo\.gl/maps|maps\.app\.goo|openstreetmap|sitemap|site-map", re.I)
 _STRONG = re.compile(r"floor\s*[-_]?\s*(plan|map)|(site|hall|venue|exhibit(ion)?|show)\s*[-_]?\s*(plan|map|layout)|expo\s*(map|plan)", re.I)
 _WEAK = re.compile(r"\b(map|layout)\b", re.I)
+_UI_ASSET = re.compile(r"(?<![a-z])(icons?|logos?|sprites?|favicons?|avatars?|badges?|sponsors?)(?![a-z])", re.I)
 _IMG_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg")
 
 
@@ -121,7 +122,10 @@ def _score(tag: str, url: str, label: str) -> int:
         return 0
     if weak and not strong and kind == "page":  # a bare "map" link to a normal page is too noisy
         return 0
-    return (4 if strong else 1) + {"viewer": 4, "pdf": 3, "image": 2, "page": 0}[kind] + (1 if tag == "iframe" else 0)
+    if kind == "image" and _UI_ASSET.search(text) or tag == "img" and not strong:  # icons, sponsor logos, "map" in an alt text
+        return 0
+    # a bare <img> ranks below a genuine strong link (e.g. "View Floor Plans" to a viewer); linked image maps (DAX) are anchors
+    return (4 if strong else 1) + {"viewer": 4, "pdf": 3, "image": 2, "page": 0}[kind] + (1 if tag == "iframe" else 0) - (3 if tag == "img" else 0)
 
 
 def extract_floor_map(pages: Iterable["FetchedPage"]) -> Optional[FloorMap]:
