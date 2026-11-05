@@ -135,6 +135,17 @@ def test_venue_hall_tiles_and_teaser_cards_with_only_a_hall_are_not_exhibitors()
     assert es.extract_exhibitors(real_pages("bauma")) == []
 
 
+def test_a_stray_group_of_three_or_four_cards_is_not_a_directory():
+    # agritechnica.com home teasers (4), nationalrestaurantshow.com show-floor theaters (3, with booth numbers)
+    assert es.extract_exhibitors(real_pages("agri")) == []
+    assert es.extract_exhibitors(real_pages("nra")) == []
+
+
+def test_a_directorys_short_last_page_still_counts_once_an_earlier_page_gave_cards():
+    p1, p2 = page("expo_cards_p1.html"), page("expo_cards_p2.html", SITE + "/exhibitors?page=2")
+    assert len(es.extract_exhibitors([p1, p2])) == 7 and len(es.extract_exhibitors([p2])) == 0
+
+
 def test_real_dax_directory_still_gives_30_exhibitors_all_with_booths():
     rows = es.extract_exhibitors(real_pages("dax"))
     assert len(rows) == 30 and all(r.booth for r in rows)

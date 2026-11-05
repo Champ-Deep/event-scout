@@ -227,5 +227,31 @@
     "fetched_at_utc": "2026-11-05T22:02:56Z"
    }
   ]
+ },
+ "agri": {
+  "start_url": "https://www.agritechnica.com/",
+  "fetched_with": "heldout/probe.py round 2 (real fetch_page), 2026-11-06 IST; only the one offending page kept",
+  "pages": [
+   {
+    "file": "agri_0.html.gz",
+    "final_url": "https://agritechnica.com/de/",
+    "bytes": 154114,
+    "sha256": "9ff39aa676f8256931b95c66929ccc985eef2e5e27f736f4e75e56778ab51f88",
+    "fetched_at_utc": "2026-11-05T22:08:58Z"
+   }
+  ]
+ },
+ "nra": {
+  "start_url": "https://www.nationalrestaurantshow.com/",
+  "fetched_with": "heldout/probe.py round 2 (real fetch_page), 2026-11-06 IST; only the one offending page kept",
+  "pages": [
+   {
+    "file": "nra_3.html.gz",
+    "final_url": "https://www.nationalrestaurantshow.com/home/show-floor-theaters/",
+    "bytes": 991452,
+    "sha256": "a91570cf38174605d8167f70ebd85dced85d5b72cdcb3e8ab953d25ddd3b7ebc",
+    "fetched_at_utc": "2026-11-05T22:09:07Z"
+   }
+  ]
  }
 }

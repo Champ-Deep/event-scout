@@ -538,8 +538,8 @@ def _card(el, page: FetchedPage, site: str) -> dict:
     return raw
 
 
-def _from_cards(page: FetchedPage) -> List[dict]:
-    """The largest group of 3+ look-alike sibling blocks (same tag and classes) outside nav/header/footer whose
+def _from_cards(page: FetchedPage, min_cards: int = 5) -> List[dict]:
+    """The largest group of `min_cards`+ look-alike sibling blocks (same tag and classes) outside nav/header/footer whose
     members read like cards: short, each with a name."""
     soup, site, best = _soup(page), _host(page.final_url), []
     for parent in soup.find_all(True):
@@ -552,7 +552,7 @@ def _from_cards(page: FetchedPage) -> List[dict]:
             if c.name in _CARD_TAGS:
                 groups.setdefault((c.name, tuple(sorted(c.get("class", [])))), []).append(c)
         for els in groups.values():
-            if len(els) < 3 or len(els) <= len(best):
+            if len(els) < min_cards or len(els) <= len(best):
                 continue
             if sum(len(e.get_text(" ", strip=True)) for e in els) / len(els) > 500:
                 continue
@@ -573,10 +573,13 @@ def extract_exhibitors(pages: List[FetchedPage], event: str = "") -> List[Scrape
     cards); rows from all pages merged and de-duplicated by lower-cased single-spaced name (first seen wins). A row
     named like the event itself (`event`, years ignored) is the site's own title, not an exhibitor."""
     own = _key(re.sub(r"\b\d{4}\b", "", event))
-    out, seen = [], set()
+    out, seen, cards = [], set(), False
     for page in pages:
-        rows = _evidenced(_from_json(page), page.final_url) or _evidenced(_from_tables(page), page.final_url) or \
-            (_evidenced(_from_cards(page), page.final_url) if "json" not in page.content_type else [])
+        rows = _evidenced(_from_json(page), page.final_url) or _evidenced(_from_tables(page), page.final_url)
+        if not rows and "json" not in page.content_type:
+            # a stray group of 3-4 blocks is a teaser strip or tile row, not a directory; only a directory's short last page may be that small
+            rows = _evidenced(_from_cards(page, 3 if cards else 5), page.final_url)
+            cards = cards or bool(rows)
         for row in rows:
             if _key(row.name) not in seen and (not own or _key(re.sub(r"\b\d{4}\b", "", row.name)) != own):
                 seen.add(_key(row.name))
