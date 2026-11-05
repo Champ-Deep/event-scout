@@ -1,0 +1,18 @@
+{
+ "declared": "2026-11-06 IST, after rules were frozen at commit 5423842 and BEFORE any of these URLs was fetched by anyone on this task",
+ "rule": "None of these sites was opened, fetched or used while developing this or earlier fixes. Excluded: all round 1 sites (imts, semashow, nabshow, nrfbigshow, conexpoconagg, rsaconference, arabhealthonline, hannovermesse, bauma, ifpexpo, pittcon, ahrexpo) plus hlth, fabtech, packexpo, inbound/unbound.hubspot, daxshow, automate.org, dmexco, ces, gulfood, mwc, worldofconcrete.",
+ "urls": [
+  "https://www.nationalhardwareshow.com/",
+  "https://www.cphi.com/",
+  "https://www.medica-tradefair.com/",
+  "https://www.ifa-berlin.com/",
+  "https://www.eurobike.com/",
+  "https://www.expowest.com/",
+  "https://www.lightfair.com/",
+  "https://www.prowein.com/",
+  "https://www.agritechnica.com/",
+  "https://www.formnext.com/",
+  "https://www.nationalrestaurantshow.com/",
+  "https://www.gitex.com/"
+ ]
+}
