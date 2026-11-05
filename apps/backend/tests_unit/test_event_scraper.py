@@ -129,6 +129,12 @@ def test_a_row_named_like_the_event_is_dropped():
     assert [r.name for r in rows] == ["Bluewave Energy", "Cedar Foods", "Delta Logistics", "Echo Labs"]
 
 
+def test_venue_hall_tiles_and_teaser_cards_with_only_a_hall_are_not_exhibitors():
+    # semashow.com/exhibitor (West Hall, Central Hall...) and bauma.de (teasers matching "Hall plans"): a hall alone names no company
+    assert es.extract_exhibitors(real_pages("sema")) == []
+    assert es.extract_exhibitors(real_pages("bauma")) == []
+
+
 def test_real_dax_directory_still_gives_30_exhibitors_all_with_booths():
     rows = es.extract_exhibitors(real_pages("dax"))
     assert len(rows) == 30 and all(r.booth for r in rows)

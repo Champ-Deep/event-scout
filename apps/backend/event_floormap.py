@@ -27,8 +27,8 @@ LLM_CHUNK_CHARS = 30_000
 LLM_MAX_CALLS = 3
 
 _VIEWER_HOSTS = ("expocad", "a2zinc", "a2z.", "map-dynamics", "mapdynamics", "cadmapper", "mapsindoors", "expofp", "mapyourshow")
-_NOT_A_FLOOR_MAP = re.compile(r"google\.[a-z.]+/maps|goo\.gl/maps|maps\.app\.goo|openstreetmap|sitemap|site-map", re.I)
-_STRONG = re.compile(r"floor\s*[-_]?\s*(plan|map)|(site|hall|venue|exhibit(ion)?|show)\s*[-_]?\s*(plan|map|layout)|expo\s*(map|plan)", re.I)
+_NOT_A_FLOOR_MAP = re.compile(r"google\.[a-z.]+/maps|goo\.gl/maps|maps\.app\.goo|openstreetmap|sitemap|site-map|[?&](booth|exhibitor)\w*=", re.I)  # last: a link to one booth, not the map
+_STRONG = re.compile(r"(floor\s*[-_]?\s*(plan|map)|(site|hall|venue|exhibit(ion)?|show)\s*[-_]?\s*(plan|map|layout)|expo\s*(map|plan))s?(?![a-z])", re.I)  # not "Show Planner"
 _WEAK = re.compile(r"\b(map|layout)\b", re.I)
 _UI_ASSET = re.compile(r"(?<![a-z])(icons?|logos?|sprites?|favicons?|avatars?|badges?|sponsors?)(?![a-z])", re.I)
 _IMG_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg")

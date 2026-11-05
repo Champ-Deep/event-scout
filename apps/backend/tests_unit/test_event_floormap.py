@@ -62,6 +62,13 @@ def test_weak_icon_and_logo_images_are_rejected_and_strong_links_outrank_bare_im
     assert fm.extract_floor_map([page('<img src="/hall-floor-plan.png" alt="Floor plan">')]).kind == "image"  # a lone real image map stays
 
 
+def test_show_planner_login_tool_and_single_booth_links_are_not_a_floor_map_but_show_plans_still_are():
+    assert fm.extract_floor_map(real_pages("imts")) is None
+    assert fm.extract_floor_map([page('<a href="/files/plan.pdf">Show Planner</a>')]) is None
+    assert fm.extract_floor_map([page('<a href="/floorplan_link.cfm?booth=1234">Hall B, Booth 1234</a>')]) is None
+    assert fm.extract_floor_map([page('<a href="/files/x.pdf">Exhibition Plans</a>')]).kind == "pdf"
+
+
 def rows(n, rich=True):
     return [SimpleNamespace(name=f"Co {i}", booth=f"A{i}" if rich else "", hall="", category="") for i in range(n)]
 

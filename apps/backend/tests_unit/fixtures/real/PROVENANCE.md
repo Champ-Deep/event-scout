@@ -14,3 +14,11 @@ starting from the start URL below, and stored gzip-compressed and byte-identical
 | automate | https://www.automate.org/ | control: company cards with country (15 real exhibitors), home page ld+json is the site itself |
 
 Pages are third-party content, kept only as test input.
+
+## Added after held-out round 1 (these three sites exposed junk, so they are now development fixtures, not held-out)
+
+| key | start URL | why it is here |
+|-----|-----------|----------------|
+| sema | https://www.semashow.com/ | venue hall tiles ("West Hall", "Central Hall") on /exhibitor emitted as exhibitors |
+| bauma | https://www.bauma.de/en/ | promo/teaser cards and page metadata emitted as exhibitors via a "Hall plans" text match |
+| imts | https://www.imts.com/ | only page 3 kept: "Show Planner" (login tool) and a per-booth `floorplan_link.cfm?...booth=` link scored as a floor map |

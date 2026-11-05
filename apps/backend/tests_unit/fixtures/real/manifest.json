@@ -160,5 +160,72 @@
     "fetched_at_utc": "2026-11-05T21:59:05Z"
    }
   ]
+ },
+ "sema": {
+  "start_url": "https://www.semashow.com/",
+  "fetched_with": "heldout/probe.py round 1 (event_scrape_service.scrape_event_site fetch, real fetch_page), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "sema_0.html.gz",
+    "final_url": "https://semashow.com/",
+    "bytes": 24746,
+    "sha256": "533b79d2b5d563947b30317630296c45c01f40f190f8c867ef03163a37cb9788",
+    "fetched_at_utc": "2026-11-05T22:03:00Z"
+   },
+   {
+    "file": "sema_1.html.gz",
+    "final_url": "https://semashow.com/exhibitor",
+    "bytes": 1060421,
+    "sha256": "e83e333ed2f072a9c122cf843f70e72941ad07a1b12cbe2b9785b08331df3188",
+    "fetched_at_utc": "2026-11-05T22:03:00Z"
+   }
+  ]
+ },
+ "bauma": {
+  "start_url": "https://www.bauma.de/en/",
+  "fetched_with": "heldout/probe.py round 1 (event_scrape_service.scrape_event_site fetch, real fetch_page), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "bauma_0.html.gz",
+    "final_url": "https://bauma.de/en/",
+    "bytes": 88726,
+    "sha256": "5c0ba1fd11f1c5fb54db37794167425a03535b55cfa2f706e927564289b53cb1",
+    "fetched_at_utc": "2026-11-05T22:03:23Z"
+   },
+   {
+    "file": "bauma_1.html.gz",
+    "final_url": "https://bauma.de/en/trade-fair/exhibitor-directory/exhibitors-brands/",
+    "bytes": 87113,
+    "sha256": "194bfa0e163602e7d8713eab7daf4a4a9333f24156a295c0f07b8c716ab17578",
+    "fetched_at_utc": "2026-11-05T22:03:23Z"
+   },
+   {
+    "file": "bauma_2.html.gz",
+    "final_url": "https://bauma.de/en/trade-fair/exhibitors/overview/",
+    "bytes": 130850,
+    "sha256": "81e9ad8953f5f1662a11ea6106221d9fe2d804e31db860ea4154997a28812231",
+    "fetched_at_utc": "2026-11-05T22:03:23Z"
+   },
+   {
+    "file": "bauma_3.html.gz",
+    "final_url": "https://bauma.de/en/trade-fair/hall-plan/",
+    "bytes": 89527,
+    "sha256": "a6dd80d931e02580348fceb1218f39969f8e5e5f5872727615cd48eca1c4e255",
+    "fetched_at_utc": "2026-11-05T22:03:23Z"
+   }
+  ]
+ },
+ "imts": {
+  "start_url": "https://www.imts.com/",
+  "fetched_with": "heldout/probe.py round 1 (event_scrape_service.scrape_event_site fetch, real fetch_page), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "imts_3.html.gz",
+    "final_url": "https://directory.imts.com:443/8_0/login/login.cfm",
+    "bytes": 266782,
+    "sha256": "f15571c0b7ccec249b7264e61005d386fd79ee25553015e22bb89063fb996bb7",
+    "fetched_at_utc": "2026-11-05T22:02:56Z"
+   }
+  ]
  }
 }
