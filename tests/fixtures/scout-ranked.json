@@ -1,0 +1,1250 @@
+[
+  {
+    "id": "0",
+    "name": "Exhibitor 000",
+    "category": "Medical Imaging",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [
+      "p"
+    ],
+    "score": 70,
+    "reason": "Ranked here: category matches your target industry 'imaging', 1 listed products, has a website."
+  },
+  {
+    "id": "105",
+    "name": "Exhibitor 105",
+    "category": "Medical Imaging",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [
+      "p"
+    ],
+    "score": 70,
+    "reason": "Ranked here: category matches your target industry 'imaging', 1 listed products, has a website."
+  },
+  {
+    "id": "21",
+    "name": "Exhibitor 021",
+    "category": "Medical Imaging",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [],
+    "score": 60,
+    "reason": "Ranked here: category matches your target industry 'imaging', has a website."
+  },
+  {
+    "id": "35",
+    "name": "Exhibitor 035",
+    "category": "Medical Imaging",
+    "country": "USA",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 60,
+    "reason": "Ranked here: category matches your target industry 'imaging', 1 listed products."
+  },
+  {
+    "id": "42",
+    "name": "Exhibitor 042",
+    "category": "Medical Imaging",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [],
+    "score": 60,
+    "reason": "Ranked here: category matches your target industry 'imaging', has a website."
+  },
+  {
+    "id": "63",
+    "name": "Exhibitor 063",
+    "category": "Medical Imaging",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [],
+    "score": 60,
+    "reason": "Ranked here: category matches your target industry 'imaging', has a website."
+  },
+  {
+    "id": "70",
+    "name": "Exhibitor 070",
+    "category": "Medical Imaging",
+    "country": "Germany",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 60,
+    "reason": "Ranked here: category matches your target industry 'imaging', 1 listed products."
+  },
+  {
+    "id": "84",
+    "name": "Exhibitor 084",
+    "category": "Medical Imaging",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [],
+    "score": 60,
+    "reason": "Ranked here: category matches your target industry 'imaging', has a website."
+  },
+  {
+    "id": "7",
+    "name": "Exhibitor 007",
+    "category": "Medical Imaging",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "14",
+    "name": "Exhibitor 014",
+    "category": "Medical Imaging",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "28",
+    "name": "Exhibitor 028",
+    "category": "Medical Imaging",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "49",
+    "name": "Exhibitor 049",
+    "category": "Medical Imaging",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "56",
+    "name": "Exhibitor 056",
+    "category": "Medical Imaging",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "77",
+    "name": "Exhibitor 077",
+    "category": "Medical Imaging",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "91",
+    "name": "Exhibitor 091",
+    "category": "Medical Imaging",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "98",
+    "name": "Exhibitor 098",
+    "category": "Medical Imaging",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "112",
+    "name": "Exhibitor 112",
+    "category": "Medical Imaging",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "119",
+    "name": "Exhibitor 119",
+    "category": "Medical Imaging",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 50,
+    "reason": "Ranked here: category matches your target industry 'imaging'."
+  },
+  {
+    "id": "15",
+    "name": "Exhibitor 015",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [
+      "p"
+    ],
+    "score": 20,
+    "reason": "Ranked here: 1 listed products, has a website."
+  },
+  {
+    "id": "30",
+    "name": "Exhibitor 030",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [
+      "p"
+    ],
+    "score": 20,
+    "reason": "Ranked here: 1 listed products, has a website."
+  },
+  {
+    "id": "45",
+    "name": "Exhibitor 045",
+    "category": "Furniture",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [
+      "p"
+    ],
+    "score": 20,
+    "reason": "Ranked here: 1 listed products, has a website."
+  },
+  {
+    "id": "60",
+    "name": "Exhibitor 060",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [
+      "p"
+    ],
+    "score": 20,
+    "reason": "Ranked here: 1 listed products, has a website."
+  },
+  {
+    "id": "75",
+    "name": "Exhibitor 075",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [
+      "p"
+    ],
+    "score": 20,
+    "reason": "Ranked here: 1 listed products, has a website."
+  },
+  {
+    "id": "90",
+    "name": "Exhibitor 090",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [
+      "p"
+    ],
+    "score": 20,
+    "reason": "Ranked here: 1 listed products, has a website."
+  },
+  {
+    "id": "3",
+    "name": "Exhibitor 003",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "5",
+    "name": "Exhibitor 005",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "6",
+    "name": "Exhibitor 006",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "9",
+    "name": "Exhibitor 009",
+    "category": "Furniture",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "10",
+    "name": "Exhibitor 010",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "12",
+    "name": "Exhibitor 012",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "18",
+    "name": "Exhibitor 018",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "20",
+    "name": "Exhibitor 020",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "24",
+    "name": "Exhibitor 024",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "25",
+    "name": "Exhibitor 025",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "27",
+    "name": "Exhibitor 027",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "33",
+    "name": "Exhibitor 033",
+    "category": "Furniture",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "36",
+    "name": "Exhibitor 036",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "39",
+    "name": "Exhibitor 039",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "40",
+    "name": "Exhibitor 040",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "48",
+    "name": "Exhibitor 048",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "50",
+    "name": "Exhibitor 050",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "51",
+    "name": "Exhibitor 051",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "54",
+    "name": "Exhibitor 054",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "55",
+    "name": "Exhibitor 055",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "57",
+    "name": "Exhibitor 057",
+    "category": "Furniture",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "65",
+    "name": "Exhibitor 065",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "66",
+    "name": "Exhibitor 066",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "69",
+    "name": "Exhibitor 069",
+    "category": "Furniture",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "72",
+    "name": "Exhibitor 072",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "78",
+    "name": "Exhibitor 078",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "80",
+    "name": "Exhibitor 080",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "81",
+    "name": "Exhibitor 081",
+    "category": "Furniture",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "85",
+    "name": "Exhibitor 085",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "87",
+    "name": "Exhibitor 087",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "93",
+    "name": "Exhibitor 093",
+    "category": "Furniture",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "95",
+    "name": "Exhibitor 095",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "96",
+    "name": "Exhibitor 096",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "99",
+    "name": "Exhibitor 099",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "100",
+    "name": "Exhibitor 100",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "102",
+    "name": "Exhibitor 102",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "108",
+    "name": "Exhibitor 108",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "110",
+    "name": "Exhibitor 110",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "111",
+    "name": "Exhibitor 111",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "114",
+    "name": "Exhibitor 114",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "115",
+    "name": "Exhibitor 115",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [
+      "p"
+    ],
+    "score": 10,
+    "reason": "Ranked here: 1 listed products."
+  },
+  {
+    "id": "117",
+    "name": "Exhibitor 117",
+    "category": "Furniture",
+    "country": "India",
+    "website": "https://x.test",
+    "products": [],
+    "score": 10,
+    "reason": "Ranked here: has a website."
+  },
+  {
+    "id": "1",
+    "name": "Exhibitor 001",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "2",
+    "name": "Exhibitor 002",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "4",
+    "name": "Exhibitor 004",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "8",
+    "name": "Exhibitor 008",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "11",
+    "name": "Exhibitor 011",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "13",
+    "name": "Exhibitor 013",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "16",
+    "name": "Exhibitor 016",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "17",
+    "name": "Exhibitor 017",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "19",
+    "name": "Exhibitor 019",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "22",
+    "name": "Exhibitor 022",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "23",
+    "name": "Exhibitor 023",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "26",
+    "name": "Exhibitor 026",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "29",
+    "name": "Exhibitor 029",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "31",
+    "name": "Exhibitor 031",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "32",
+    "name": "Exhibitor 032",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "34",
+    "name": "Exhibitor 034",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "37",
+    "name": "Exhibitor 037",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "38",
+    "name": "Exhibitor 038",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "41",
+    "name": "Exhibitor 041",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "43",
+    "name": "Exhibitor 043",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "44",
+    "name": "Exhibitor 044",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "46",
+    "name": "Exhibitor 046",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "47",
+    "name": "Exhibitor 047",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "52",
+    "name": "Exhibitor 052",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "53",
+    "name": "Exhibitor 053",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "58",
+    "name": "Exhibitor 058",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "59",
+    "name": "Exhibitor 059",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "61",
+    "name": "Exhibitor 061",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "62",
+    "name": "Exhibitor 062",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "64",
+    "name": "Exhibitor 064",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "67",
+    "name": "Exhibitor 067",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "68",
+    "name": "Exhibitor 068",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "71",
+    "name": "Exhibitor 071",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "73",
+    "name": "Exhibitor 073",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "74",
+    "name": "Exhibitor 074",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "76",
+    "name": "Exhibitor 076",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "79",
+    "name": "Exhibitor 079",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "82",
+    "name": "Exhibitor 082",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "83",
+    "name": "Exhibitor 083",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "86",
+    "name": "Exhibitor 086",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "88",
+    "name": "Exhibitor 088",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "89",
+    "name": "Exhibitor 089",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "92",
+    "name": "Exhibitor 092",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "94",
+    "name": "Exhibitor 094",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "97",
+    "name": "Exhibitor 097",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "101",
+    "name": "Exhibitor 101",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "103",
+    "name": "Exhibitor 103",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "104",
+    "name": "Exhibitor 104",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "106",
+    "name": "Exhibitor 106",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "107",
+    "name": "Exhibitor 107",
+    "category": "Furniture",
+    "country": "USA",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "109",
+    "name": "Exhibitor 109",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "113",
+    "name": "Exhibitor 113",
+    "category": "Furniture",
+    "country": "India",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "116",
+    "name": "Exhibitor 116",
+    "category": "Furniture",
+    "country": "UAE",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  },
+  {
+    "id": "118",
+    "name": "Exhibitor 118",
+    "category": "Furniture",
+    "country": "Germany",
+    "website": "",
+    "products": [],
+    "score": 0,
+    "reason": "Ranked low: no profile match and almost no listing detail."
+  }
+]

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#667eea">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -294,6 +294,45 @@
             color: #16a34a;
             border-color: #bbf7d0;
         }
+        /* Scout feed. 21st.dev klyv-filter-bar is a visual reference only. */
+        #scoutScreen { color: #0f172a; min-height: 100%; }
+        #contentArea:has(#scoutScreen:not(.hidden)) { overflow-anchor: none; }
+        .feed-column { max-width: 42rem; margin-inline: auto; }
+        #feed-header { position: sticky; top: 0; z-index: 30; background: #fff; padding-top: env(safe-area-inset-top); border-bottom: 1px solid #e2e8f0; }
+        #feed-search-bar { padding: 16px 16px 8px; }
+        #feed-search-bar h1 { font-size: 24px; font-weight: 700; line-height: 1.3; }
+        #feed-search-bar p, #feed-summary { font-size: 14px; color: #475569; }
+        #feed-search-bar label { display: block; font-size: 14px; font-weight: 600; margin-top: 12px; }
+        #feed-search { width: 100%; min-height: 44px; border: 1px solid #64748b; border-radius: 8px; padding: 10px 12px; color: #0f172a; background: #fff; font-size: 16px; }
+        #feed-search::placeholder { color: #475569; opacity: 1; }
+        #feed-filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 16px 12px; max-height: 28vh; overflow-y: auto; }
+        #scoutScreen button { min-height: 44px; min-width: 44px; font-size: 16px; }
+        .feed-chip { border: 1px solid var(--primary); color: var(--primary-dark); background: #fff; padding: 8px 14px; border-radius: 999px; overflow-wrap: anywhere; }
+        .feed-chip[aria-pressed="true"], .feed-action { background: var(--primary); color: #fff; }
+        .feed-action { padding: 10px 16px; border-radius: 8px; margin-top: 16px; }
+        #scoutScreen :focus-visible, #scoutNavBtn:focus-visible { outline: 3px solid var(--primary-dark); outline-offset: 3px; }
+        #feed-summary { padding: 16px; }
+        .feed-row { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; padding: 20px 16px; border-top: 1px solid #e2e8f0; background: #fff; content-visibility: auto; contain-intrinsic-size: auto 210px; }
+        .feed-rank { color: #475569; font-size: 14px; padding-top: 4px; }
+        .feed-row-heading { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+        .feed-row h2 { font-size: 18px; line-height: 1.4; font-weight: 700; overflow-wrap: anywhere; min-width: 0; }
+        .score-badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 4px 8px; font-size: 14px; font-weight: 600; white-space: nowrap; color: #0f172a; background: #e2e8f0; }
+        .score-badge[data-temperature="hot"] { background: var(--secondary); color: #0f172a; }
+        .score-badge[data-temperature="warm"] { background: var(--warning); color: #0f172a; }
+        .feed-meta { color: #475569; font-size: 14px; margin: 6px 0 10px; overflow-wrap: anywhere; }
+        .feed-reason { font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+        .feed-reason-clamped { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .feed-reason-missing { color: var(--danger); font-size: 19px; font-weight: 700; }
+        .feed-more { color: var(--primary-dark); text-decoration: underline; text-underline-offset: 3px; }
+        #feed-state { padding: 24px 16px; }
+        #feed-state h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        #feed-state p { line-height: 1.5; color: #475569; }
+        .feed-skeleton { border-top: 1px solid #e2e8f0; padding: 24px 0; }
+        .feed-skeleton span { display: block; height: 14px; margin: 12px 0; border-radius: 4px; background: #e2e8f0; }
+        .feed-skeleton span:first-child { width: 60%; height: 20px; }
+        #feed-sentinel { height: 1px; }
+        body:has(#scoutScreen:not(.hidden)) .nav-btn { transition: none; }
+        @media (prefers-reduced-motion: reduce) { #scoutScreen.fade-in { animation: none; } }
     </style>
 </head>
 
@@ -438,6 +477,27 @@
         <!-- Content Area (swappable screens) -->
         <div id="contentArea" class="flex-1 overflow-y-auto pb-20" style="scroll-padding-top: 120px">
 
+            <!-- SCOUT SCREEN -->
+            <section id="scoutScreen" class="content-screen hidden" aria-label="Ranked scouting feed">
+                <header id="feed-header">
+                    <div id="feed-search-bar" class="feed-column">
+                        <h1>Scout</h1>
+                        <p id="feed-event">Exhibitors ranked for your profile</p>
+                        <label for="feed-search">Search exhibitors</label>
+                        <input id="feed-search" type="search" autocomplete="off" placeholder="Name, category or tag">
+                        <!-- route mode mounts here, after map work -->
+                        <div id="feed-route-mode-slot" hidden></div>
+                    </div>
+                    <div id="feed-filters" class="feed-column" role="group" aria-label="Exhibitor categories"></div>
+                </header>
+                <div class="feed-column">
+                    <p id="feed-summary" role="status" aria-live="polite" aria-atomic="true"></p>
+                    <ol id="feed-list" aria-label="Exhibitors in score order"></ol>
+                    <div id="feed-state" role="status" aria-live="polite"></div>
+                    <div id="feed-sentinel" aria-hidden="true"></div>
+                </div>
+            </section>
+
             <!-- CONTACTS SCREEN -->
             <div id="contactsScreen" class="content-screen">
                 <!-- Sticky Header with Search -->
@@ -478,15 +538,37 @@
                                 oninput="handleSearch()">
                             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                         </div>
-                        <!-- Date filter pills -->
-                        <div class="flex gap-1.5 mt-2 overflow-x-auto pb-0.5 no-scrollbar" id="contactsDateFilters">
-                            <button onclick="setContactsDateFilter('')" id="cdf-all" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-blue-600 text-white font-medium">All</button>
-                            <button onclick="setContactsDateFilter('today')" id="cdf-today" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Today</button>
-                            <button onclick="setContactsDateFilter('yesterday')" id="cdf-yesterday" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Yesterday</button>
-                            <button onclick="setContactsDateFilter('last_week')" id="cdf-last_week" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Last 7 Days</button>
-                            <button onclick="setContactsDateFilter('last_month')" id="cdf-last_month" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">This Month</button>
+                        <!-- Date filter pills + Select icon -->
+                        <div class="flex items-center gap-2 mt-2">
+                            <div class="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar flex-1" id="contactsDateFilters">
+                                <button onclick="setContactsDateFilter('')" id="cdf-all" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-blue-600 text-white font-medium">All</button>
+                                <button onclick="setContactsDateFilter('today')" id="cdf-today" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Today</button>
+                                <button onclick="setContactsDateFilter('yesterday')" id="cdf-yesterday" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Yesterday</button>
+                                <button onclick="setContactsDateFilter('last_week')" id="cdf-last_week" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Last 7 Days</button>
+                                <button onclick="setContactsDateFilter('last_month')" id="cdf-last_month" class="flex-shrink-0 px-3 py-1 text-xs rounded-full bg-gray-100 text-gray-600">This Month</button>
+                            </div>
+                            <!-- Select toggle — always visible, top-right of filter row -->
+                            <button id="selectModeBtn" onclick="toggleSelectMode()"
+                                class="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 active:bg-gray-200 transition font-medium">
+                                <i class="fas fa-check-square"></i>
+                                <span id="selectModeBtnLabel">Select</span>
+                            </button>
                         </div>
-                        <p id="contactsFilterCount" class="text-xs text-gray-400 mt-1 hidden"></p>
+
+                        <!-- Smart action strip: appears when a date filter is active -->
+                        <div id="contactsActionStrip" class="hidden mt-2 flex items-center justify-between bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+                            <p id="actionStripLabel" class="text-xs font-semibold text-blue-800"></p>
+                            <div class="flex items-center gap-2">
+                                <button onclick="selectAllAndExport('csv')"
+                                    class="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-semibold active:bg-blue-700 transition">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                                <button onclick="openExportsSheet()"
+                                    class="flex items-center gap-1 px-2.5 py-1.5 bg-white border border-blue-200 text-blue-700 text-xs rounded-lg font-medium active:bg-blue-50 transition">
+                                    <i class="fas fa-folder-open"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -503,8 +585,8 @@
                     </div>
                 </div>
 
-                <!-- Contact List -->
-                <div id="contactsList" class="divide-y divide-gray-200 pt-4">
+                <!-- Contact List (pb-28 gives room for bulk bar in select mode) -->
+                <div id="contactsList" class="divide-y divide-gray-200 pt-4 pb-28">
                     <!-- Contacts will be rendered here -->
                 </div>
 
@@ -513,6 +595,34 @@
                     class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg active:scale-95 transition z-30 touch-feedback">
                     <i class="fas fa-plus text-xl"></i>
                 </button>
+
+                <!-- Bulk Selection Bar (visible only in select mode) -->
+                <div id="contactsSelectBar" class="hidden fixed bottom-16 left-0 right-0 bg-white border-t-2 border-blue-200 shadow-xl z-35 px-4 py-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="handleSelectAllCheckbox(this)"
+                                    class="w-4 h-4 rounded accent-blue-600 cursor-pointer">
+                                <span class="text-xs text-blue-700 font-semibold whitespace-nowrap">All (<span id="selectableCount">0</span>)</span>
+                            </label>
+                            <span class="text-xs text-gray-500 whitespace-nowrap font-medium"><span id="selectedCount">0</span> selected</span>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <button onclick="promptExport('csv')"
+                                class="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg font-semibold active:bg-green-700 transition flex items-center gap-1.5">
+                                <i class="fas fa-download"></i> CSV
+                            </button>
+                            <button onclick="promptExport('json')"
+                                class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg font-semibold active:bg-blue-700 transition flex items-center gap-1.5">
+                                <i class="fas fa-download"></i> JSON
+                            </button>
+                            <button onclick="toggleSelectMode()"
+                                class="px-2.5 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg active:bg-gray-200 transition font-medium">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- SCAN SCREEN -->
@@ -569,6 +679,9 @@
                     <!-- Controls - fixed at bottom, always visible -->
                     <div class="bg-gray-900/95 backdrop-blur-sm px-4 pt-3 pb-20 safe-area-inset-bottom"
                         style="flex-shrink:0;">
+                        <button onclick="ScanFlow.open()" class="w-full mb-3 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm active:bg-blue-700">
+                            <i class="fas fa-bolt mr-1"></i>Scan to score
+                        </button>
                         <div class="flex justify-center gap-5 items-center">
                             <button onclick="uploadFromGallery()"
                                 class="w-11 h-11 bg-gray-700 rounded-full text-white flex items-center justify-center active:bg-gray-600">
@@ -958,6 +1071,19 @@
                         </button>
                     </div>
 
+                    <!-- My Exports Section -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-semibold text-gray-900">My Exports</h3>
+                            <button onclick="loadExports()" class="text-xs text-blue-600 active:opacity-70 font-medium">
+                                <i class="fas fa-sync-alt mr-1"></i>Refresh
+                            </button>
+                        </div>
+                        <div id="myExportsList">
+                            <p class="text-sm text-gray-400 text-center py-4">Loading exports...</p>
+                        </div>
+                    </div>
+
                     <button onclick="handleLogout()"
                         class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold active:bg-red-600 transition touch-feedback">
                         <i class="fas fa-sign-out-alt mr-2"></i>
@@ -1327,6 +1453,11 @@
                     <i class="fas fa-calendar-check text-2xl mb-1"></i>
                     <span class="text-xs">Expo</span>
                 </button>
+                <button id="scoutNavBtn" onclick="switchScreen('scout')"
+                    class="nav-btn flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
+                    <i class="fas fa-compass text-2xl mb-1" aria-hidden="true"></i>
+                    <span class="text-xs">Scout</span>
+                </button>
                 <button id="adminNavBtn" onclick="switchScreen('admin')"
                     class="nav-btn hidden flex flex-col items-center justify-center flex-1 h-full text-gray-600 transition">
                     <i class="fas fa-shield-alt text-2xl mb-1"></i>
@@ -1587,7 +1718,248 @@
             _voiceContactId: null,
             _voiceTranscript: '',
             _voiceAudioBlob: null,
+            selectMode: false,
+            selectedContactIds: new Set(),
+            exports: [],
         };
+
+        // ==================== SCOUT FEED ====================
+        const feedPreviewParam = new URLSearchParams(location.search).get('feedstate');
+        const feedPreviewState = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
+            && ['empty', 'loading', 'populated', 'error', 'offline', 'noresults'].includes(feedPreviewParam)
+            ? feedPreviewParam : '';
+        const scoutFeed = {
+            token: 0, busy: false, offset: 0, total: 0, hasMore: true,
+            search: '', selected: new Set(), categories: null, event: '', user: '',
+            controller: null, timer: null, observer: null, seed: null, initialized: false,
+        };
+
+        function renderScoreBadge(score) {
+            const value = Number(score);
+            if (!Number.isFinite(value) || value < 0 || value > 100) {
+                console.error('[Scout] Invalid score');
+                return '<span class="score-badge">Score unavailable</span>';
+            }
+            const temperature = value >= 70 ? 'hot' : value >= 40 ? 'warm' : 'cold';
+            return `<span class="score-badge" data-temperature="${temperature}" data-score="${value}">${value} ${temperature[0].toUpperCase() + temperature.slice(1)}</span>`;
+        }
+
+        function renderExhibitorRow(item, rank) {
+            const reason = typeof item.reason === 'string' ? item.reason.trim() : '';
+            if (!reason) console.error('[Scout] Missing exhibitor reason', item.id);
+            const meta = [item.booth ? `Booth ${item.booth}` : '', item.hall ? `Hall ${item.hall}` : ''].filter(Boolean).join(' / ');
+            return `<li class="feed-row">
+                <span class="feed-rank" aria-label="Rank ${rank}">${rank}</span>
+                <div><div class="feed-row-heading"><h2>${escapeHtml(item.name || 'Unnamed exhibitor')}</h2>${renderScoreBadge(item.score)}</div>
+                <p class="feed-meta">${escapeHtml(meta || 'Booth and hall not listed')}</p>
+                <p id="feed-reason-${rank}" class="feed-reason feed-reason-clamped ${reason ? '' : 'feed-reason-missing'}">${escapeHtml(reason || 'Reason unavailable')}</p>
+                ${reason ? `<button type="button" class="feed-more" aria-label="Show full reason for rank ${rank}" aria-expanded="false" aria-controls="feed-reason-${rank}">More<span class="sr-only"> about ${escapeHtml(item.name || 'this exhibitor')}</span></button>` : ''}</div>
+            </li>`;
+        }
+
+        function renderFilterChips() {
+            const container = document.getElementById('feed-filters');
+            container.replaceChildren();
+            ['', ...(scoutFeed.categories || [])].forEach(category => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'feed-chip';
+                button.textContent = category || 'All';
+                button.setAttribute('aria-pressed', String(category ? scoutFeed.selected.has(category) : !scoutFeed.selected.size));
+                button.addEventListener('click', () => {
+                    if (!category) scoutFeed.selected.clear();
+                    else if (scoutFeed.selected.has(category)) scoutFeed.selected.delete(category);
+                    else scoutFeed.selected.add(category);
+                    // Keep the active button mounted so keyboard focus survives filtering.
+                    [...container.children].forEach((child, index) => child.setAttribute('aria-pressed',
+                        String(index ? scoutFeed.selected.has(child.textContent) : !scoutFeed.selected.size)));
+                    resetScoutFeed();
+                });
+                container.append(button);
+            });
+        }
+
+        function renderFeedState(state) {
+            const node = document.getElementById('feed-state');
+            node.dataset.state = state;
+            const active = [scoutFeed.search ? `search "${scoutFeed.search}"` : '', ...scoutFeed.selected].filter(Boolean).join(', ');
+            const states = {
+                empty: '<h2>No exhibitors yet</h2><p>Ask your event admin to import exhibitors for this event. They will appear here ranked for your profile.</p>',
+                loading: scoutFeed.offset ? '<p>Loading more exhibitors...</p>' : '<p>Ranking exhibitors for you...</p>' + '<div class="feed-skeleton" aria-hidden="true"><span></span><span></span><span></span></div>'.repeat(3),
+                error: '<h2>Could not load exhibitors</h2><p>The server could not return the feed. Try again.</p><button class="feed-action" type="button" data-feed-action="retry">Retry</button>',
+                offline: '<h2>You are offline</h2><p>Check your connection. Any exhibitors already loaded stay here. We will retry when you are back online.</p><button class="feed-action" type="button" data-feed-action="retry">Retry connection</button>',
+                noresults: `<h2>No matching exhibitors</h2><p>No results for ${escapeHtml(active || 'the active filters')}. Try a different search or clear your filters.</p><button class="feed-action" type="button" data-feed-action="clear">Clear filters</button>`,
+                end: `<p>You have seen all ${scoutFeed.total} exhibitors</p>`,
+                populated: '',
+            };
+            node.innerHTML = states[state] || '';
+        }
+
+        async function scoutFeedRequest(kind, signal) {
+            if (feedPreviewState) {
+                if (feedPreviewState === 'offline') throw new TypeError('Preview offline');
+                if (feedPreviewState === 'error') throw new Error('Preview server error');
+                if (kind === 'categories') return { categories: ['Medical Imaging', 'Furniture'] };
+                if (feedPreviewState === 'empty') return { items: [], total: 0, has_more: false };
+                if (!scoutFeed.seed) {
+                    const response = await fetch('tests/fixtures/scout-ranked.json', { signal });
+                    if (!response.ok) throw new Error('Preview fixture missing');
+                    scoutFeed.seed = await response.json();
+                }
+                // The fixture is generated by rank_exhibitors, never scored or sorted here.
+                const query = scoutFeed.search.trim().toLowerCase();
+                const items = scoutFeed.seed.filter(item =>
+                    (!query || [item.name, item.category, ...(item.tags || [])].join(' ').toLowerCase().includes(query))
+                    && (!scoutFeed.selected.size || [...scoutFeed.selected].some(category =>
+                        [item.category, item.subcategory].join(' ').toLowerCase().includes(category.toLowerCase()))));
+                return { items: items.slice(scoutFeed.offset, scoutFeed.offset + 20), total: items.length, has_more: scoutFeed.offset + 20 < items.length };
+            }
+            if (!navigator.onLine) throw new TypeError('Offline');
+            const params = new URLSearchParams({ event: scoutFeed.event });
+            if (kind === 'ranked') {
+                Object.entries({ user_id: scoutFeed.user, search: scoutFeed.search,
+                    category: [...scoutFeed.selected].join(','), offset: scoutFeed.offset, limit: 20 })
+                    .forEach(([key, value]) => params.set(key, value));
+            }
+            const response = await fetch(`${CONFIG.API_BASE_URL}/exhibitors/${kind}/?${params}`, {
+                headers: { 'X-API-Key': CONFIG.API_KEY }, signal,
+            });
+            if (!response.ok) throw new Error(`Feed HTTP ${response.status}`);
+            const data = await response.json();
+            if (data.status !== 'success') throw new Error('Invalid feed response');
+            return data;
+        }
+
+        async function loadScoutPage() {
+            if (scoutFeed.busy || !scoutFeed.hasMore || AppState.activeScreen !== 'scout') return;
+            scoutFeed.busy = true;
+            const token = scoutFeed.token;
+            scoutFeed.controller = new AbortController();
+            const signal = scoutFeed.controller.signal;
+            renderFeedState('loading');
+            if (feedPreviewState === 'loading') return;
+            try {
+                const [data, categories] = await Promise.all([
+                    scoutFeedRequest('ranked', signal),
+                    scoutFeed.categories === null ? scoutFeedRequest('categories', signal) : null,
+                ]);
+                if (token !== scoutFeed.token) return;
+                if (!Array.isArray(data.items) || !Number.isInteger(data.total) || data.total < 0
+                    || typeof data.has_more !== 'boolean' || (data.has_more && !data.items.length)
+                    || data.items.some(item => !item || typeof item !== 'object')
+                    || (categories && (!Array.isArray(categories.categories) || categories.categories.some(c => typeof c !== 'string')))) {
+                    throw new Error('Invalid ranked feed payload');
+                }
+                if (categories) {
+                    scoutFeed.categories = categories.categories;
+                    renderFilterChips();
+                }
+                document.getElementById('feed-list').insertAdjacentHTML('beforeend', data.items.map((item, index) => renderExhibitorRow(item, scoutFeed.offset + index + 1)).join(''));
+                scoutFeed.offset += data.items.length;
+                scoutFeed.total = data.total;
+                scoutFeed.hasMore = data.has_more;
+                document.getElementById('feed-summary').textContent = `${data.total} exhibitors / highest score first`;
+                renderFeedState(!data.total ? (scoutFeed.search || scoutFeed.selected.size ? 'noresults' : 'empty') : data.has_more ? 'populated' : 'end');
+            } catch (error) {
+                if (token !== scoutFeed.token || error.name === 'AbortError') return;
+                document.getElementById('feed-summary').textContent = `${scoutFeed.offset} exhibitors loaded`;
+                renderFeedState(error instanceof TypeError || !navigator.onLine ? 'offline' : 'error');
+            } finally {
+                if (token === scoutFeed.token) scoutFeed.busy = false;
+            }
+        }
+
+        function resetScoutFeed(delay = 0) {
+            scoutFeed.token++;
+            scoutFeed.controller?.abort();
+            clearTimeout(scoutFeed.timer);
+            scoutFeed.busy = false;
+            scoutFeed.offset = 0;
+            scoutFeed.total = 0;
+            scoutFeed.hasMore = true;
+            document.getElementById('feed-list').replaceChildren();
+            document.getElementById('feed-summary').textContent = 'Updating exhibitors...';
+            document.getElementById('contentArea').scrollTop = 0;
+            renderFeedState('loading');
+            // Block the sentinel while the search debounce is pending.
+            scoutFeed.busy = true;
+            scoutFeed.timer = setTimeout(() => { scoutFeed.busy = false; loadScoutPage(); }, delay);
+        }
+
+        async function startScoutFeed() {
+            if (scoutFeed.user !== (AppState.currentUser?.user_id || '')) {
+                scoutFeed.token++;
+                scoutFeed.controller?.abort();
+                clearTimeout(scoutFeed.timer);
+                scoutFeed.busy = true;
+                document.getElementById('feed-list').replaceChildren();
+                document.getElementById('feed-summary').textContent = 'Updating exhibitors...';
+                renderFeedState('loading');
+            }
+            if (!scoutFeed.initialized) {
+                scoutFeed.initialized = true;
+                document.getElementById('feed-search').addEventListener('input', event => {
+                    scoutFeed.search = event.target.value;
+                    resetScoutFeed(300);
+                });
+                document.getElementById('feed-state').addEventListener('click', event => {
+                    const action = event.target.closest('[data-feed-action]')?.dataset.feedAction;
+                    if (action === 'clear') {
+                        scoutFeed.search = '';
+                        scoutFeed.selected.clear();
+                        document.getElementById('feed-search').value = '';
+                        renderFilterChips();
+                        resetScoutFeed();
+                        document.getElementById('feed-search').focus();
+                    } else if (action === 'retry') loadScoutPage();
+                });
+                document.getElementById('feed-list').addEventListener('click', event => {
+                    const button = event.target.closest('.feed-more');
+                    if (!button) return;
+                    const expanded = button.getAttribute('aria-expanded') !== 'true';
+                    button.setAttribute('aria-expanded', String(expanded));
+                    button.setAttribute('aria-label', `${expanded ? 'Collapse' : 'Show full'} reason for rank ${button.getAttribute('aria-controls').split('-').pop()}`);
+                    button.firstChild.textContent = expanded ? 'Less' : 'More';
+                    document.getElementById(button.getAttribute('aria-controls')).classList.toggle('feed-reason-clamped', !expanded);
+                });
+                scoutFeed.observer = new IntersectionObserver(entries => {
+                    if (entries.some(entry => entry.isIntersecting) && ['populated', 'loading'].includes(document.getElementById('feed-state').dataset.state)) loadScoutPage();
+                }, { root: document.getElementById('contentArea'), rootMargin: '300px' });
+                scoutFeed.observer.observe(document.getElementById('feed-sentinel'));
+                window.addEventListener('online', () => {
+                    if (document.getElementById('feed-state').dataset.state === 'offline') {
+                        if (scoutFeed.hasMore) loadScoutPage();
+                        else renderFeedState(scoutFeed.total ? 'end' : scoutFeed.search || scoutFeed.selected.size ? 'noresults' : 'empty');
+                    }
+                });
+                window.addEventListener('offline', () => {
+                    scoutFeed.token++;
+                    scoutFeed.controller?.abort();
+                    clearTimeout(scoutFeed.timer);
+                    scoutFeed.busy = false;
+                    if (AppState.activeScreen === 'scout') renderFeedState('offline');
+                });
+            }
+            if (!feedPreviewState && navigator.onLine) await loadUserProfile();
+            const event = AppState.userProfile?.current_event_name || 'WHX Dubai 2026';
+            const user = AppState.currentUser?.user_id || '';
+            if (AppState.activeScreen !== 'scout') return;
+            document.getElementById('feed-event').textContent = feedPreviewState ? 'Local preview / 120-row test dataset' : event;
+            if (scoutFeed.event !== event || scoutFeed.user !== user) {
+                scoutFeed.event = event;
+                scoutFeed.user = user;
+                scoutFeed.categories = null;
+                scoutFeed.selected.clear();
+                if (feedPreviewState === 'noresults') {
+                    scoutFeed.search = 'zzzz';
+                    document.getElementById('feed-search').value = 'zzzz';
+                }
+                renderFilterChips();
+                resetScoutFeed();
+            } else if (scoutFeed.hasMore && ['offline', 'loading', 'populated'].includes(document.getElementById('feed-state').dataset.state)) {
+                loadScoutPage();
+            }
+        }
 
         // ==================== INITIALIZATION ====================
         async function validateUserSession() {
@@ -1623,6 +1995,12 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            if (feedPreviewState) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                await switchScreen('scout');
+                return;
+            }
             // Check for saved session FIRST (instant, no network call)
             const savedUser = localStorage.getItem('eventScoutUser');
             if (savedUser) {
@@ -1861,7 +2239,7 @@
             });
 
             // Highlight the correct nav button
-            const navMap = { contacts: 0, scan: 1, chat: 2, expo: 3, admin: 4, profile: 5 };
+            const navMap = { contacts: 0, scan: 1, chat: 2, expo: 3, scout: 4, admin: 5, profile: 6 };
             const navBtns = document.querySelectorAll('.nav-btn');
             const idx = navMap[screenName];
             if (idx !== undefined && navBtns[idx]) {
@@ -1876,10 +2254,13 @@
             history.pushState({ screen: screenName }, '', `#${screenName}`);
 
             // Initialize screen-specific features
-            if (screenName === 'profile') {
+            if (screenName === 'scout') {
+                await startScoutFeed();
+            } else if (screenName === 'profile') {
                 document.getElementById('totalContacts').textContent = AppState.contacts.length;
                 loadDashboardStats();
                 loadDigitalCard();
+                loadExports();
             } else if (screenName === 'scan') {
                 // Only reset scan state if no active scans are running
                 const hasActiveScans = activeScanCount > 0 || scanImageQueue.length > 0;
@@ -1975,15 +2356,27 @@
                         AppState.contacts = data.contacts;
                         renderContacts(AppState.contacts);
                         renderHotLeads();
-                        // Update count label
+                        // Update count label + smart action strip
                         const countEl = document.getElementById('contactsFilterCount');
+                        const strip = document.getElementById('contactsActionStrip');
+                        const stripLabel = document.getElementById('actionStripLabel');
+                        const total = data.total_contacts ?? data.total ?? data.contacts.length;
                         if (countEl) {
-                            const total = data.total_contacts ?? data.total ?? data.contacts.length;
                             if (df) {
                                 countEl.textContent = `${total} contact${total !== 1 ? 's' : ''} found`;
                                 countEl.classList.remove('hidden');
                             } else {
                                 countEl.classList.add('hidden');
+                            }
+                        }
+                        // Show action strip whenever a date filter is active
+                        if (strip && stripLabel) {
+                            const filterNames = { today: 'Today', yesterday: 'Yesterday', last_week: 'Last 7 Days', last_month: 'This Month' };
+                            if (df && total > 0) {
+                                stripLabel.textContent = `${total} contact${total !== 1 ? 's' : ''} · ${filterNames[df] || df}`;
+                                strip.classList.remove('hidden');
+                            } else {
+                                strip.classList.add('hidden');
                             }
                         }
                     } else {
@@ -2030,10 +2423,14 @@
                 const score = contact.lead_score;
                 const temp = contact.lead_temperature;
                 const scoreColor = temp === 'hot' ? 'bg-red-500' : temp === 'warm' ? 'bg-orange-400' : temp === 'cold' ? 'bg-gray-400' : '';
+                const isSelected = AppState.selectMode && AppState.selectedContactIds.has(contact.id);
+                const selectedClass = isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : '';
 
                 return `
-                <div class="contact-card bg-white rounded-xl shadow-sm active:shadow-md mb-2 mx-2 transition-all duration-200" data-id="${contact.id}" onclick="openContactDetail('${contact.id}')">
+                <div class="contact-card bg-white rounded-xl shadow-sm active:shadow-md mb-2 mx-2 transition-all duration-200 ${selectedClass}" data-id="${contact.id}" onclick="openContactDetail('${contact.id}')">
                     <div class="flex items-start p-4 gap-3">
+                        <!-- Select mode checkbox (pointer-events-none so tap always reaches the card onclick) -->
+                        ${AppState.selectMode ? `<div class="flex-shrink-0 flex items-center self-center pr-1"><input type="checkbox" class="contact-select-cb w-5 h-5 rounded accent-blue-600 pointer-events-none" ${isSelected ? 'checked' : ''}></div>` : ''}
                         <!-- Avatar with score badge -->
                         <div class="relative flex-shrink-0 mt-0.5">
                             ${contact.photo_base64
@@ -3375,6 +3772,11 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         // ==================== CONTACT DETAIL VIEW ====================
         let _swipeVoiceTriggered = 0;
         function openContactDetail(contactId) {
+            // In select mode, tap = toggle selection (never open detail)
+            if (AppState.selectMode) {
+                toggleContactSelection(contactId);
+                return;
+            }
             // Skip if voice recording was just triggered by swipe
             if (Date.now() - _swipeVoiceTriggered < 500) return;
             const contact = AppState.contacts.find(c => c.id === contactId);
@@ -6587,7 +6989,376 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             if (chatVoiceRecognition) { chatVoiceRecognition.onend = null; try { chatVoiceRecognition.stop(); } catch (e) { } chatVoiceRecognition = null; }
             document.getElementById('chatInput').placeholder = 'Ask about your contacts...';
         }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // SELECT MODE  (Single Responsibility: manages contact selection state)
+        // ─────────────────────────────────────────────────────────────────────
+
+        function toggleSelectMode() {
+            AppState.selectMode = !AppState.selectMode;
+            AppState.selectedContactIds = new Set();
+            const btn = document.getElementById('selectModeBtn');
+            const label = document.getElementById('selectModeBtnLabel');
+            const bar = document.getElementById('contactsSelectBar');
+            const fab = document.getElementById('contactsFab');
+            if (AppState.selectMode) {
+                btn.className = 'flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-blue-600 text-white active:bg-blue-700 transition font-medium';
+                label.textContent = 'Selecting';
+                bar.classList.remove('hidden');
+                fab.classList.add('hidden');
+                const strip = document.getElementById('contactsActionStrip');
+                if (strip) strip.classList.add('hidden');
+            } else {
+                btn.className = 'flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-600 active:bg-gray-200 transition font-medium';
+                label.textContent = 'Select';
+                bar.classList.add('hidden');
+                fab.classList.remove('hidden');
+                // Re-show action strip if a date filter is still active
+                const strip = document.getElementById('contactsActionStrip');
+                if (strip && window._contactsDateFilter && AppState.contacts.length > 0) {
+                    strip.classList.remove('hidden');
+                }
+            }
+            updateSelectionBar();
+            renderContacts(AppState.contacts);
+        }
+
+        // One-tap export: grabs all currently visible (filtered) contacts, saves + downloads
+        async function selectAllAndExport(format) {
+            if (AppState.contacts.length === 0) { showToast('No contacts to export', 'error'); return; }
+            const filterNames = { '': 'All', today: 'Today', yesterday: 'Yesterday', last_week: 'Last 7 Days', last_month: 'This Month' };
+            const filterLabel = filterNames[window._contactsDateFilter || ''] || 'All';
+            showToast(`Saving ${AppState.contacts.length} contacts…`, 'info');
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contact_ids: AppState.contacts.map(c => c.id), format, filter_label: filterLabel }),
+                    }
+                );
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+                const data = await res.json();
+                await downloadExport(data.id, data.filename);
+                showToast(`Downloaded: ${data.filename}`, 'success');
+                await loadExports();
+            } catch (err) {
+                console.error('selectAllAndExport error:', err);
+                showToast('Export failed', 'error');
+            }
+        }
+
+        function toggleContactSelection(contactId) {
+            if (!AppState.selectMode) return;
+            if (AppState.selectedContactIds.has(contactId)) {
+                AppState.selectedContactIds.delete(contactId);
+            } else {
+                AppState.selectedContactIds.add(contactId);
+            }
+            updateSelectionBar();
+            const card = document.querySelector(`.contact-card[data-id="${contactId}"]`);
+            if (card) {
+                const isNowSelected = AppState.selectedContactIds.has(contactId);
+                card.classList.toggle('ring-2', isNowSelected);
+                card.classList.toggle('ring-blue-500', isNowSelected);
+                card.classList.toggle('bg-blue-50', isNowSelected);
+                const cb = card.querySelector('.contact-select-cb');
+                if (cb) cb.checked = isNowSelected;
+            }
+        }
+
+        function selectAllVisible() {
+            AppState.contacts.forEach(c => AppState.selectedContactIds.add(c.id));
+            updateSelectionBar();
+            renderContacts(AppState.contacts);
+        }
+
+        function updateSelectionBar() {
+            const selEl = document.getElementById('selectedCount');
+            const allEl = document.getElementById('selectableCount');
+            if (selEl) selEl.textContent = AppState.selectedContactIds.size;
+            if (allEl) allEl.textContent = AppState.contacts.length;
+            updateSelectAllCheckbox();
+        }
+
+        function updateSelectAllCheckbox() {
+            const cb = document.getElementById('selectAllCheckbox');
+            if (!cb) return;
+            const total = AppState.contacts.length;
+            const selected = AppState.selectedContactIds.size;
+            if (selected === 0 || total === 0) {
+                cb.checked = false;
+                cb.indeterminate = false;
+            } else if (selected >= total) {
+                cb.checked = true;
+                cb.indeterminate = false;
+            } else {
+                cb.checked = false;
+                cb.indeterminate = true;
+            }
+        }
+
+        function handleSelectAllCheckbox(cb) {
+            if (cb.checked) {
+                selectAllVisible();
+            } else {
+                AppState.selectedContactIds = new Set();
+                updateSelectionBar();
+                renderContacts(AppState.contacts);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        // EXPORT OPERATIONS  (each function has one job)
+        // ─────────────────────────────────────────────────────────────────────
+
+        function promptExport(format) {
+            const contactIds = AppState.selectedContactIds.size > 0
+                ? Array.from(AppState.selectedContactIds)
+                : AppState.contacts.map(c => c.id);
+            if (contactIds.length === 0) { showToast('No contacts to export', 'error'); return; }
+
+            const today = new Date().toISOString().slice(0, 10);
+            const defaultName = `contacts_${today}`;
+            const btnColor = format === 'csv' ? 'bg-green-600 active:bg-green-700' : 'bg-blue-600 active:bg-blue-700';
+
+            const modal = document.createElement('div');
+            modal.id = 'exportNameModal';
+            modal.className = 'fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 bg-black/60';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl slide-up">
+                    <h3 class="text-lg font-bold text-gray-900 mb-1">Name Your Export</h3>
+                    <p class="text-xs text-gray-400 mb-4">${contactIds.length} contact${contactIds.length !== 1 ? 's' : ''} · ${format.toUpperCase()}</p>
+                    <div class="relative mb-5">
+                        <input type="text" id="exportFileName" value="${defaultName}"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none pr-16"
+                            placeholder="File name..." maxlength="80">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">.${format}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="document.getElementById('exportNameModal').remove()"
+                            class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-semibold active:bg-gray-200">
+                            Cancel
+                        </button>
+                        <button onclick="confirmExport('${format}')"
+                            class="flex-1 py-2.5 ${btnColor} text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            setTimeout(() => {
+                const inp = document.getElementById('exportFileName');
+                if (inp) { inp.focus(); inp.select(); }
+            }, 80);
+        }
+
+        async function confirmExport(format) {
+            const modal = document.getElementById('exportNameModal');
+            const inp = document.getElementById('exportFileName');
+            const raw = inp ? inp.value.trim() : '';
+            const baseName = (raw.replace(/[^\w\s\-]/g, '').trim().replace(/\s+/g, '_') || 'contacts');
+            const downloadFilename = `${baseName}.${format}`;
+            if (modal) modal.remove();
+
+            const contactIds = AppState.selectedContactIds.size > 0
+                ? Array.from(AppState.selectedContactIds)
+                : AppState.contacts.map(c => c.id);
+
+            showToast('Creating export…', 'info');
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contact_ids: contactIds,
+                            format,
+                            filter_label: `Selected ${contactIds.length}`,
+                        }),
+                    }
+                );
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+                const data = await res.json();
+                await downloadExport(data.id, downloadFilename);
+                showToast(`Downloaded: ${downloadFilename}`, 'success');
+                if (AppState.selectMode) toggleSelectMode();
+                await loadExports();
+            } catch (err) {
+                console.error('confirmExport error:', err);
+                showToast('Export failed', 'error');
+            }
+        }
+
+        async function createExport(format) {
+            const contactIds = AppState.selectedContactIds.size > 0
+                ? Array.from(AppState.selectedContactIds)
+                : AppState.contacts.map(c => c.id);
+
+            if (contactIds.length === 0) {
+                showToast('No contacts to export', 'error');
+                return;
+            }
+
+            const filterLabels = {
+                '': 'All', 'today': 'Today', 'yesterday': 'Yesterday',
+                'last_week': 'Last 7 Days', 'last_month': 'This Month'
+            };
+            const filterLabel = AppState.selectedContactIds.size > 0
+                ? `Selected ${contactIds.length}`
+                : (filterLabels[window._contactsDateFilter] || 'All');
+
+            showToast('Creating export file...', 'info');
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    {
+                        method: 'POST',
+                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contact_ids: contactIds, format, filter_label: filterLabel }),
+                    }
+                );
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Failed'); }
+                const data = await res.json();
+                showToast(`Export saved: ${data.filename}`, 'success');
+                if (AppState.selectMode) toggleSelectMode();
+                await loadExports();
+            } catch (err) {
+                console.error('createExport error:', err);
+                showToast('Export creation failed', 'error');
+            }
+        }
+
+        async function loadExports() {
+            if (!AppState.currentUser) return;
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                if (!res.ok) return;
+                const data = await res.json();
+                AppState.exports = data.exports || [];
+                renderExports(AppState.exports);
+                renderExportsSheet(AppState.exports);
+            } catch (err) {
+                console.error('loadExports error:', err);
+            }
+        }
+
+        function _buildExportRow(exp) {
+            const date = new Date(exp.created_at).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            const badge = exp.format === 'csv'
+                ? '<span class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">CSV</span>'
+                : '<span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">JSON</span>';
+            const safeFilename = exp.filename.replace(/'/g, "\\'");
+            return `
+            <div class="flex items-center gap-2 py-2.5 border-b border-gray-100 last:border-0">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">${badge}<span class="text-xs text-gray-500 truncate">${escapeHtml(exp.filter_label)}</span></div>
+                    <p class="text-xs text-gray-400 mt-0.5">${exp.contact_count} contacts · ${date}</p>
+                    <p class="text-xs text-gray-300 truncate">${escapeHtml(exp.filename)}</p>
+                </div>
+                <button onclick="downloadExport('${exp.id}','${safeFilename}')"
+                    class="w-9 h-9 flex items-center justify-center text-blue-600 active:bg-blue-50 rounded-lg transition flex-shrink-0" title="Download">
+                    <i class="fas fa-download text-sm"></i>
+                </button>
+                <button onclick="deleteExport('${exp.id}')"
+                    class="w-9 h-9 flex items-center justify-center text-red-400 active:bg-red-50 rounded-lg transition flex-shrink-0" title="Delete">
+                    <i class="fas fa-trash text-sm"></i>
+                </button>
+            </div>`;
+        }
+
+        function renderExports(exports) {
+            const container = document.getElementById('myExportsList');
+            if (!container) return;
+            if (!exports.length) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">No exports yet. Use Select mode to create one!</p>';
+                return;
+            }
+            container.innerHTML = exports.map(_buildExportRow).join('');
+        }
+
+        function renderExportsSheet(exports) {
+            const container = document.getElementById('exportsSheetList');
+            if (!container) return;
+            if (!exports.length) {
+                container.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">No exports yet. Use Select mode on the contacts screen to create one!</p>';
+                return;
+            }
+            container.innerHTML = exports.map(_buildExportRow).join('');
+        }
+
+        async function downloadExport(exportId, filename) {
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/${exportId}/download?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                if (!res.ok) throw new Error('Download failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename; a.click();
+                URL.revokeObjectURL(url);
+                showToast('Downloaded!', 'success');
+            } catch (err) {
+                console.error('downloadExport error:', err);
+                showToast('Download failed', 'error');
+            }
+        }
+
+        async function deleteExport(exportId) {
+            if (!confirm('Delete this export file?')) return;
+            try {
+                const res = await resilientFetch(
+                    `${CONFIG.API_BASE_URL}/exports/${exportId}?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
+                    { method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY } }
+                );
+                if (!res.ok) throw new Error('Delete failed');
+                showToast('Export deleted', 'success');
+                await loadExports();
+            } catch (err) {
+                console.error('deleteExport error:', err);
+                showToast('Delete failed', 'error');
+            }
+        }
+
+        function openExportsSheet() {
+            loadExports();
+            document.getElementById('exportsSheet').classList.remove('hidden');
+        }
+
+        function closeExportsSheet() {
+            document.getElementById('exportsSheet').classList.add('hidden');
+        }
     </script>
+
+    <!-- ── My Exports Bottom Sheet ── -->
+    <div id="exportsSheet" class="hidden fixed inset-0 z-50 flex flex-col justify-end">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeExportsSheet()"></div>
+        <div class="relative bg-white rounded-t-2xl shadow-2xl max-h-[75vh] flex flex-col slide-up">
+            <div class="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100">
+                <h3 class="text-lg font-bold text-gray-900"><i class="fas fa-folder-open text-blue-500 mr-2"></i>My Exports</h3>
+                <button onclick="closeExportsSheet()" class="w-8 h-8 flex items-center justify-center text-gray-400 active:bg-gray-100 rounded-full">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="px-5 pb-2 pt-2 border-b border-gray-100">
+                <p class="text-xs text-gray-400">Export files are saved on the server — come back anytime to download them.</p>
+            </div>
+            <div id="exportsSheetList" class="flex-1 overflow-y-auto px-5 py-2">
+                <p class="text-sm text-gray-400 text-center py-6">Loading...</p>
+            </div>
+        </div>
+    </div>
+    <script src="score-card.js"></script>
+    <script src="scan-flow.js"></script>
 </body>
 
 </html>

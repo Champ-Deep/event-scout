@@ -31,6 +31,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 COPY VERSION .
 COPY database.py .
 COPY app.py .
+COPY admin_api.py .
 
 # Create directories for data persistence
 RUN mkdir -p /app/temp_images /app/saved_qr /app/data /app/users

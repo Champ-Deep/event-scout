@@ -32,9 +32,12 @@ import google.generativeai as genai
 from sqlalchemy import select, update, delete, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from lead_scoring import score_contact
+from exhibitor_ranking import rank_exhibitors
+import scan_analysis
 from database import (
     UserDB, ContactDB, SharedContactDB, UserProfileDB, ConversationDB, ExhibitorDB, UserCardDB, EventFileDB,
-    ContactFileDB, ContactPipelineDB, AdminBroadcastDB, ContactListDB, ContactListMemberDB, Base,
+    ContactFileDB, ContactPipelineDB, AdminBroadcastDB, ContactListDB, ContactListMemberDB, UserExportDB, Base,
     get_engine, get_session_factory, get_backup_session_factory, init_db, dispose_engines,
     ASYNC_DATABASE_URL, ASYNC_BACKUP_URL
 )
@@ -172,6 +175,13 @@ class LeadScoreResult(BaseModel):
 class EnrichRequest(BaseModel):
     notes_append: Optional[str] = None
     links: Optional[List[Dict[str, str]]] = None
+
+
+class CreateExportRequest(BaseModel):
+    contact_ids: List[str]
+    format: str = "csv"          # "csv" or "json"
+    filter_label: str = "All"    # Human-readable label shown in the exports list
+    filename: Optional[str] = None
 
 
 class AudioNoteRequest(BaseModel):
@@ -1389,82 +1399,7 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
             os.remove(temp_filename)
 
 
-# --- LEAD SCORING ---
-def score_contact_with_gemini(contact_meta: dict, user_profile: dict) -> dict:
-    if not GEMINI_API_KEY or not gemini_configured:
-        return {
-            "score": 50, "temperature": "warm",
-            "reasoning": "Gemini not configured.",
-            "recommended_actions": ["Configure Gemini API for AI-powered scoring"],
-            "breakdown": {"profile_fit": 10, "role_relevance": 10, "company_fit": 10, "engagement": 10, "timing": 10}
-        }
-
-    prompt = f"""You are a lead scoring expert. Score this contact against the user's profile and event context.
-
-USER PROFILE:
-- Company: {user_profile.get('company_name', 'N/A')}
-- Job Title: {user_profile.get('job_title', 'N/A')}
-- Products/Services: {json.dumps(user_profile.get('products', []))}
-- Target Industries: {json.dumps(user_profile.get('target_industries', []))}
-- Target Roles: {json.dumps(user_profile.get('target_roles', []))}
-- Target Company Sizes: {json.dumps(user_profile.get('target_company_sizes', []))}
-- Target Geographies: {json.dumps(user_profile.get('target_geographies', []))}
-- Value Propositions: {json.dumps(user_profile.get('value_propositions', []))}
-- Event: {user_profile.get('current_event_name', 'N/A')}
-- Event Goals: {json.dumps(user_profile.get('event_goals', []))}
-
-CONTACT:
-- Name: {contact_meta.get('name', 'N/A')}
-- Company: {contact_meta.get('company_name', 'N/A')}
-- Email: {contact_meta.get('email', 'N/A')}
-- Phone: {contact_meta.get('phone', 'N/A')}
-- LinkedIn: {contact_meta.get('linkedin', 'N/A')}
-- Notes: {contact_meta.get('notes', '')}
-
-Score this contact on 5 dimensions (each 0-20, total 0-100):
-1. profile_fit 2. role_relevance 3. company_fit 4. engagement 5. timing
-
-Return ONLY a valid JSON object:
-{{"score": <0-100>, "temperature": "<hot|warm|cold>", "reasoning": "<2-3 sentences>", "recommended_actions": ["action1", "action2", "action3"], "breakdown": {{"profile_fit": <0-20>, "role_relevance": <0-20>, "company_fit": <0-20>, "engagement": <0-20>, "timing": <0-20>}}}}
-
-Rules: hot >= 70, warm = 40-69, cold < 40. Return ONLY raw JSON."""
-
-    model_names = ['gemini-2.5-flash', 'gemini-2.0-flash']
-    for model_name in model_names:
-        try:
-            model = genai.GenerativeModel(model_name)
-            import google.generativeai.types as genai_types
-            request_options = genai_types.RequestOptions(timeout=30)
-            response = model.generate_content(prompt, request_options=request_options)
-            if not response or not response.text:
-                continue
-            response_text = response.text.strip()
-            if response_text.startswith("```"):
-                parts = response_text.split("```")
-                response_text = parts[1] if len(parts) > 1 else response_text
-                if response_text.startswith("json"):
-                    response_text = response_text[4:]
-                response_text = response_text.strip()
-            if not response_text.startswith("{"):
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                if json_start != -1 and json_end > json_start:
-                    response_text = response_text[json_start:json_end]
-            result = json.loads(response_text)
-            score = result.get("score", 50)
-            result["temperature"] = "hot" if score >= 70 else ("warm" if score >= 40 else "cold")
-            return result
-        except Exception as e:
-            print(f"[SCORING] Error with {model_name}: {e}")
-            continue
-
-    return {
-        "score": 50, "temperature": "warm",
-        "reasoning": "Scoring temporarily unavailable.",
-        "recommended_actions": ["Retry scoring later"],
-        "breakdown": {"profile_fit": 10, "role_relevance": 10, "company_fit": 10, "engagement": 10, "timing": 10}
-    }
-
+# --- LEAD SCORING: see lead_scoring.py ---
 
 # --- INTELLIGENCE PIPELINE ---
 
@@ -1744,14 +1679,7 @@ async def pipeline_step_score(pipeline_id, contact_id: str, user_id: str):
             "notes": contact.notes or "", "source": contact.source or "scan",
         }
 
-        try:
-            score_result = await asyncio.wait_for(
-                asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile),
-                timeout=30
-            )
-        except asyncio.TimeoutError:
-            print("[PIPELINE] Scoring hard timeout (30s) — using default score")
-            score_result = {"score": 50, "temperature": "warm", "reasoning": "Scoring timed out - manual review needed", "breakdown": {}, "recommended_actions": ["Manual review needed"]}
+        score_result = score_contact(contact_meta, user_profile)
 
         # Save scores to contact
         contact.lead_score = score_result.get("score")
@@ -2058,7 +1986,11 @@ async def run_contact_pipeline(contact_id: str, user_id: str):
 
 # --- FASTAPI APP ---
 app = FastAPI(title="Contact Assistant API - Multi-User (PostgreSQL)", version="2.1.0-admin-cmd")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"],
+                   expose_headers=["X-Total-Count", "Content-Disposition"])
+
+import sys, admin_api  # admin dashboard endpoints (docs/admin-dashboard-spec.md)
+app.include_router(admin_api.build_router(sys.modules[__name__]))
 
 
 @app.on_event("startup")
@@ -2094,6 +2026,8 @@ async def startup_event():
     if not db_ok:
         print("[STARTUP] WARNING: Database initialization failed!")
         return
+
+    await admin_api.load_settings(sys.modules[__name__])  # persisted admin settings override env defaults
 
     # Rebuild FAISS indices from Postgres
     print("[STARTUP] Rebuilding FAISS indices from PostgreSQL...")
@@ -2544,6 +2478,55 @@ async def add_contact_image_route(
                 detail="AI processing timed out. Please try again."
             )
         raise HTTPException(status_code=500, detail=f"Failed to process card: {error_msg}")
+
+
+class ScanAnalyzeRequest(BaseModel):
+    contact: Contact
+    user_id: str
+
+
+@app.post("/scan/extract")
+async def scan_extract_route(
+    file: UploadFile = File(...),
+    user_id: str = Query(..., description="User ID"),
+    api_key: str = Depends(verify_api_key),
+):
+    """Hi-Fi scan flow step 1: read the card, return fields, save nothing (the user confirms them first)."""
+    content = await file.read()
+    if len(content) < 1000:
+        raise HTTPException(status_code=400, detail="Image file is empty or corrupted.")
+    path = os.path.join(TEMP_DIR, f"{uuid.uuid4()}.png")
+    with open(path, "wb") as f:
+        f.write(content)
+    try:
+        try:
+            fields = await asyncio.wait_for(asyncio.to_thread(extract_contact_from_image_with_gemini, path), timeout=20)
+        except asyncio.TimeoutError:
+            fields = {}
+        keys = ("name", "email", "phone", "linkedin", "company_name")
+        if not any(fields.get(k, "N/A") != "N/A" for k in keys):
+            fields = await extract_contact_with_openrouter(path)
+        if not any(fields.get(k, "N/A") != "N/A" for k in keys):
+            raise HTTPException(status_code=422, detail="No contact information found in the image.")
+        return {"fields": {k: fields.get(k, "N/A") for k in keys}}
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+@app.post("/scan/analyze")
+async def scan_analyze_route(request: ScanAnalyzeRequest, api_key: str = Depends(verify_api_key)):
+    """Hi-Fi scan flow step 3: local, profile-personalised score and reasoning for unsaved fields."""
+    session = await get_db_session()
+    try:
+        res = await session.execute(select(UserProfileDB).where(UserProfileDB.user_id == uuid.UUID(request.user_id)))
+        row = res.scalar_one_or_none()
+        profile = row.profile_data if row else {}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid user_id")
+    finally:
+        await session.close()
+    return await asyncio.to_thread(scan_analysis.analyze, request.contact.model_dump(), profile)
 
 
 @app.post("/scan_qr/")
@@ -3033,6 +3016,231 @@ async def export_contacts_route(
         await session.close()
 
 
+# ─── Selective Export Endpoints (SOLID: each endpoint has one responsibility) ───
+
+@app.post("/exports/create")
+async def create_export_route(
+    request: CreateExportRequest,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Generate a CSV/JSON file from a specific set of contact IDs and persist it."""
+    import csv
+    from io import StringIO
+
+    if not request.contact_ids:
+        raise HTTPException(status_code=400, detail="contact_ids cannot be empty")
+    if request.format not in ("csv", "json"):
+        raise HTTPException(status_code=400, detail="format must be 'csv' or 'json'")
+
+    session = await get_db_session()
+    try:
+        contact_uuids = [uuid.UUID(cid) for cid in request.contact_ids]
+        result = await session.execute(
+            select(ContactDB).where(
+                ContactDB.user_id == uuid.UUID(user_id),
+                ContactDB.id.in_(contact_uuids),
+            )
+        )
+        contacts = result.scalars().all()
+        if not contacts:
+            raise HTTPException(status_code=404, detail="No matching contacts found")
+
+        # Fetch pipeline data for research/pitch columns
+        pipeline_map: Dict[str, Any] = {}
+        pip_result = await session.execute(
+            select(ContactPipelineDB)
+            .where(ContactPipelineDB.contact_id.in_([c.id for c in contacts]))
+            .order_by(ContactPipelineDB.created_at.desc())
+        )
+        for p in pip_result.scalars().all():
+            cid = str(p.contact_id)
+            if cid not in pipeline_map:
+                pipeline_map[cid] = p
+
+        # Build file content
+        if request.format == "json":
+            import json as _json
+            data = []
+            for c in contacts:
+                pip = pipeline_map.get(str(c.id))
+                data.append({
+                    "name": c.name, "email": c.email or "N/A",
+                    "phone": c.phone or "N/A", "linkedin": c.linkedin or "N/A",
+                    "company_name": c.company_name or "N/A",
+                    "event_name": getattr(c, "event_name", "") or "",
+                    "notes": c.notes or "", "links": c.links or [],
+                    "source": c.source or "manual",
+                    "lead_score": c.lead_score, "lead_temperature": c.lead_temperature,
+                    "research_summary": pip.research_summary if pip else "",
+                    "pitch_angle": pip.pitch_angle if pip else "",
+                    "pitch_email_subject": pip.pitch_email_subject if pip else "",
+                    "gamma_deck_url": getattr(pip, "gamma_deck_url", "") if pip else "",
+                })
+            file_content = _json.dumps(data, indent=2)
+        else:
+            output = StringIO()
+            writer = csv.writer(output)
+            writer.writerow([
+                "Name", "Email", "Phone", "LinkedIn", "Company", "Event",
+                "Notes", "Source", "Lead Score", "Lead Temperature",
+                "Research Summary", "Pitch Email Subject", "Gamma Deck URL",
+            ])
+            for c in contacts:
+                pip = pipeline_map.get(str(c.id))
+                writer.writerow([
+                    c.name, c.email or "N/A", c.phone or "N/A",
+                    c.linkedin or "N/A", c.company_name or "N/A",
+                    getattr(c, "event_name", "") or "",
+                    (c.notes or "").replace("\n", " "), c.source or "manual",
+                    c.lead_score or "", c.lead_temperature or "",
+                    (pip.research_summary or "").replace("\n", " ") if pip else "",
+                    (pip.pitch_email_subject or "") if pip else "",
+                    (getattr(pip, "gamma_deck_url", "") or "") if pip else "",
+                ])
+            file_content = output.getvalue()
+
+        # Build filename
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        label_slug = request.filter_label.lower().replace(" ", "_")
+        filename = request.filename or f"contacts_{label_slug}_{ts}.{request.format}"
+
+        export = UserExportDB(
+            user_id=uuid.UUID(user_id),
+            filename=filename,
+            format=request.format,
+            filter_label=request.filter_label,
+            contact_count=len(contacts),
+            file_content=file_content,
+        )
+        session.add(export)
+        await session.commit()
+        await session.refresh(export)
+
+        return {
+            "status": "success",
+            "id": str(export.id),
+            "filename": export.filename,
+            "format": export.format,
+            "filter_label": export.filter_label,
+            "contact_count": export.contact_count,
+            "created_at": export.created_at.isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/exports/")
+async def list_exports_route(
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Return metadata for all saved exports belonging to the user (no file content)."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserExportDB)
+            .where(UserExportDB.user_id == uuid.UUID(user_id))
+            .order_by(UserExportDB.created_at.desc())
+        )
+        exports = result.scalars().all()
+        return {
+            "status": "success",
+            "exports": [
+                {
+                    "id": str(e.id),
+                    "filename": e.filename,
+                    "format": e.format,
+                    "filter_label": e.filter_label,
+                    "contact_count": e.contact_count,
+                    "created_at": e.created_at.isoformat(),
+                }
+                for e in exports
+            ],
+        }
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/exports/{export_id}/download")
+async def download_export_route(
+    export_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Stream the file content of a saved export as a download."""
+    from fastapi.responses import StreamingResponse
+
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserExportDB).where(
+                UserExportDB.id == uuid.UUID(export_id),
+                UserExportDB.user_id == uuid.UUID(user_id),
+            )
+        )
+        export = result.scalar_one_or_none()
+        if not export:
+            raise HTTPException(status_code=404, detail="Export not found")
+
+        media_type = "text/csv" if export.format == "csv" else "application/json"
+        return StreamingResponse(
+            iter([export.file_content]),
+            media_type=media_type,
+            headers={"Content-Disposition": f"attachment; filename={export.filename}"},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.delete("/exports/{export_id}")
+async def delete_export_route(
+    export_id: str,
+    user_id: str = Query(...),
+    api_key: str = Depends(verify_api_key),
+):
+    """Permanently delete a saved export record."""
+    from sqlalchemy import delete as sa_delete
+
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(UserExportDB).where(
+                UserExportDB.id == uuid.UUID(export_id),
+                UserExportDB.user_id == uuid.UUID(user_id),
+            )
+        )
+        export = result.scalar_one_or_none()
+        if not export:
+            raise HTTPException(status_code=404, detail="Export not found")
+
+        await session.execute(
+            sa_delete(UserExportDB).where(UserExportDB.id == uuid.UUID(export_id))
+        )
+        await session.commit()
+        return {"status": "success", "deleted_id": export_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
 @app.post("/contact/{contact_id}/enrich")
 async def enrich_contact_route(
     contact_id: str,
@@ -3216,13 +3424,7 @@ async def score_contact_route(
             "email": c.email or "N/A", "phone": c.phone or "N/A",
             "linkedin": c.linkedin or "N/A", "notes": c.notes or "",
         }
-        try:
-            score_result = await asyncio.wait_for(
-                asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile),
-                timeout=30
-            )
-        except asyncio.TimeoutError:
-            raise HTTPException(status_code=504, detail="Scoring timed out — Gemini API unresponsive")
+        score_result = score_contact(contact_meta, user_profile)
 
         # Save score to DB
         c.lead_score = score_result["score"]
@@ -3293,10 +3495,7 @@ async def score_all_contacts_route(
                     "email": c.email or "N/A", "phone": c.phone or "N/A",
                     "linkedin": c.linkedin or "N/A", "notes": c.notes or "",
                 }
-                score_result = await asyncio.wait_for(
-                    asyncio.to_thread(score_contact_with_gemini, contact_meta, user_profile),
-                    timeout=30
-                )
+                score_result = score_contact(contact_meta, user_profile)
                 c.lead_score = score_result["score"]
                 c.lead_temperature = score_result["temperature"]
                 c.lead_score_reasoning = score_result["reasoning"]
@@ -3538,6 +3737,46 @@ async def list_exhibitors_route(
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await session.close()
+
+
+@app.get("/exhibitors/ranked/")
+async def ranked_exhibitors_route(
+    user_id: uuid.UUID = Query(..., description="User ID"),
+    event: str = Query("WHX Dubai 2026"),
+    search: str = Query(""),
+    category: str = Query("", description="Comma-separated categories"),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    api_key: str = Depends(verify_api_key),
+):
+    """Return the ranked feed in score order, using the stored user profile."""
+    session = await get_db_session()
+    try:
+        result = await session.execute(
+            select(ExhibitorDB).where(ExhibitorDB.event_name == event)
+        )
+        exhibitors = [
+            {
+                "id": str(e.id), "name": e.name,
+                "booth": e.booth or "", "hall": e.hall or "",
+                "category": e.category or "", "subcategory": e.subcategory or "",
+                "country": e.country or "", "website": e.website or "",
+                "description": e.description or "",
+                "products": e.products or [], "tags": e.tags or [],
+            }
+            for e in result.scalars().all()
+        ]
+        result = await session.execute(
+            select(UserProfileDB).where(UserProfileDB.user_id == user_id)
+        )
+        profile = result.scalar_one_or_none()
+        ranked = rank_exhibitors(
+            exhibitors, profile.profile_data if profile else {},
+            q=search, categories=category.split(","), offset=offset, limit=limit,
+        )
+        return {"status": "success", **ranked}
     finally:
         await session.close()
 
