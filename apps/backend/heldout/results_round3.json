@@ -1,0 +1,694 @@
+[
+ {
+  "url": "https://www.sial-paris.com/",
+  "pages": [],
+  "error": "unreachable: ConnectError: https://www.sial-paris.com/",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.ispo.com/",
+  "pages": [
+   "https://www.ispo.com/",
+   "https://www.ispo.com/exhibitors-2026-brands",
+   "https://www.ispo.com/expo",
+   "https://www.ispo.com/expo/floorplan"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://ispo2026.mapyourshow.com/8_0/exhview/index.cfm",
+   "kind": "viewer",
+   "label": "2026 ISPO Floorplan"
+  }
+ },
+ {
+  "url": "https://www.anuga.com/",
+  "pages": [
+   "https://www.anuga.com/",
+   "https://www.anuga.com/anuga-exhibitors/list-of-exhibitors/",
+   "https://www.anuga.com/anuga-exhibitors/list-of-exhibitors/?route=aussteller/blaettern&&start=20&paginatevalues=%7B%22stichwort%22%3A%22%22%2C%22suchart%22%3A%22alle%22%7D",
+   "https://www.anuga.com/anuga-exhibitors/list-of-exhibitors/?route=aussteller/blaettern&&start=40&paginatevalues=%7B%22stichwort%22%3A%22%22%2C%22suchart%22%3A%22alle%22%7D",
+   "https://www.anuga.com/anuga-exhibitors/list-of-exhibitors/?route=aussteller/blaettern&&start=60&paginatevalues=%7B%22stichwort%22%3A%22%22%2C%22suchart%22%3A%22alle%22%7D",
+   "https://www.anuga.com/anuga-exhibitors/list-of-exhibitors/?route=aussteller/blaettern&&start=80&paginatevalues=%7B%22stichwort%22%3A%22%22%2C%22suchart%22%3A%22alle%22%7D"
+  ],
+  "error": null,
+  "status": "ok",
+  "rows": 100,
+  "with_booth": 100,
+  "exhibitors": [
+   {
+    "name": "3A Management Corp Frontier Bakery",
+    "booth": "Hall 3.2 | C010",
+    "hall": "Hall 3.2 | C010"
+   },
+   {
+    "name": "3F Group Oy",
+    "booth": "Hall 10.2 | A068",
+    "hall": "Hall 10.2 | A068"
+   },
+   {
+    "name": "ACEITES ESPECIALES TH",
+    "booth": "Hall 3.1 | C078 D079",
+    "hall": "Hall 3.1 | C078 D079"
+   },
+   {
+    "name": "Afreximbank",
+    "booth": "Hall 11.1 | A058",
+    "hall": "Hall 11.1 | A058"
+   },
+   {
+    "name": "Aim Food Manufacturing Sdn Bhd",
+    "booth": "Hall 7.1 | G030",
+    "hall": "Hall 7.1 | G030"
+   },
+   {
+    "name": "ALAZAN",
+    "booth": "Hall 3.1 | C078 D079",
+    "hall": "Hall 3.1 | C078 D079"
+   },
+   {
+    "name": "ANTESCO",
+    "booth": "Confexhall B030 C039",
+    "hall": "Confexhall B030 C039"
+   },
+   {
+    "name": "Baoqing Country Xinfeng Agricultural and Sideline Products Co., Ltd",
+    "booth": "Confexhall B052",
+    "hall": "Confexhall B052"
+   },
+   {
+    "name": "Bello Foods",
+    "booth": "Hall 9.1 | D042",
+    "hall": "Hall 9.1 | D042"
+   },
+   {
+    "name": "BFB FOODS BRASIL",
+    "booth": "Hall 9.1 | D044a",
+    "hall": "Hall 9.1 | D044a"
+   },
+   {
+    "name": "BFT BRAZIL TRADING COML EXP DE ALIMENTOS",
+    "booth": "Hall 9.1 | C040",
+    "hall": "Hall 9.1 | C040"
+   },
+   {
+    "name": "Bialetti Industrie Spa",
+    "booth": "Hall 8.1 | C090",
+    "hall": "Hall 8.1 | C090"
+   },
+   {
+    "name": "Birchall Tea Imporient (U.K.) Ltd",
+    "booth": "Hall 8.1 | B078",
+    "hall": "Hall 8.1 | B078"
+   },
+   {
+    "name": "Cabaña Juramento",
+    "booth": "Hall 6.1 | C038a",
+    "hall": "Hall 6.1 | C038a"
+   },
+   {
+    "name": "Cachamai S.A.",
+    "booth": "Hall 8.1 | A076",
+    "hall": "Hall 8.1 | A076"
+   },
+   {
+    "name": "CAFESA TRADING SRL / HESAR HNOS S.A",
+    "booth": "Hall 3.1 | B074",
+    "hall": "Hall 3.1 | B074"
+   },
+   {
+    "name": "Carbo-Ar",
+    "booth": "Hall 4.1 | C096",
+    "hall": "Hall 4.1 | C096"
+   },
+   {
+    "name": "Cárdeno, S.A.",
+    "booth": "Hall 7.1 | B069",
+    "hall": "Hall 7.1 | B069"
+   },
+   {
+    "name": "Center \"Kyrgyz Export\"",
+    "booth": "Hall 11.3 | C051",
+    "hall": "Hall 11.3 | C051"
+   },
+   {
+    "name": "Comesul Beef",
+    "booth": "Hall 6.1 | E076",
+    "hall": "Hall 6.1 | E076"
+   },
+   {
+    "name": "Cooperativa Apícola del Paraná Ltda.",
+    "booth": "Hall 3.2 | B063",
+    "hall": "Hall 3.2 | B063"
+   },
+   {
+    "name": "Coopérative des Sauniers de l'Ile de Ré",
+    "booth": "Hall 10.2 | F016",
+    "hall": "Hall 10.2 | F016"
+   },
+   {
+    "name": "Ecopecan",
+    "booth": "Hall 4.1 | B091gC098g",
+    "hall": "Hall 4.1 | B091gC098g"
+   },
+   {
+    "name": "ECOTRADING YVA PY",
+    "booth": "Hall 5.1 | C059 D058",
+    "hall": "Hall 5.1 | C059 D058"
+   },
+   {
+    "name": "Ekoagros - Litfood",
+    "booth": "Hall 10.2 | E036gF037g",
+    "hall": "Hall 10.2 | E036gF037g"
+   },
+   {
+    "name": "FANCY FOODS MANUFACTURE TRADING CO., LTD",
+    "booth": "Confexhall D050 E059",
+    "hall": "Confexhall D050 E059"
+   },
+   {
+    "name": "Favamole B.V.",
+    "booth": "Hall 1.2 | D020",
+    "hall": "Hall 1.2 | D020"
+   },
+   {
+    "name": "Fujian Xiangda Imp. & Exp. Co., Ltd.",
+    "booth": "Hall 1.2 | N046",
+    "hall": "Hall 1.2 | N046"
+   },
+   {
+    "name": "Grasslands Brokerage & Consulting Ltd",
+    "booth": "Hall 11.2 | D049a",
+    "hall": "Hall 11.2 | D049a"
+   },
+   {
+    "name": "Hazelnut Growers of Oregon",
+    "booth": "Hall 10.2 | G075a",
+    "hall": "Hall 10.2 | G075a"
+   },
+   {
+    "name": "HOANG SON I JSC",
+    "booth": "Confexhall A030 B039",
+    "hall": "Confexhall A030 B039"
+   },
+   {
+    "name": "Indugrapa SA",
+    "booth": "Hall 5.1 | C059 D058",
+    "hall": "Hall 5.1 | C059 D058"
+   },
+   {
+    "name": "J.B. Gottstein Foods Co. Division of Safeway/Albertson's",
+    "booth": "Hall 10.2 | I070",
+    "hall": "Hall 10.2 | I070"
+   },
+   {
+    "name": "JVK FOODS PC",
+    "booth": "Hall 11.2 | G029",
+    "hall": "Hall 11.2 | G029"
+   },
+   {
+    "name": "kraftschluck UG",
+    "booth": "Boulevard 154, Boulevard 154l",
+    "hall": "Boulevard 154, Boulevard 154l"
+   },
+   {
+    "name": "KSF CO., LTD",
+    "booth": "Hall 5.2 | A066",
+    "hall": "Hall 5.2 | A066"
+   },
+   {
+    "name": "LA MORENA",
+    "booth": "Hall 3.1 | C078 D079",
+    "hall": "Hall 3.1 | C078 D079"
+   },
+   {
+    "name": "Lai Phu Corporation",
+    "booth": "Confexhall E050 F059",
+    "hall": "Confexhall E050 F059"
+   },
+   {
+    "name": "Latinagri S.A. - Legado Montés",
+    "booth": "Hall 3.1 | B029a",
+    "hall": "Hall 3.1 | B029a"
+   },
+   {
+    "name": "Libyan Olives,co,ltd",
+    "booth": "Hall 2.1 | E029",
+    "hall": "Hall 2.1 | E029"
+   },
+   {
+    "name": "M.NEXT NATURALS LLP",
+    "booth": "Confexhall G046",
+    "hall": "Confexhall G046"
+   },
+   {
+    "name": "MamasChai B.V.",
+    "booth": "Hall 1.2 | D020",
+    "hall": "Hall 1.2 | D020"
+   },
+   {
+    "name": "MARIPOSA ANDINA",
+    "booth": "Hall 4.2 | D051a",
+    "hall": "Hall 4.2 | D051a"
+   },
+   {
+    "name": "Mashud Agro Processing Food Products Ltd",
+    "booth": "Hall 3.1 | A029",
+    "hall": "Hall 3.1 | A029"
+   },
+   {
+    "name": "Mette Munk A/S",
+    "booth": "Hall 5.2 | D032",
+    "hall": "Hall 5.2 | D032"
+   },
+   {
+    "name": "mySuperFruits GmbH",
+    "booth": "Boulevard 070",
+    "hall": "Boulevard 070"
+   },
+   {
+    "name": "Nasonville Dairy Inc",
+    "booth": "Hall 10.1 | H038",
+    "hall": "Hall 10.1 | H038"
+   },
+   {
+    "name": "NatFood GmbH",
+    "booth": "Hall 3.1 | D076",
+    "hall": "Hall 3.1 | D076"
+   },
+   {
+    "name": "Nichols Pistachio",
+    "booth": "Hall 10.2 | I067",
+    "hall": "Hall 10.2 | I067"
+   },
+   {
+    "name": "OKKO SUPER FOODS",
+    "booth": "Hall 10.2 | F079",
+    "hall": "Hall 10.2 | F079"
+   },
+   {
+    "name": "Old Fashioned Cheese",
+    "booth": "Hall 10.2 | I051",
+    "hall": "Hall 10.2 | I051"
+   },
+   {
+    "name": "Organic Flavour Company BV",
+    "booth": "Passage Halle 4 Halle 5 A066 B067",
+    "hall": "Passage Halle 4 Halle 5 A066 B067"
+   },
+   {
+    "name": "palacios SRL",
+    "booth": "Hall 3.2 | B063a",
+    "hall": "Hall 3.2 | B063a"
+   },
+   {
+    "name": "Paraná Trading",
+    "booth": "Hall 3.1 | D021",
+    "hall": "Hall 3.1 | D021"
+   },
+   {
+    "name": "PECANINIS INC",
+    "booth": "Hall 10.2 | I063",
+    "hall": "Hall 10.2 | I063"
+   },
+   {
+    "name": "Primm AB",
+    "booth": "Boulevard 195, Boulevard 195l",
+    "hall": "Boulevard 195, Boulevard 195l"
+   },
+   {
+    "name": "Q PLUS CONCEPT CO.,LTD.",
+    "booth": "Hall 11.3 | G018",
+    "hall": "Hall 11.3 | G018"
+   },
+   {
+    "name": "Refresco Deutschland GmbH",
+    "booth": "Hall 7.1 | E018",
+    "hall": "Hall 7.1 | E018"
+   },
+   {
+    "name": "RPF GROUP",
+    "booth": "Hall 9.1 | D044",
+    "hall": "Hall 9.1 | D044"
+   },
+   {
+    "name": "Salvita SAS",
+    "booth": "Hall 3.1 | C070",
+    "hall": "Hall 3.1 | C070"
+   },
+   {
+    "name": "SANTA FE GLOBAL",
+    "booth": "Hall 4.1 | C098",
+    "hall": "Hall 4.1 | C098"
+   },
+   {
+    "name": "Sezen Gida Mad. Tar. ve Hayv. Urun. Tic. ve San. Ltd. Sti.",
+    "booth": "Hall 2.2 | B036",
+    "hall": "Hall 2.2 | B036"
+   },
+   {
+    "name": "Shandong Guanghua Agri Cultural Pro Product Co., Ltd.",
+    "booth": "Hall 1.2 | N027",
+    "hall": "Hall 1.2 | N027"
+   },
+   {
+    "name": "SNACKVILLE",
+    "booth": "Hall 1.2 | A040",
+    "hall": "Hall 1.2 | A040"
+   },
+   {
+    "name": "SURFOOD S.A.",
+    "booth": "Hall 3.1 | C076",
+    "hall": "Hall 3.1 | C076"
+   },
+   {
+    "name": "Texas Peanut Producers Board",
+    "booth": "Hall 10.2 | H063",
+    "hall": "Hall 10.2 | H063"
+   },
+   {
+    "name": "Trade Experts Rafal Mietlicki Sp. K.",
+    "booth": "Hall 9.1 | A030",
+    "hall": "Hall 9.1 | A030"
+   },
+   {
+    "name": "U.S. Dry Bean Council",
+    "booth": "Hall 10.2 | G078",
+    "hall": "Hall 10.2 | G078"
+   },
+   {
+    "name": "UCHU Spice",
+    "booth": "Hall 3.1 | B006",
+    "hall": "Hall 3.1 | B006"
+   },
+   {
+    "name": "VIET PHI AGRICULTURE JSC",
+    "booth": "Confexhall A030 B039",
+    "hall": "Confexhall A030 B039"
+   },
+   {
+    "name": "VILKS SIA",
+    "booth": "Hall 7.1 | G057a",
+    "hall": "Hall 7.1 | G057a"
+   },
+   {
+    "name": "Villa Vainilla",
+    "booth": "Hall 3.1 | C078 D079",
+    "hall": "Hall 3.1 | C078 D079"
+   },
+   {
+    "name": "Vitamizu Sp. z o.o.",
+    "booth": "Hall 7.1 | F018",
+    "hall": "Hall 7.1 | F018"
+   },
+   {
+    "name": "WHITE PEARL RICE MILLS LTD",
+    "booth": "Hall 11.3 | E032a",
+    "hall": "Hall 11.3 | E032a"
+   },
+   {
+    "name": "Wyandot Inc.",
+    "booth": "Hall 5.1 | C051",
+    "hall": "Hall 5.1 | C051"
+   },
+   {
+    "name": "Xurmalad",
+    "booth": "Boulevard 144",
+    "hall": "Boulevard 144"
+   },
+   {
+    "name": "Yrasema Group S.A.",
+    "booth": "Hall 7.1 | G028",
+    "hall": "Hall 7.1 | G028"
+   },
+   {
+    "name": "\"ALHAMWI\" LLC",
+    "booth": "Hall 11.1 | G064",
+    "hall": "Hall 11.1 | G064"
+   },
+   {
+    "name": "\"BAXRIDDIN AGRO IMPEKS\" LLC",
+    "booth": "Hall 5.1 | B079 C078",
+    "hall": "Hall 5.1 | B079 C078"
+   },
+   {
+    "name": "A/S Cesvaines piens",
+    "booth": "Hall 10.1 | G028b",
+    "hall": "Hall 10.1 | G028b"
+   },
+   {
+    "name": "JAUNPILS PIENOTAVA AS",
+    "booth": "Hall 10.1 | G028a",
+    "hall": "Hall 10.1 | G028a"
+   },
+   {
+    "name": "\"Khan-El\" LLC",
+    "booth": "Hall 5.2 | B068g",
+    "hall": "Hall 5.2 | B068g"
+   },
+   {
+    "name": "Lat Eko Food, SIA",
+    "booth": "Hall 5.1 | F001",
+    "hall": "Hall 5.1 | F001"
+   },
+   {
+    "name": "\"NAVOBOD NASLLI PARRANDA\" FARMING",
+    "booth": "Hall 10.2 | A023",
+    "hall": "Hall 10.2 | A023"
+   },
+   {
+    "name": "\"Rcheuli 2021\" LTD",
+    "booth": "Hall 7.1 | G061",
+    "hall": "Hall 7.1 | G061"
+   },
+   {
+    "name": "\"Valmiermuizas alus\", SIA",
+    "booth": "Hall 7.1 | F058a",
+    "hall": "Hall 7.1 | F058a"
+   },
+   {
+    "name": "\"VIJI TRADE\" LLC",
+    "booth": "Confexhall B022",
+    "hall": "Confexhall B022"
+   },
+   {
+    "name": "GICA",
+    "booth": "Hall 11.3 | C040b",
+    "hall": "Hall 11.3 | C040b"
+   },
+   {
+    "name": "100 Mistérios",
+    "booth": "Hall 4.1 | A051 B058",
+    "hall": "Hall 4.1 | A051 B058"
+   },
+   {
+    "name": "11er Nahrungsmittel GmbH",
+    "booth": "Hall 11.2 | F012",
+    "hall": "Hall 11.2 | F012"
+   },
+   {
+    "name": "Storteboom Food Group B.V.",
+    "booth": "Hall 9.1 | D020 D024",
+    "hall": "Hall 9.1 | D020 D024"
+   },
+   {
+    "name": "2BOX (JuiceBox & TeaBox)",
+    "booth": "Hall 8.1 | C062",
+    "hall": "Hall 8.1 | C062"
+   },
+   {
+    "name": "2VD sprl",
+    "booth": "Hall 5.2 | D050a",
+    "hall": "Hall 5.2 | D050a"
+   },
+   {
+    "name": "3 SEASONS FRUIT INDUSTRY CO., LTD.",
+    "booth": "Hall 5.1 | E087, Hall 11.3 | H051",
+    "hall": "Hall 5.1 | E087, Hall 11.3 | H051"
+   },
+   {
+    "name": "3A BIOTECH SL",
+    "booth": "Hall 7.1 | A042",
+    "hall": "Hall 7.1 | A042"
+   },
+   {
+    "name": "4-Chef SRL",
+    "booth": "Hall 5.1 | C064",
+    "hall": "Hall 5.1 | C064"
+   },
+   {
+    "name": "4.0 caffe srl",
+    "booth": "Hall 11.2 | C037",
+    "hall": "Hall 11.2 | C037"
+   },
+   {
+    "name": "528 Productions BV",
+    "booth": "Hall 4.1 | A069",
+    "hall": "Hall 4.1 | A069"
+   },
+   {
+    "name": "5L S.A.",
+    "booth": "Hall 9.1 | A008",
+    "hall": "Hall 9.1 | A008"
+   },
+   {
+    "name": "7 spices co",
+    "booth": "Hall 2.1 | B065",
+    "hall": "Hall 2.1 | B065"
+   }
+  ],
+  "exhibitors_url": "https://www.anuga.com/anuga-exhibitors/list-of-exhibitors/",
+  "floor_map": {
+   "url": "https://www.anuga.com/anuga-exhibitors/hall-plan/",
+   "kind": "page",
+   "label": "Hall plan Hall plan"
+  }
+ },
+ {
+  "url": "https://www.drupa.com/",
+  "pages": [
+   "https://www.drupa.com/de/",
+   "https://www.drupa.com/de/messeinfos/vorbereitung/hallenplan/"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://www.drupa.com/en/trade-fair-information/preparation/hall-plan/",
+   "kind": "page",
+   "label": "English"
+  }
+ },
+ {
+  "url": "https://www.shotshow.org/",
+  "pages": [
+   "https://shotshow.org/",
+   "https://shotshow.org/exhibitors/",
+   "https://shotshow.org/new-exhibitor-inquiries/",
+   "https://n1a.goexposoftware.com/events/ss27/goExpo/floorPlan/viewFloorPlan.php"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://shotshow.org/floorplan",
+   "kind": "page",
+   "label": "Floorplan"
+  }
+ },
+ {
+  "url": "https://www.ifsecglobal.com/",
+  "pages": [],
+  "error": "blocked: HTTP 403",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.interpack.com/",
+  "pages": [
+   "https://www.interpack.com/",
+   "https://www.interpack.com/en/Exhibit/Services/Exhibitor_Profile",
+   "https://www.interpack.com/en/Exhibit/Services/Exhibitor_passes/Exhibitor_Passes",
+   "https://www.interpack.com/en/Visit/Preparations/Floor_Plan_Site_Map"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://www.interpack.com/en/Visit/Preparations/Floor_Plan_Site_Map",
+   "kind": "page",
+   "label": "Floor Plan & Site Map"
+  }
+ },
+ {
+  "url": "https://www.eimamilano.com/",
+  "pages": [],
+  "error": "unreachable: cannot resolve www.eimamilano.com",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.cosmoprof.com/",
+  "pages": [
+   "https://www.cosmoprof.com/",
+   "https://www.cosmoprof.com/la-fiera/partners-tecnici/",
+   "https://www.cosmoprof.com/media-room/news/bolognafiere-cosmoprof-acquisisce-la-maggioranza-di-aestetica-beauty-wellness-exhibition/",
+   "https://www.cosmoprof.com/la-fiera/mappa/"
+  ],
+  "error": "no_content: no exhibitor list or floor map found",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.intersolar.de/",
+  "pages": [
+   "https://www.intersolar.de/home",
+   "https://www.intersolar.de/exhibitorlist",
+   "https://www.intersolar.de/for-exhibitors",
+   "https://www.intersolar.de/exhibition-halls"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://www.intersolar.de/exhibition-halls",
+   "kind": "page",
+   "label": "Exhibition Site Plan"
+  }
+ },
+ {
+  "url": "https://www.chinaplas.com/",
+  "pages": [],
+  "error": "unreachable: ConnectError: https://www.chinaplas.com/",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.siggraph.org/",
+  "pages": [],
+  "error": "no_content: HTTP 307",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ }
+]
