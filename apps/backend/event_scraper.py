@@ -498,6 +498,7 @@ def _from_tables(page: FetchedPage) -> List[dict]:
 
 _BOOTH_TXT = re.compile(r"\b(?:booth|stand)\s*(?:no\.?|number|#|:)?\s*([A-Za-z]{0,3}[-\s]?\d[\w\-/]*)", re.I)
 _HALL_TXT = re.compile(r"\bhall\s*([A-Za-z0-9]+)", re.I)
+_MENU_ROLES = {"menu", "menubar", "navigation"}
 _CARD_TAGS = {"div", "li", "article", "section", "a"}
 _SIGNAL = ("booth", "hall", "category", "country")
 
@@ -532,8 +533,9 @@ def _from_cards(page: FetchedPage) -> List[dict]:
     members read like cards: short, each with a name."""
     soup, site, best = _soup(page), _host(page.final_url), []
     for parent in soup.find_all(True):
-        if parent.name in ("nav", "header", "footer", "select", "table", "thead", "tbody", "tr", "head", "script") or \
-                parent.find_parent(["nav", "header", "footer"]):
+        if parent.name in ("nav", "aside", "header", "footer", "select", "table", "thead", "tbody", "tr", "head", "script") or \
+                parent.find_parent(["nav", "aside", "header", "footer"]) or \
+                any(t.get("role") in _MENU_ROLES for t in (parent, *parent.parents)):  # div-built menus and sidebars
             continue
         groups: Dict[tuple, list] = {}
         for c in parent.find_all(True, recursive=False):
@@ -543,6 +545,9 @@ def _from_cards(page: FetchedPage) -> List[dict]:
             if len(els) < 3 or len(els) <= len(best):
                 continue
             if sum(len(e.get_text(" ", strip=True)) for e in els) / len(els) > 500:
+                continue
+            # Help-centre / FAQ sections: most blocks contain a question, which exhibitor cards rarely do.
+            if sum("?" in e.get_text() for e in els) >= 0.5 * len(els):
                 continue
             rows = [_card(e, page, site) for e in els]
             # A real exhibitor list carries booth/hall/category/country (not just the name again) on a fifth of its cards; bare name+link groups are menus.

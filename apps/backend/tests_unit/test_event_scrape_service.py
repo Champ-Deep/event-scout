@@ -257,3 +257,18 @@ async def test_partial_rescrape_without_exhibitors_keeps_earlier_scraped_rows(db
     out = await svc.run_scrape(uuid.UUID(created["id"]), manual=True)
     assert out["exhibitors"] == 0 and out["status"] == "partial", out
     assert len(await discovery(db, "Gulf Expo 2026")) == 7, "rescrape wiped rows"
+
+
+async def test_faq_only_site_creates_no_discovery_exhibitors_and_keeps_app_rows(db, monkeypatch):
+    """dmexco: the crawl lands on a help-centre FAQ page; its sections must not become exhibitors."""
+    monkeypatch.setattr(event_scraper, "fetch_page", fake_site({SITE: "dmexco_faq.html", SITE + "/": "dmexco_faq.html"}))
+    admin = await make_user(db, admin=True)
+    created = await create(db, admin)
+    await settle()
+    async with db() as s:
+        await api_routes.add_booth(api_routes.BoothPayload(event="Gulf Expo 2026", name="Walk-up Co", booth="Z9"), s, admin, None)
+    out = await svc.run_scrape(uuid.UUID(created["id"]), manual=True)
+    assert out["exhibitors"] == 0 and out["status"] != "ok", out
+    assert [b["name"] for b in await discovery(db, "Gulf Expo 2026")] == ["Walk-up Co"]
+    async with db() as s:
+        assert {x.source for x in (await s.execute(select(database.ExhibitorDB))).scalars()} == {"app"}

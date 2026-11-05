@@ -46,6 +46,11 @@ def test_faq_cards_whose_category_is_their_own_title_are_not_exhibitors():
     assert es.extract_exhibitors([page("faq_cards.html", SITE + "/faq")]) == []
 
 
+def test_help_centre_sections_listing_questions_are_not_exhibitors():
+    # support.dmexco.com/faq/exhibitors: <section><h2>topic</h2><ul class="...category-article-list">question links</ul></section>
+    assert es.extract_exhibitors([page("dmexco_faq.html", "https://support.dmexco.com/faq/exhibitors")]) == []
+
+
 def test_real_card_grid_beats_a_larger_menu():
     menu = (FIX / "site_menu.html").read_text().split("<main>")[0].split("<body>")[1]
     html = (FIX / "expo_cards_p1.html").read_text().replace("<body>", "<body>" + menu, 1)
