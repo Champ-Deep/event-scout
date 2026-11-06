@@ -1,0 +1,18 @@
+{
+ "declared": "2026-11-06 IST, after rules were frozen at commit aa858c5 and BEFORE any of these URLs was fetched by anyone on this task",
+ "rule": "None of these sites was opened, fetched or used while developing this or earlier fixes. Excluded: hlth, fabtech, packexpo, inbound/unbound.hubspot, daxshow, automate.org, dmexco, ces, gulfood, mwc, worldofconcrete (named in the brief).",
+ "urls": [
+  "https://www.imts.com/",
+  "https://www.semashow.com/",
+  "https://nabshow.com/",
+  "https://nrfbigshow.nrf.com/",
+  "https://www.conexpoconagg.com/",
+  "https://www.rsaconference.com/",
+  "https://www.arabhealthonline.com/",
+  "https://www.hannovermesse.de/en/",
+  "https://www.bauma.de/en/",
+  "https://www.ifpexpo.com/",
+  "https://www.pittcon.org/",
+  "https://ahrexpo.com/"
+ ]
+}

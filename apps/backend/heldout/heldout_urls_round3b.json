@@ -1,0 +1,16 @@
+{
+ "declared": "2026-11-06 IST. Round 3 fetched only 7 of 12 sites (5 unreachable/blocked), below the 8 required, so this supplement adds 10 more fresh sites. Rules are UNCHANGED since commit da8b669 (round 3 and 3b together are the final held-out claim). Declared BEFORE any of these URLs was fetched by anyone on this task.",
+ "rule": "None of these sites was opened, fetched or used while developing this or earlier fixes. Excluded: all round 1, 2, 3 sites plus hlth, fabtech, packexpo, inbound/unbound.hubspot, daxshow, automate.org, dmexco, ces, gulfood, mwc, worldofconcrete.",
+ "urls": [
+  "https://www.fachpack.de/",
+  "https://www.productronica.com/",
+  "https://www.electronica.de/",
+  "https://sps.mesago.com/",
+  "https://www.analytica.de/",
+  "https://www.k-online.com/",
+  "https://www.euroshop-tradefair.com/",
+  "https://www.globalpetexpo.org/",
+  "https://www.glasstec-online.com/",
+  "https://www.expopharm.de/"
+ ]
+}

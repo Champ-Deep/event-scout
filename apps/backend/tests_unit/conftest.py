@@ -81,3 +81,22 @@ async def make_user(factory, name="Rep", admin=False, token_version=0) -> uuid.U
                               is_admin=admin, token_version=token_version))
         await s.commit()
         return uid
+
+
+def real_pages(site: str):
+    """The pages event_scraper.crawl really fetched for `site` (fixtures/real/manifest.json has URL + time + sha256)."""
+    import gzip
+    import json
+    import pathlib
+
+    import event_scraper
+    real = pathlib.Path(__file__).parent / "fixtures" / "real"
+    return [event_scraper.FetchedPage(url=p["final_url"], final_url=p["final_url"], status=200, content_type="text/html",
+                                      html=gzip.decompress((real / p["file"]).read_bytes()).decode("utf-8", "replace"))
+            for p in json.loads((real / "manifest.json").read_text())[site]["pages"]]
+
+
+def real_start_url(site: str) -> str:
+    import json
+    import pathlib
+    return json.loads((pathlib.Path(__file__).parent / "fixtures" / "real" / "manifest.json").read_text())[site]["start_url"]

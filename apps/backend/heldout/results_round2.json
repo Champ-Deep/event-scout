@@ -1,0 +1,943 @@
+[
+ {
+  "url": "https://www.nationalhardwareshow.com/",
+  "pages": [
+   "https://www.hardlinessupplierevent.com/",
+   "https://www.hardlinessupplierevent.com/en-us/for-exhibitors.html",
+   "https://www.hardlinessupplierevent.com/en-us/for-exhibitors/exhibitor-resources.html"
+  ],
+  "error": "no_content: no exhibitor list or floor map found",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.cphi.com/",
+  "pages": [
+   "https://www.cphi.com/",
+   "https://www.cphi.com/digital-products/digital-marketing/",
+   "https://www.cphi.com/middle-east/"
+  ],
+  "error": "no_content: no exhibitor list or floor map found",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.medica-tradefair.com/",
+  "pages": [
+   "https://www.medica-tradefair.com/",
+   "https://www.medica-tradefair.com/en/Exhibit/Services/Exhibitor_Profile",
+   "https://idp.messe-duesseldorf.de/portal/oAuth?ssoRequest=eyJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiQTI1NkdDTUtXIiwidGFnIjoiOGNEcHZnZ2JWY3dsSU04THNUd2xjdyIsIml2IjoiVVFYMTJyMWdqQ3RTUzZLSCJ9.0YTg7WVKK_Iy1NrKPFzq6lQ1u18IriqaaBXcYf2kDqk.FVS-0KAt0dRQAVnB.9ioUzXpy3kdIl9JDWR7ooqEzcuL6bmPtg0mdy_Jhz4eTmalNFEnUR4H9Hcf3aQCE7UwBQxgf6wOr8xtKIRZ6hd34uVO0xd1vPJ6JCXx5Tl45AurJMr67EOs9AUiMTHB_oiNCgmyKgmcMiFh2CVB_rtfG-6KrOARamaZhQnCZEaeH-BL_D6elEnYpZSy2RiHSquB8JeHDPMag-TQA0XX9kYXl0fFvzBm1-ORTtqOrzIxObmTvqdnW30eS_fZCpAUKKNui2mf-9VfGnWvIAaMEqEMszGBgaMYZoBAEaXTNg4-mtY8a0E1n7a-XLvu5K0tDaBUj7odjF5S6K124lpitbky-YAzlzqnDdWO2dyCBF5IlbSPt8Yr46sXZOgh22wsc7_0n2WXIJETruASMIj8tpQYQpmlubwKLodwgQvH_CxgmjN8U5_9kp_NUcn0K2WRis7foeDkhV8QbulkHC6sACnApmG1dZh9YIXwh2ltkYcqRPTnsZopvSG16ld8TZworG2mTQ_pyAE1xXvTmSeJ_FtCBj5H9utmMlHlkelb1Q2SVIMXa6312X6XA.2nUf7mSJnGIc8luyhP1Epg",
+   "https://www.medica-tradefair.com/en/Visit/Preparation/Hall_site_plans"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://www.medica-tradefair.com/cgi-bin/md_medica/lib/pub/object/downloadfile.cgi/med2601_Gelaendeplan_Legende_2026_10_14.pdf?oid=130701&lang=2&ticket=g_u_e_s_t",
+   "kind": "pdf",
+   "label": "MEDICA is clearly structured, because the hall layout is based on the thematic focal point of the trade fair. Laboratory"
+  }
+ },
+ {
+  "url": "https://www.ifa-berlin.com/",
+  "pages": [
+   "https://www.ifa-berlin.com/",
+   "https://www.ifa-berlin.com/exhibitors",
+   "https://www.ifa-berlin.com/exhibitors?page=2",
+   "https://www.ifa-berlin.com/exhibitors?page=3",
+   "https://www.ifa-berlin.com/exhibitors?page=4",
+   "https://www.ifa-berlin.com/exhibitors?page=5"
+  ],
+  "error": null,
+  "status": "ok",
+  "rows": 140,
+  "with_booth": 139,
+  "exhibitors": [
+   {
+    "name": "Beurer GmbH",
+    "booth": "Hall 4.1 H4.1-112, H4.1-112",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "Panasonic Marketing Europe",
+    "booth": "CityCube Hall B CCBB-R4 CityCube Hall B CCBB-R5 CityCube Hall B CCBB-R6, CCBB-R4, CCBB-R5, CCBB-R6",
+    "hall": "CityCube Hall B"
+   },
+   {
+    "name": "ROKU",
+    "booth": "Hall 23 H23-103, H23-103",
+    "hall": "Hall 23"
+   },
+   {
+    "name": "AEG",
+    "booth": "Hall 4.1 H4.1-101, H4.1-101",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "SBS SPA",
+    "booth": "Hall 3.2 H3.2-133, H3.2-133",
+    "hall": "Hall 3.2"
+   },
+   {
+    "name": "JURA Elektrogeräte Vertriebs-GmbH",
+    "booth": "Hall 2.1 H2.1-103, H2.1-103",
+    "hall": "Hall 2.1"
+   },
+   {
+    "name": "Haier",
+    "booth": "Hall 3.1 H3.1-101, H3.1-101",
+    "hall": "Hall 3.1"
+   },
+   {
+    "name": "LG Electronics",
+    "booth": "Hall 18 H18-101, H18-101, Hall 13 H13-Greifswald Hall 13 H13-Sassnitz, H13-Greifswald, H13-Sassnitz",
+    "hall": "Hall 18, Hall 13"
+   },
+   {
+    "name": "Hisense",
+    "booth": "Hall 23 H23-102, H23-102",
+    "hall": "Hall 23"
+   },
+   {
+    "name": "Midea Electric Trading (Singapore) Co. Pte. Ltd",
+    "booth": "Hall 5.1 H5.1-101, H5.1-101",
+    "hall": "Hall 5.1"
+   },
+   {
+    "name": "Telering",
+    "booth": "Hall 2.2 H2.2-160, H2.2-160",
+    "hall": "Hall 2.2"
+   },
+   {
+    "name": "Kärcher",
+    "booth": "Hall 2.1 H2.1-102, H2.1-102",
+    "hall": "Hall 2.1"
+   },
+   {
+    "name": "Fakir-Hausgeräte GmbH",
+    "booth": "Hall 4.1 H4.1-108, H4.1-108",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "Severin Elektrogeräte GmbH",
+    "booth": "Hall 4.1 H4.1-103, H4.1-103",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "Acer Inc.",
+    "booth": "CityCube Hall A CCBA-A5, CCBA-A5",
+    "hall": "CityCube Hall A"
+   },
+   {
+    "name": "euronics",
+    "booth": "CityCube Hall B CCBB-103 CityCube Hall A CCBA-Cube Club, CCBB-103, CCBA-Cube Club",
+    "hall": "CityCube Hall B, CityCube Hall A"
+   },
+   {
+    "name": "Miele",
+    "booth": "Hall 2.1 H2.1-101, H2.1-101",
+    "hall": "Hall 2.1"
+   },
+   {
+    "name": "EBAY GmbH",
+    "booth": "Hall 20 H20-125, H20-125",
+    "hall": "Hall 20"
+   },
+   {
+    "name": "Metz",
+    "booth": "Hall 23 H23-101, H23-101",
+    "hall": "Hall 23"
+   },
+   {
+    "name": "Global Fairs",
+    "booth": "Hub 27 H27-H27, H27-H27",
+    "hall": "Hub 27"
+   },
+   {
+    "name": "Philips TV",
+    "booth": "Sommergarten SOM-115, SOM-115",
+    "hall": "Sommergarten"
+   },
+   {
+    "name": "ELECTROLUX APPLIANCES AB",
+    "booth": "Hall 4.1 H4.1-101, H4.1-101",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "FRITZ!",
+    "booth": "Hall 7.2c H7.2c-111, H7.2c-111",
+    "hall": "Hall 7.2c"
+   },
+   {
+    "name": "TCL Overseas Marketing Ltd",
+    "booth": "Hall 21 H21-101, H21-101",
+    "hall": "Hall 21"
+   },
+   {
+    "name": "Bosch Home Appliances",
+    "booth": "Hall 1.1 H1.1-102, H1.1-102",
+    "hall": "Hall 1.1"
+   },
+   {
+    "name": "Cecotec",
+    "booth": "Hall 3.1 H3.1-102, H3.1-102",
+    "hall": "Hall 3.1"
+   },
+   {
+    "name": "LAURASTAR Deutschland GmbH",
+    "booth": "Hall 4.1 H4.1-111, H4.1-111",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "STRONG",
+    "booth": "Hall 23 H23-103 Hall 5.2 H5.2-Kassel 2, H23-103, H5.2-Kassel 2",
+    "hall": "Hall 23, Hall 5.2"
+   },
+   {
+    "name": "De'Longhi @Joint Space RIZ",
+    "booth": "CityCube Hall B CCBB-101 CityCube Hall B CCBB-102 CityCube Hall B CCBB-103, CCBB-101, CCBB-102, CCBB",
+    "hall": "CityCube Hall B"
+   },
+   {
+    "name": "Xiaomi",
+    "booth": "Hall 6.2 H6.2-101, H6.2-101",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Anker Innovations",
+    "booth": "Hall 2.2 H2.2-101, H2.2-101, Hall 7.2c H7.2c-105 Hall 13 H13-100 Palais PAF-123 Marshall-Haus MSH-10",
+    "hall": "Hall 2.2, Hall 7.2c, Hall 13, Palais, Marshall-Haus"
+   },
+   {
+    "name": "zvei",
+    "booth": "Hall 4.1 H4.1-119, H4.1-119",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "Turtle Beach Europe Ltd.",
+    "booth": "Hall 4.2 H4.2-147, H4.2-147",
+    "hall": "Hall 4.2"
+   },
+   {
+    "name": "CASO GmbH",
+    "booth": "Hall 4.1 H4.1-110, H4.1-110",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "Sandisk Germany GmbH",
+    "booth": "Hall 4.2 H4.2-147, H4.2-147",
+    "hall": "Hall 4.2"
+   },
+   {
+    "name": "Rommelsbacher",
+    "booth": "Hall 4.1 H4.1-113, H4.1-113",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "AliExpress",
+    "booth": "Hall 5.2 H5.2-439, H5.2-439",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "Nivona Apparate GmbH",
+    "booth": "Hall 4.1 H4.1-104, H4.1-104",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "Volkswagen AG",
+    "booth": "Sommergarten SOM-301 Sommergarten SOM-201 Mobility Track MT-111 Palais PAF-117, SOM-301, SOM-201, MT",
+    "hall": "Sommergarten, Mobility Track, Palais"
+   },
+   {
+    "name": "Liebherr",
+    "booth": "Hall 2.1 H2.1-104, H2.1-104",
+    "hall": "Hall 2.1"
+   },
+   {
+    "name": "Siemens Home Appliances",
+    "booth": "Hall 1.1 H1.1-101, H1.1-101",
+    "hall": "Hall 1.1"
+   },
+   {
+    "name": "Dreame",
+    "booth": "Hall 7.1a H7.1a-101 Sommergarten Outdoor CG OCG-107 Hall 7.1b H7.1b-101, H7.1a-101, OCG-107, H7.1b-1",
+    "hall": "Hall 7.1a, Sommergarten Outdoor CG, Hall 7.1b"
+   },
+   {
+    "name": "Samsung",
+    "booth": "Palais PAF-101, PAF-101, CityCube Hall B CCBB-R2, CCBB-R2",
+    "hall": "Palais, CityCube Hall B"
+   },
+   {
+    "name": "Panasonic TV",
+    "booth": "Hall 8.2 H8.2-103, H8.2-103",
+    "hall": "Hall 8.2"
+   },
+   {
+    "name": "beyerdynamic GmbH & Co. KG",
+    "booth": "Hall 4.2 H4.2-147, H4.2-147",
+    "hall": "Hall 4.2"
+   },
+   {
+    "name": "Hama GmbH & Co KG",
+    "booth": "Hall 4.2 H4.2-147, H4.2-147",
+    "hall": "Hall 4.2"
+   },
+   {
+    "name": "Sharp Consumer Electronics",
+    "booth": "Hall 22 H22-101, H22-101",
+    "hall": "Hall 22"
+   },
+   {
+    "name": "Russell Hobbs",
+    "booth": "Hall 4.1 H4.1-109, H4.1-109",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "SEBO Stein & Co. GmbH",
+    "booth": "Hall 4.1 H4.1-105, H4.1-105",
+    "hall": "Hall 4.1"
+   },
+   {
+    "name": "Cellularline",
+    "booth": "Hall 4.2 H4.2-101, H4.2-101",
+    "hall": "Hall 4.2"
+   },
+   {
+    "name": "EagleSight Dynamics",
+    "booth": "Hall 5.2 H5.2-439, H5.2-439",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "Anycubic",
+    "booth": "Hall 5.2 H5.2-439, H5.2-439",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "Tapo",
+    "booth": "Hall 7.2c H7.2c-101, H7.2c-101",
+    "hall": "Hall 7.2c"
+   },
+   {
+    "name": "Deco",
+    "booth": "Hall 7.2c H7.2c-101, H7.2c-101",
+    "hall": "Hall 7.2c"
+   },
+   {
+    "name": "Changhong Group",
+    "booth": "Hall 22 H22-135, H22-135",
+    "hall": "Hall 22"
+   },
+   {
+    "name": "Tesla Electronics s.r.o.",
+    "booth": "Hall 6.1 H6.1-100, H6.1-100",
+    "hall": "Hall 6.1"
+   },
+   {
+    "name": "KIDP",
+    "booth": "Hall 25 H25-361, H25-361",
+    "hall": "Hall 25"
+   },
+   {
+    "name": "KITA",
+    "booth": "Hall 25 H25-361, H25-361",
+    "hall": "Hall 25"
+   },
+   {
+    "name": "XGIMI",
+    "booth": "Hall 21 H21-111, H21-111",
+    "hall": "Hall 21"
+   },
+   {
+    "name": "Sony Europe",
+    "booth": "Palais PAF-125, PAF-125",
+    "hall": "Palais"
+   },
+   {
+    "name": "Roborock",
+    "booth": "Hall 9 H9-111, H9-111",
+    "hall": "Hall 9"
+   },
+   {
+    "name": "TP-Link",
+    "booth": "Hall 7.2c H7.2c-101, H7.2c-101",
+    "hall": "Hall 7.2c"
+   },
+   {
+    "name": "Blaupunkt",
+    "booth": "Hall 22 H22-125, H22-125",
+    "hall": "Hall 22"
+   },
+   {
+    "name": "Simfer",
+    "booth": "Hall 9 H9-105, H9-105",
+    "hall": "Hall 9"
+   },
+   {
+    "name": "CANVAS HiFi",
+    "booth": "Hall 21 H21-108, H21-108",
+    "hall": "Hall 21"
+   },
+   {
+    "name": "HP",
+    "booth": "Hall 5.2 H5.2-439, H5.2-439",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "ENGWE",
+    "booth": "Hall 5.2 H5.2-439, H5.2-439",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "Korea Innovation Center Europe",
+    "booth": "Hall 25 H25-317 Hall 25 H25-307 Hall 25 H25-305 Hall 25 H25-311 Hall 25 H25-313, H25-317, H25-307, H",
+    "hall": "Hall 25"
+   },
+   {
+    "name": "Seauto",
+    "booth": "Hall 5.2 H5.2-439, H5.2-439",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "Mammotion Technology Co., Limited",
+    "booth": "Hall 9 H9-123 Sommergarten Outdoor CG OCG-141, H9-123, OCG-141",
+    "hall": "Hall 9, Sommergarten Outdoor CG"
+   },
+   {
+    "name": "TOSHIBA",
+    "booth": "Hall 6.2 H6.2-203, H6.2-203",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Ferre",
+    "booth": "Hall 1.1 H1.1-105, H1.1-105",
+    "hall": "Hall 1.1"
+   },
+   {
+    "name": "PanzerGlass",
+    "booth": "Hall 4.2 H4.2-109 Hall 4.2 H4.2-123, H4.2-109, H4.2-123",
+    "hall": "Hall 4.2"
+   },
+   {
+    "name": "DJI",
+    "booth": "Hall 20 H20-129, H20-129",
+    "hall": "Hall 20"
+   },
+   {
+    "name": "MagicLab",
+    "booth": "Hall 5.2 H5.2-439, H5.2-439",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "ILIFE",
+    "booth": "Hall 5.2 H5.2-439, H5.2-439",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "Ecovacs",
+    "booth": "Hall 9 H9-113, H9-113",
+    "hall": "Hall 9"
+   },
+   {
+    "name": "Zhejiang Sunseeker Industrial Co.,Ltd.",
+    "booth": "Hall 11.1 H11.1-107, H11.1-107",
+    "hall": "Hall 11.1"
+   },
+   {
+    "name": "ETENWOLF",
+    "booth": "Hall 5.2 H5.2-439, H5.2-439",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "Deutsche Rentenversicherung Bund",
+    "booth": "Sommergarten SOM-210, SOM-210",
+    "hall": "Sommergarten"
+   },
+   {
+    "name": "Stellarvoid: Cold Protocol",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Ollobot",
+    "booth": "Hall 1.2 H1.2-174, H1.2-174",
+    "hall": "Hall 1.2"
+   },
+   {
+    "name": "JLab",
+    "booth": "Hall 10.2 H10.2-113, H10.2-113",
+    "hall": "Hall 10.2"
+   },
+   {
+    "name": "XPENG",
+    "booth": "CityCube Hall B CCBB-142, CCBB-142, Hall 5.2 H5.2-507, H5.2-507",
+    "hall": "CityCube Hall B, Hall 5.2"
+   },
+   {
+    "name": "SD COMPANIES",
+    "booth": "Hall 25 H25-369, H25-369",
+    "hall": "Hall 25"
+   },
+   {
+    "name": "Vonmaehlen",
+    "booth": "Hall 3.2 H3.2-02, H3.2-02",
+    "hall": "Hall 3.2"
+   },
+   {
+    "name": "Soular GmbH & Co. KG",
+    "booth": "Hall 5.2 H5.2-159, H5.2-159",
+    "hall": "Hall 5.2"
+   },
+   {
+    "name": "Morbus Dei",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "SAMIII7",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Zeroth",
+    "booth": "Hall 25 H25-163, H25-163",
+    "hall": "Hall 25"
+   },
+   {
+    "name": "So I Remain",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Denver A/S",
+    "booth": "Hall 22 H22-133, H22-133",
+    "hall": "Hall 22"
+   },
+   {
+    "name": "Vention",
+    "booth": "Hall 4.2 H4.2-127, H4.2-127",
+    "hall": "Hall 4.2"
+   },
+   {
+    "name": "PICEA",
+    "booth": "Hall 9 H9-133, H9-133, Hall 6.1 H6.1-Dessau 1 Hall 6.1 H6.1-Dessau 2, H6.1-Dessau 1, H6.1-Dessau 2",
+    "hall": "Hall 9, Hall 6.1"
+   },
+   {
+    "name": "Bundeswehr",
+    "booth": "Hall 17 H17-241, H17-241",
+    "hall": "Hall 17"
+   },
+   {
+    "name": "Egypt Expo & Convention Authority (EECA)",
+    "booth": "Hall 26c H26c-308, H26c-308",
+    "hall": "Hall 26c"
+   },
+   {
+    "name": "intenxiv",
+    "booth": "Hall 25 H25-361, H25-361",
+    "hall": "Hall 25"
+   },
+   {
+    "name": "Bundesamt für Strahlenschutz",
+    "booth": "Hall 2.2 H2.2-182, H2.2-182",
+    "hall": "Hall 2.2"
+   },
+   {
+    "name": "CREDA",
+    "booth": "Hall 3.1 H3.1-107, H3.1-107",
+    "hall": "Hall 3.1"
+   },
+   {
+    "name": "hoogo @RIZ ElectronicPartner",
+    "booth": "CityCube Hall B CCBB-102, CCBB-102",
+    "hall": "CityCube Hall B"
+   },
+   {
+    "name": "Lost and Found",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "MOTORFAN ELEKTRIK",
+    "booth": "Hall 7.1c H7.1c-102, H7.1c-102",
+    "hall": "Hall 7.1c"
+   },
+   {
+    "name": "PHILIPS Sound",
+    "booth": "Sommergarten SOM-116, SOM-116",
+    "hall": "Sommergarten"
+   },
+   {
+    "name": "Wertgarantie",
+    "booth": "CityCube Hall B CCBB-135, CCBB-135",
+    "hall": "CityCube Hall B"
+   },
+   {
+    "name": "JBL @RIZ Expert",
+    "booth": "CityCube Hall B CCBB-101, CCBB-101",
+    "hall": "CityCube Hall B"
+   },
+   {
+    "name": "Froggotten",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Elaraby Germany GmbH",
+    "country": "Germany"
+   },
+   {
+    "name": "Space Cat, cook that!",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Mad King Redemption",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "ElectronicPartner",
+    "booth": "CityCube Hall B CCBB-102, CCBB-102",
+    "hall": "CityCube Hall B"
+   },
+   {
+    "name": "Partner Tele",
+    "booth": "Hall 4.2 H4.2-117, H4.2-117",
+    "hall": "Hall 4.2"
+   },
+   {
+    "name": "MTC",
+    "booth": "Hall 22 H22-102, H22-102",
+    "hall": "Hall 22"
+   },
+   {
+    "name": "DREO",
+    "booth": "Hall 9 H9-130, H9-130",
+    "hall": "Hall 9"
+   },
+   {
+    "name": "Express Luck Europe Electric Kft.",
+    "booth": "Hall 22 H22-112, H22-112",
+    "hall": "Hall 22"
+   },
+   {
+    "name": "Baseus",
+    "booth": "Hall 4.2 H4.2-145, H4.2-145",
+    "hall": "Hall 4.2"
+   },
+   {
+    "name": "NAVIMOW SEGWAY",
+    "booth": "Hall 9 H9-121, H9-121",
+    "hall": "Hall 9"
+   },
+   {
+    "name": "One For All GmbH",
+    "booth": "Hall 22 H22-110, H22-110",
+    "hall": "Hall 22"
+   },
+   {
+    "name": "TULPAR",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "MagicLab Robotics",
+    "booth": "Hall 25 H25-149, H25-149",
+    "hall": "Hall 25"
+   },
+   {
+    "name": "Second White",
+    "booth": "Hall 25 H25-361, H25-361",
+    "hall": "Hall 25"
+   },
+   {
+    "name": "EZVIZ",
+    "booth": "Hall 1.2 H1.2-175, H1.2-175",
+    "hall": "Hall 1.2"
+   },
+   {
+    "name": "Tuya GmbH",
+    "booth": "Hall 1.2 H1.2-169, H1.2-169",
+    "hall": "Hall 1.2"
+   },
+   {
+    "name": "BLUETTI",
+    "booth": "Hall 2.2 H2.2-176, H2.2-176",
+    "hall": "Hall 2.2"
+   },
+   {
+    "name": "AFRA EUROPE LTD",
+    "booth": "Hall 6.1 H6.1-109, H6.1-109",
+    "hall": "Hall 6.1"
+   },
+   {
+    "name": "Laser Limbo",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Belkin",
+    "booth": "Hall 3.2 H3.2-117, H3.2-117",
+    "hall": "Hall 3.2"
+   },
+   {
+    "name": "Myrkwood",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "AWOL Vision",
+    "booth": "Hall 22 H22-113, H22-113",
+    "hall": "Hall 22"
+   },
+   {
+    "name": "xTool",
+    "booth": "Hall 20 H20-127, H20-127",
+    "hall": "Hall 20"
+   },
+   {
+    "name": "Obergenie",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Ecoflow",
+    "booth": "Hall 2.2 H2.2-166, H2.2-166",
+    "hall": "Hall 2.2"
+   },
+   {
+    "name": "Mountkin",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Laifen",
+    "booth": "Hall 9 H9-125, H9-125",
+    "hall": "Hall 9"
+   },
+   {
+    "name": "Stareep Intelligence",
+    "booth": "Hall 2.2 H2.2-182, H2.2-182",
+    "hall": "Hall 2.2"
+   },
+   {
+    "name": "Speediance",
+    "booth": "Hall 12 H12-121, H12-121",
+    "hall": "Hall 12"
+   },
+   {
+    "name": "Goblin & Sons",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Insta360",
+    "booth": "Hall 20 H20-119, H20-119",
+    "hall": "Hall 20"
+   },
+   {
+    "name": "SANGIORGIO IT WASH Srl",
+    "booth": "Hall 3.1 H3.1-109, H3.1-109",
+    "hall": "Hall 3.1"
+   },
+   {
+    "name": "Willow — The Herbal Witch",
+    "booth": "Hall 6.2 H6.2-202, H6.2-202",
+    "hall": "Hall 6.2"
+   },
+   {
+    "name": "Blackview",
+    "booth": "Hall 3.2 H3.2-171, H3.2-171",
+    "hall": "Hall 3.2"
+   }
+  ],
+  "exhibitors_url": "https://www.ifa-berlin.com/",
+  "floor_map": {
+   "url": "https://drive.ifa-berlin.com/drive/2026/10/IFA_FLOORPLAN_RGB_2027_1015_3840.png",
+   "kind": "image",
+   "label": "Zoom in venue map"
+  }
+ },
+ {
+  "url": "https://www.eurobike.com/",
+  "pages": [
+   "https://eurobike.com/frankfurt/en.html",
+   "https://eurobike.com/frankfurt/en/exhibitor-search.html"
+  ],
+  "error": "no_content: no exhibitor list or floor map found",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.expowest.com/",
+  "pages": [
+   "https://www.expowest.com/",
+   "https://www.expowest.com/exhibitor-list/2026-exhibitor-list/",
+   "https://www.expowest.com/exhibitor-resources/exhibitor-resources/",
+   "https://exhibitor.expowest.com/ew27/Public/eventmap.aspx?mapid=1000801&amp;shMode=E&amp;shAds=0&amp;_gl=1*c66g0r*_gcl_au*MjA5ODM0MTQ0NS4xNzc4MDQyNTQ5",
+   "https://exhibitor.expowest.com/ew27/Public/eventmap.aspx?mapid=1000801&shMode=E&shAds=0&_gl=1*c66g0r*_gcl_au*MjA5ODM0MTQ0NS4xNzc4MDQyNTQ5"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://exhibitor.expowest.com/ew27/Public/eventmap.aspx?mapid=1000801&shMode=E&shAds=0&_gl=1*c66g0r*_gcl_au*MjA5ODM0MTQ0NS4xNzc4MDQyNTQ5",
+   "kind": "page",
+   "label": "2027 Floor Plans & Pavilions"
+  }
+ },
+ {
+  "url": "https://www.lightfair.com/",
+  "pages": [
+   "https://lightintelligentbuildingna.us.messefrankfurt.com/us/en.html",
+   "https://lightintelligentbuildingna.us.messefrankfurt.com/us/en/exhibit/exhibitor-faq.html",
+   "https://lightintelligentbuildingna.us.messefrankfurt.com/us/en/exhibit/exhibitor-inquiry.html",
+   "https://lib2027.mapyourshow.com/8_0/exhview/index.cfm"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://lightintelligentbuildingna.us.messefrankfurt.com/us/en/exhibit/FLOORPLAN.html",
+   "kind": "page",
+   "label": "FLOOR PLAN"
+  }
+ },
+ {
+  "url": "https://www.prowein.com/",
+  "pages": [
+   "https://www.prowein.com/",
+   "https://www.prowein.com/en/Exhibit/Services_for_exhibitors",
+   "https://www.prowein.com/en/Exhibit/Services_for_exhibitors/Exhibitor_Profile",
+   "https://www.prowein.com/en/Visit/Preparations/Hall_and_Site_Plans"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://www.prowein.com/cgi-bin/md_prowein/lib/pub/object/downloadfile.cgi/261008_PROWEIN_Hallenplan_003.pdf?oid=50619&lang=2&ticket=g_u_e_s_t",
+   "kind": "pdf",
+   "label": "Hall plan 2027"
+  }
+ },
+ {
+  "url": "https://www.agritechnica.com/",
+  "pages": [
+   "https://agritechnica.com/de/",
+   "https://agritechnica.com/de/ausstellen",
+   "https://agritechnica.com/de/ausstellen/teilnahmeoptionen-und-preise",
+   "https://digital.agritechnica.com/marketplace/exhibitors?pageNumber=2&limit=12",
+   "https://agritechnica.com/de/ausstellen/gelaendeplan"
+  ],
+  "error": null,
+  "status": "ok",
+  "rows": 4,
+  "with_booth": 1,
+  "exhibitors": [
+   {
+    "name": "Aussteller werden",
+    "booth": "ab 16"
+   },
+   {
+    "name": "Facts & Figures der Weltleitmesse"
+   },
+   {
+    "name": "SYSTEMS & COMPONENTS"
+   },
+   {
+    "name": "Aussteller & Produkte"
+   }
+  ],
+  "exhibitors_url": "https://agritechnica.com/de/",
+  "floor_map": {
+   "url": "https://digital.agritechnica.com/newfront/floorplan",
+   "kind": "page",
+   "label": "Geländeplan 2025 Geländeplan 2025"
+  }
+ },
+ {
+  "url": "https://www.formnext.com/",
+  "pages": [],
+  "error": "unreachable: ConnectError: https://www.formnext.com/",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.nationalrestaurantshow.com/",
+  "pages": [
+   "https://www.nationalrestaurantshow.com/home/",
+   "https://www.nationalrestaurantshow.com/nras-exhibitors/",
+   "https://directory.nationalrestaurantshow.com/8_0/explore/exhibitor-gallery.cfm?featured=false",
+   "https://www.nationalrestaurantshow.com/home/show-floor-theaters/"
+  ],
+  "error": null,
+  "status": "ok",
+  "rows": 3,
+  "with_booth": 3,
+  "exhibitors": [
+   {
+    "name": "Discovery Theater",
+    "booth": "2693"
+   },
+   {
+    "name": "Innovation Theater",
+    "booth": "5577"
+   },
+   {
+    "name": "The Beverage Room Stage",
+    "booth": "13955"
+   }
+  ],
+  "exhibitors_url": "https://www.nationalrestaurantshow.com/home/show-floor-theaters/",
+  "floor_map": {
+   "url": "https://restaurant27.mapyourshow.com/8_0/exhview/index.cfm",
+   "kind": "viewer",
+   "label": "2027 Floor Plan"
+  }
+ },
+ {
+  "url": "https://www.gitex.com/",
+  "pages": [
+   "https://www.gitex.com/",
+   "https://exhibitors.gitex.com/gitex-global-2026/Exhibitor",
+   "https://www.gitex.com/plan-your-visit-2026"
+  ],
+  "error": "no_content: no exhibitor list or floor map found",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ }
+]

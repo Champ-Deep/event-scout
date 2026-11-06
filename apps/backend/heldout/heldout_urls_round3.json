@@ -1,0 +1,18 @@
+{
+ "declared": "2026-11-06 IST, after rules were frozen at commit da8b669 and BEFORE any of these URLs was fetched by anyone on this task",
+ "rule": "None of these sites was opened, fetched or used while developing this or earlier fixes. Excluded: all round 1 and round 2 sites plus hlth, fabtech, packexpo, inbound/unbound.hubspot, daxshow, automate.org, dmexco, ces, gulfood, mwc, worldofconcrete.",
+ "urls": [
+  "https://www.sial-paris.com/",
+  "https://www.ispo.com/",
+  "https://www.anuga.com/",
+  "https://www.drupa.com/",
+  "https://www.shotshow.org/",
+  "https://www.ifsecglobal.com/",
+  "https://www.interpack.com/",
+  "https://www.eimamilano.com/",
+  "https://www.cosmoprof.com/",
+  "https://www.intersolar.de/",
+  "https://www.chinaplas.com/",
+  "https://www.siggraph.org/"
+ ]
+}

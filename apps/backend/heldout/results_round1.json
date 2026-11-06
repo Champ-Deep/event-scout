@@ -1,0 +1,248 @@
+[
+ {
+  "url": "https://www.imts.com/",
+  "pages": [
+   "https://www.imts.com/",
+   "https://directory.imts.com/8_0/exhibitor/exhibitor-details.cfm?exhid=00002332",
+   "https://directory.imts.com:443/8_0/",
+   "https://directory.imts.com:443/8_0/login/login.cfm"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://directory.imts.com/8_0/myshow",
+   "kind": "page",
+   "label": "Show Planner"
+  }
+ },
+ {
+  "url": "https://www.semashow.com/",
+  "pages": [
+   "https://semashow.com/",
+   "https://semashow.com/exhibitor"
+  ],
+  "error": null,
+  "status": "ok",
+  "rows": 4,
+  "with_booth": 2,
+  "exhibitors": [
+   {
+    "name": "West Hall",
+    "hall": "Hall 3"
+   },
+   {
+    "name": "Central Hall",
+    "hall": "Hall 3"
+   },
+   {
+    "name": "South Upper"
+   },
+   {
+    "name": "South Lower"
+   }
+  ],
+  "exhibitors_url": "https://semashow.com/exhibitor",
+  "floor_map": {
+   "url": "https://sema26.mapyourshow.com/8_0/floorplan/index.cfm?_gl=1*h23kcl*_gcl_au*MTA2OTQ4Njc3MS4xNzg3NTc1Njky&hallID=W&level=1&st=hall&sv=W",
+   "kind": "viewer",
+   "label": "View West Hall Floorplan"
+  }
+ },
+ {
+  "url": "https://nabshow.com/",
+  "pages": [
+   "https://www.nabshow.com/",
+   "https://www.nabshow.com/trends-and-topics/exhibitor-spotlight/",
+   "https://www.nabshow.com/las-vegas/show-floor/"
+  ],
+  "error": "no_content: no exhibitor list or floor map found",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://nrfbigshow.nrf.com/",
+  "pages": [
+   "https://nrfbigshow.nrf.com/",
+   "https://sponsorship.nrf.com/nrf-retails-big-show/exhibitor-sponsor-overview",
+   "https://sponsorship.nrf.com/"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://bigshow27.mapyourshow.com/8_0/exhview/index.cfm",
+   "kind": "viewer",
+   "label": "2027 Floor Plan"
+  }
+ },
+ {
+  "url": "https://www.conexpoconagg.com/",
+  "pages": [
+   "https://www.conexpoconagg.com/",
+   "https://www.conexpoconagg.com/for-exhibitors",
+   "https://www.conexpoconagg.com/for-exhibitors/exhibitor-hotel-and-travel-information",
+   "https://www.conexpoconagg.com/for-exhibitors/exhibitor-floor-plan"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://www.conexpoconagg.com/for-exhibitors/exhibitor-floor-plan",
+   "kind": "page",
+   "label": "Exhibitor Floor PlanExhibitor Floor Plan Exhibitor Floor Plan"
+  }
+ },
+ {
+  "url": "https://www.rsaconference.com/",
+  "pages": [],
+  "error": "blocked: HTTP 403",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.arabhealthonline.com/",
+  "pages": [],
+  "error": "blocked: HTTP 403",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.hannovermesse.de/en/",
+  "pages": [
+   "https://www.hannovermesse.de/en/",
+   "https://www.hannovermesse.de/en/search/?category=ep",
+   "https://www.hannovermesse.de/en/for-exhibitors/trade-fair-location/",
+   "https://www.hannovermesse.de/en/expo/hall-plan/index-4"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://www.hannovermesse.de/en/expo/hall-plan/index-4",
+   "kind": "page",
+   "label": "Hall Plan"
+  }
+ },
+ {
+  "url": "https://www.bauma.de/en/",
+  "pages": [
+   "https://bauma.de/en/",
+   "https://bauma.de/en/trade-fair/exhibitor-directory/exhibitors-brands/",
+   "https://bauma.de/en/trade-fair/exhibitors/overview/",
+   "https://bauma.de/en/trade-fair/hall-plan/"
+  ],
+  "error": null,
+  "status": "ok",
+  "rows": 8,
+  "with_booth": 2,
+  "exhibitors": [
+   {
+    "name": "Everything in one place: the Exhibitor Directory",
+    "hall": "Hall plans"
+   },
+   {
+    "name": "Review of the contents of the Exhibitor Directory 2025"
+   },
+   {
+    "name": "Exhibition sectors"
+   },
+   {
+    "name": "bauma Mining"
+   },
+   {
+    "name": "dd92rhcurd7sj9364n78pa0l1q"
+   },
+   {
+    "name": "A group of people in business attire is walking along the express walkways between the exhibition halls at Messe München. Red directional signs hang above them.",
+    "hall": "Hall s"
+   },
+   {
+    "name": "page-en"
+   },
+   {
+    "name": "2026-10-22T16:01:47+02:00"
+   }
+  ],
+  "exhibitors_url": "https://bauma.de/en/trade-fair/exhibitor-directory/exhibitors-brands/",
+  "floor_map": {
+   "url": "https://bauma.de/en/trade-fair/hall-plan/",
+   "kind": "page",
+   "label": "Trade-fair venue & hall plan"
+  }
+ },
+ {
+  "url": "https://www.ifpexpo.com/",
+  "pages": [],
+  "error": "timeout: https://www.ifpexpo.com/",
+  "status": "failed",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": null
+ },
+ {
+  "url": "https://www.pittcon.org/",
+  "pages": [
+   "https://pittcon.org/",
+   "https://pittcon.org/exhibit-pittcon/request-exhibitor-info/",
+   "https://pittcon.org/exhibit-pittcon/"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://pittcon.ungerboeck.net/prod/app85.cshtml?aat=666e317275726a656b7642394b5a5044496c2b424b5567667435586d4c724a2b4d306452784b303249386b3d",
+   "kind": "page",
+   "label": "2027 Exhibitor List + Floor Plan"
+  }
+ },
+ {
+  "url": "https://ahrexpo.com/",
+  "pages": [
+   "https://www.ahrexpo.com/",
+   "https://www.ahrexpo.com/exhibitor-news-room",
+   "https://www.ahrexpo.com/new-exhibitor-inquiry-form",
+   "https://www.ahrexpo.com/sales-floor-plan-2027"
+  ],
+  "error": null,
+  "status": "partial",
+  "rows": 0,
+  "with_booth": 0,
+  "exhibitors": [],
+  "exhibitors_url": null,
+  "floor_map": {
+   "url": "https://www.ahrexpo.com/s/H27-Sales-Floorplan-North-BS-v23.pdf",
+   "kind": "pdf",
+   "label": "North Building Sales Floor Plan"
+  }
+ }
+]
