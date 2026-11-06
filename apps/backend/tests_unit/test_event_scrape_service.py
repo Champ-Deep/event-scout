@@ -296,7 +296,7 @@ async def seed_other_rows(db, admin, event):
         await s.commit()
 
 
-@pytest.mark.parametrize("site,name", [("hlth", "HLTH 2026"), ("fabtech", "FABTECH 2027")])
+@pytest.mark.parametrize("site,name", [("hlth", "HLTH 2026"), ("fabtech", "FABTECH 2027"), ("ibc", "IBC 2026")])
 async def test_real_non_directory_sites_persist_no_exhibitors_and_leave_app_and_import_rows(db, monkeypatch, site, name):
     monkeypatch.setattr(event_scraper, "fetch_page", real_site(site))
     admin = await make_user(db, admin=True)

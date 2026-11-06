@@ -253,5 +253,25 @@
     "fetched_at_utc": "2026-11-05T22:09:07Z"
    }
   ]
+ },
+ "ibc": {
+  "start_url": "https://ibc.org/",
+  "fetched_with": "event_scraper.crawl (real SSRF-guarded fetch_page, unmodified), 2026-11-06 IST",
+  "pages": [
+   {
+    "file": "ibc_0.html.gz",
+    "final_url": "https://www.ibc.org/",
+    "bytes": 82809,
+    "sha256": "523edcb98a23258a2e7ceb36502f74c890c779b9c12167007be1b1fd53b0847e",
+    "fetched_at_utc": "2026-11-06T13:53:25Z"
+   },
+   {
+    "file": "ibc_1.html.gz",
+    "final_url": "https://www.ibc.org/production/news/eurosport-tnt-sports-and-hbo-max-unveil-winter-sports-plan/22794",
+    "bytes": 49043,
+    "sha256": "b452a61720f5f289c783d61935dee7ce56b32dd13a99b73340098ec17700dcdb",
+    "fetched_at_utc": "2026-11-06T13:53:25Z"
+   }
+  ]
  }
 }

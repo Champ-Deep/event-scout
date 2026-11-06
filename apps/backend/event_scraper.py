@@ -503,12 +503,13 @@ _BOOTH_TXT = re.compile(r"\b(?:booth|stand)\s*(?:no\.?|number|#|:)?\s*([A-Za-z]{
 _HALL_TXT = re.compile(r"\bhall\s*([A-Za-z0-9]+)", re.I)
 _MENU_ROLES = {"menu", "menubar", "navigation"}
 _CARD_TAGS = {"div", "li", "article", "section", "a"}
-_SIGNAL = ("booth", "category", "country")  # not hall: venue halls / floor-plan tiles ("West Hall") carry a hall but name no company
+_SIGNAL = ("booth", "country")  # not hall (venue halls / floor-plan tiles carry one) and not category (news/tag card grids carry one)
 
 
 def _evidenced(raws: List[dict], base: str) -> List[ScrapedExhibitor]:
-    """The valid rows of one candidate list, or [] unless a fifth of them carry booth/category/country (not just
-    the name again). A real exhibitor directory has such fields; bare name lists are menus, logo walls, sessions."""
+    """The valid rows of one candidate list, or [] unless a fifth of them carry booth/country (not just
+    the name again). A real exhibitor directory has such fields; bare name lists are menus, logo walls, sessions,
+    and a category alone (news/tag grids) or a hall alone (venue tiles) is not evidence."""
     rows = [r for r in (_row(raw, base) for raw in raws) if r]
     return rows if sum(1 for r in rows if any(getattr(r, f) and getattr(r, f) != r.name for f in _SIGNAL)) >= 0.2 * len(rows) else []
 

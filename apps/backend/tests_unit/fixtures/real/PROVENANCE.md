@@ -29,3 +29,9 @@ Pages are third-party content, kept only as test input.
 |-----|------|----------------|
 | agri | https://agritechnica.com/de/ (start https://www.agritechnica.com/) | 4 teaser/tile cards ("Aussteller werden", "Facts & Figures der Weltleitmesse"...) emitted as exhibitors |
 | nra | https://www.nationalrestaurantshow.com/home/show-floor-theaters/ | 3 show-floor theater cards with booth numbers emitted as exhibitors |
+
+## Added after reviewer round 3 (this site exposed junk, so it is a development fixture now)
+
+| key | page | why it is here |
+|-----|------|----------------|
+| ibc | https://ibc.org/ (redirects to https://www.ibc.org/) and the news article the crawl reached from it, https://www.ibc.org/production/news/eurosport-tnt-sports-and-hbo-max-unveil-winter-sports-plan/22794 | news/tag card grids carry a category and were emitted as exhibitors (24 junk rows on the live pages fetched 2026-11-06 13:53 UTC; reviewer's earlier live baseline was 25 = 20 home + 5 article) |

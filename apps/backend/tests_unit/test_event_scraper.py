@@ -135,6 +135,11 @@ def test_venue_hall_tiles_and_teaser_cards_with_only_a_hall_are_not_exhibitors()
     assert es.extract_exhibitors(real_pages("bauma")) == []
 
 
+def test_real_ibc_news_and_tag_cards_with_only_a_category_are_not_exhibitors():
+    # ibc.org home (20 news cards) + a news article (related-article cards): each carries a category but no booth or country
+    assert es.extract_exhibitors(real_pages("ibc")) == []
+
+
 def test_a_stray_group_of_three_or_four_cards_is_not_a_directory():
     # agritechnica.com home teasers (4), nationalrestaurantshow.com show-floor theaters (3, with booth numbers)
     assert es.extract_exhibitors(real_pages("agri")) == []
