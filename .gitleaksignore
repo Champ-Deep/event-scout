@@ -1,0 +1,4 @@
+# reviewed false positive, t_06979714: test_auth.py placeholder test value; index.tsx hit is the import identifier after LinkedInFinderCard
+d3bab47ad3f3cacbacaec33de243bdd30ef3a052:apps/backend/test_auth.py:generic-api-key:111
+d3bab47ad3f3cacbacaec33de243bdd30ef3a052:apps/mobile/app/(app)/contacts/[id]/index.tsx:linkedin-client-secret:19
+d3bab47ad3f3cacbacaec33de243bdd30ef3a052:test_auth.py:generic-api-key:111
