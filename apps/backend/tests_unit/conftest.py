@@ -17,17 +17,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest  # noqa: E402
 import pytest_asyncio  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine  # noqa: E402
-from sqlalchemy.pool import StaticPool  # noqa: E402
+from sqlalchemy.pool import NullPool  # noqa: E402
 
 import database  # noqa: E402
 import contact_store  # noqa: E402
 
 
 @pytest_asyncio.fixture
-async def db():
-    """A fresh in-memory SQLite database with every table; database.get_session_factory() returns it.
-    (One shared connection, so every session sees the same database.)"""
-    engine = create_async_engine("sqlite+aiosqlite://", poolclass=StaticPool)
+async def db(tmp_path):
+    """A fresh SQLite database with every table; database.get_session_factory() returns it."""
+    # Separate connections keep overlapping route and background sessions' transactions isolated.
+    engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'test.db'}", poolclass=NullPool)
     async with engine.begin() as conn:
         await conn.run_sync(database.Base.metadata.create_all)
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
