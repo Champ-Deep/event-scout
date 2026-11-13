@@ -1,0 +1,393 @@
+/* EventScout tokens, light surfaces and violet actions. Dense labelled records, one scrolling column. */
+.es-events {
+  min-width: 0;
+  display: grid;
+  gap: 24px;
+  color: var(--foreground);
+}
+.es-events section {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--card);
+}
+.es-events h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 650;
+  line-height: 1.15;
+}
+.es-events h2,
+.es-event-form h2 {
+  font-size: 19px;
+  font-weight: 650;
+}
+.es-events h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+.es-events p,
+.es-event-form p {
+  line-height: 1.6;
+}
+.es-events p {
+  max-width: 75ch;
+}
+.es-events button,
+.es-events input,
+.es-events select,
+.es-events summary,
+.es-event-form button,
+.es-event-form input,
+.es-event-form select {
+  min-height: 44px;
+}
+.es-events button:disabled,
+.es-event-form button:disabled {
+  opacity: 1;
+  color: var(--muted-foreground);
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+.es-events label,
+.es-event-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 550;
+  min-width: 0;
+}
+.es-events input,
+.es-events select,
+.es-event-form input,
+.es-event-form select,
+.es-event-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--input);
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 8px;
+  padding: 9px 12px;
+}
+.es-events :focus-visible,
+.es-event-form :focus-visible,
+.es-ticker :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.es-event-form input[readonly] {
+  background: var(--secondary);
+}
+.es-events .es-section-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.es-event-values,
+.es-event-fields {
+  display: grid;
+  gap: 18px 28px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.es-event-values dt {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.es-event-values dd {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+.es-events details {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.es-events summary {
+  display: list-item;
+  align-content: center;
+  cursor: pointer;
+  font-weight: 550;
+}
+.es-events .es-filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.es-events .es-table-region {
+  overflow-x: auto;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.es-events table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.es-events th {
+  background: var(--secondary);
+  text-align: left;
+  font-weight: 600;
+}
+.es-events th,
+.es-events td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.es-events td small {
+  display: block;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+}
+.es-events .es-file-name {
+  min-width: 160px;
+  max-width: 260px;
+  overflow-wrap: anywhere;
+}
+.es-events .es-notice {
+  background: var(--secondary);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+}
+.es-events .es-notice p + p {
+  margin-top: 8px;
+}
+.es-events .es-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.es-events .es-cache {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  margin-top: 14px;
+}
+.es-event-form {
+  display: grid;
+  gap: 20px;
+}
+.es-event-form .es-wide {
+  grid-column: 1 / -1;
+}
+.es-event-form details {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.es-event-form summary {
+  cursor: pointer;
+  margin-bottom: 16px;
+  min-height: 44px;
+  align-content: center;
+}
+[role="dialog"]:has(.es-event-form) [data-slot="dialog-close"] {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  top: 8px;
+  right: 8px;
+}
+[role="dialog"]:has(.es-event-form) [data-slot="dialog-footer"] button {
+  min-height: 44px;
+}
+.es-admin-header [aria-label="Today at a glance"] {
+  height: auto;
+  min-height: 44px;
+  flex-wrap: wrap;
+  flex-shrink: 1;
+}
+.es-admin-header [aria-label="Today at a glance"] > * {
+  flex-shrink: 0;
+}
+.es-ticker .es-marquee {
+  mask-image: none;
+}
+.es-admin-header [aria-label="Today at a glance"] > a {
+  min-height: 44px;
+}
+.es-admin-header > button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.es-admin-header {
+  height: auto;
+  min-height: 56px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.es-ticker {
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--foreground);
+}
+.es-ticker button,
+.es-ticker summary {
+  min-height: 44px;
+  padding: 10px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.es-ticker button:disabled {
+  color: var(--muted-foreground);
+  cursor: default;
+}
+.es-ticker .es-names {
+  margin: 0;
+  position: static;
+}
+.es-ticker .es-names > div {
+  padding: 0;
+  max-width: 100%;
+}
+.es-ticker .es-names > div > div {
+  animation: none;
+}
+.es-ticker .es-event-group {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 24px;
+  padding-right: 24px;
+}
+.es-ticker .es-event-group span {
+  white-space: nowrap;
+}
+.es-ticker .es-event-group + .es-event-group {
+  display: none;
+}
+.es-ticker [data-moving="true"] .es-event-group + .es-event-group {
+  display: inline-flex;
+}
+.es-ticker [data-moving="true"] .es-names > div > div {
+  animation: es-event-ticker 70s linear infinite;
+}
+.es-ticker [data-paused="true"] .es-names > div > div,
+.es-ticker:focus-within .es-names > div > div,
+.es-ticker:hover .es-names > div > div {
+  animation-play-state: paused;
+}
+.es-stationary {
+  position: relative;
+}
+.es-stationary ul {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 30;
+  width: min(320px, 80vw);
+  max-height: 300px;
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.es-stationary li + li {
+  margin-top: 8px;
+}
+@keyframes es-event-ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (max-width: 1023px) {
+  .es-admin-header .es-today-glance {
+    flex-basis: 100%;
+    order: 2;
+  }
+  .es-admin-header .es-ticker {
+    order: 3;
+  }
+  .es-admin-header [aria-label="Today at a glance"] {
+    width: 100%;
+  }
+  .es-event-fields,
+  .es-event-values,
+  .es-events .es-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 767px) {
+  .es-events section {
+    padding: 16px;
+  }
+  .es-events .es-secondary-col {
+    display: none;
+  }
+  .es-events a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+  }
+  .es-events input,
+  .es-events select,
+  .es-event-form input,
+  .es-event-form select,
+  .es-event-form textarea {
+    font-size: 16px;
+  }
+  .es-ticker .es-marquee {
+    flex-basis: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .es-ticker .es-names > div > div {
+    animation: none !important;
+    width: 100%;
+  }
+  .es-ticker .es-event-group {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    min-width: 0;
+  }
+  .es-ticker .es-event-group span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .es-ticker .es-event-group + .es-event-group {
+    display: none !important;
+  }
+  .es-ticker button {
+    display: none;
+  }
+}
+html.es-reduce-motion .es-ticker .es-names > div > div {
+  animation: none !important;
+  width: 100%;
+}
+html.es-reduce-motion .es-ticker .es-event-group {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+}
+html.es-reduce-motion .es-ticker .es-event-group span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+html.es-reduce-motion .es-ticker .es-event-group + .es-event-group {
+  display: none !important;
+}
+html.es-reduce-motion .es-ticker button {
+  display: none;
+}

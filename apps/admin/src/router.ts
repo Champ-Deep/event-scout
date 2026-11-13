@@ -11,7 +11,7 @@ import { DeletedComponent } from './routes/_auth.deleted';
 import { ContactListsComponent } from './routes/_auth.lists';
 import { BroadcastsCenterComponent } from './routes/_auth.broadcasts';
 import { PipelinesComponent } from './routes/_auth.pipelines';
-import { ExhibitorsComponent } from './routes/_auth.exhibitors';
+import { EventsAdmin } from './features/events/EventsAdmin';
 import { FilesComponent } from './routes/_auth.files';
 import { AssistantComponent } from './routes/_auth.assistant';
 import { SystemComponent } from './routes/_auth.system';
@@ -126,13 +126,8 @@ const pipelinesRoute = createRoute({
 const exhibitorsRoute = createRoute({
   ...base, path: '/exhibitors', validateSearch: eventsSearch, pendingComponent: skel('table'),
   loaderDeps: ({ search }) => ({ event: search.event }),
-  loader: async ({ context: { queryClient: qc }, deps }) => {
-    // every event (directory ∪ contacts ∪ reps' lists ∪ files); no event in the URL → the most recent
-    const events = await qc.ensureQueryData(q.adminEvents());
-    const event = deps.event || events[0]?.name || '';
-    if (event) await qc.ensureQueryData(q.eventDetail(event));
-  },
-  component: ExhibitorsComponent,
+  // Reads live in the component so a cold offline visit can render the no-cache state.
+  component: EventsAdmin,
 });
 
 const filesRoute = createRoute({
