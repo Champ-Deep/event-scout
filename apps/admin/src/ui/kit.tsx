@@ -6,6 +6,7 @@ import { toast as sonner } from 'sonner';
 import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useConnection } from '../features/events/useConnection';
 import { Button as ShadButton, type buttonVariants } from '@/components/ui/button';
 import { Badge as ShadBadge } from '@/components/ui/badge';
 import { Card as ShadCard } from '@/components/ui/card';
@@ -148,8 +149,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
   { variant = 'secondary', size = 'md', icon, loading, className, children, disabled, ...rest }, ref,
 ) {
   const v = VARIANT[variant];
+  const online = useConnection();
+  const offlineWrite = !online && (rest.type === 'submit' || !!icon && ['trash', 'pencil', 'plus', 'upload', 'sparkles', 'send', 'check', 'save'].includes(icon));
   return (
-    <ShadButton ref={ref} variant={v.variant} size={size === 'sm' ? 'sm' : 'default'} disabled={disabled || loading}
+    <ShadButton ref={ref} variant={v.variant} size={size === 'sm' ? 'sm' : 'default'} disabled={disabled || loading || offlineWrite}
       className={cn('es-btn cursor-pointer rounded-lg font-semibold transition-[transform,background-color,color,box-shadow] hover:-translate-y-px active:translate-y-0 active:scale-[0.97]', size === 'sm' ? 'px-3 text-xs' : 'px-4', v.className, className)} {...rest}>
       {loading ? <Loader2 className="animate-spin" aria-label="Loading" /> : icon ? <Icon name={icon} size={size === 'sm' ? 14 : 16} /> : null}
       {children}
@@ -157,9 +160,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
   );
 });
 
-export function IconButton({ icon, label, className, size = 'sm', ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement> & { icon: IconName; label: string; size?: 'xs' | 'sm' | 'md' }) {
+export function IconButton({ icon, label, className, size = 'sm', disabled, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement> & { icon: IconName; label: string; size?: 'xs' | 'sm' | 'md' }) {
+  const online = useConnection();
   return (
-    <ShadButton variant="ghost" size={size === 'xs' ? 'icon-xs' : size === 'md' ? 'icon' : 'icon-sm'} aria-label={label} title={label}
+    <ShadButton disabled={disabled || !online && (icon === 'trash' || icon === 'pencil')} variant="ghost" size={size === 'xs' ? 'icon-xs' : size === 'md' ? 'icon' : 'icon-sm'} aria-label={label} title={label}
       className={cn('es-btn cursor-pointer rounded-lg text-muted-foreground transition-[transform,color,background-color] hover:text-foreground active:scale-90', className)} {...rest}>
       <Icon name={icon} size={size === 'xs' ? 13 : 16} />
     </ShadButton>
@@ -516,7 +520,7 @@ export function Drawer(props: DrawerProps) {
 /* ------------------------------------------------------------------ toasts + confirm */
 
 type ToastTone = 'success' | 'error' | 'info';
-interface ConfirmOpts { title: string; message?: React.ReactNode; confirmLabel?: string; danger?: boolean }
+interface ConfirmOpts { title: string; message?: React.ReactNode; confirmLabel?: string; cancelLabel?: string; danger?: boolean }
 
 const UiContext = createContext<{
   toast: (tone: ToastTone, title: string, description?: string) => void;
@@ -547,8 +551,8 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
             <AlertDialogDescription asChild><div className="text-sm text-muted-foreground">{dialog?.message}</div></AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="cursor-pointer rounded-lg font-semibold" onClick={() => close(false)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant={dialog?.danger ? 'destructive' : 'default'} className="cursor-pointer rounded-lg font-semibold" onClick={() => close(true)} autoFocus>{dialog?.confirmLabel || 'Confirm'}</AlertDialogAction>
+            <AlertDialogCancel className="cursor-pointer rounded-lg font-semibold" onClick={() => close(false)} autoFocus>{dialog?.cancelLabel || 'Cancel'}</AlertDialogCancel>
+            <AlertDialogAction variant={dialog?.danger ? 'destructive' : 'default'} className="cursor-pointer rounded-lg font-semibold" onClick={() => close(true)}>{dialog?.confirmLabel || 'Confirm'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

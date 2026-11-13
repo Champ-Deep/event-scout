@@ -13,6 +13,7 @@ import { Icon, type IconName } from '../ui/icons';
 import { LiveIcon } from '../ui/live-icon';
 import { CommandPalette, usePaletteHotkey } from '../features/palette/CommandPalette';
 import { TodayGlance } from '../features/live/TodayGlance';
+import { EventTicker } from '../features/events/EventTicker';
 import { cx } from '../ui/kit';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset,
@@ -280,7 +281,7 @@ export function RootComponent() {
       <SidebarInset>
         {/* Top bar */}
         {/* solid (no see-through blur): what scrolls under the bar never shows through it */}
-        <header className="sticky top-0 z-20 flex h-12 items-center gap-2.5 border-b bg-background px-3 sm:px-4 lg:px-5">
+        <header className="es-admin-header sticky top-0 z-20 flex items-center gap-2.5 border-b bg-background px-3 sm:px-4 lg:px-5">
           <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground cursor-pointer" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
           <button onClick={() => setPaletteOpen(true)} aria-label="Open command palette (Ctrl+K)"
@@ -301,6 +302,7 @@ export function RootComponent() {
             aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Dark mode' : 'Light mode'}>
             <Icon name={theme === 'light' ? 'moon' : 'sun'} size={18} />
           </button>
+          <EventTicker />
         </header>
 
         {/* SidebarInset is the page's <main>; this is just the content column. */}

@@ -2,6 +2,7 @@
 // 401, X-Admin-Console) and throws ApiError with the server's own message when it fails.
 // Responses of the shapes the app shares (@es/types) are checked against the contract in development.
 import { z } from 'zod';
+import { connectionAvailable } from '../features/events/useConnection';
 import {
   addedExhibitorSchema, broadcastSchema, contactFileSchema, contactPageSchema, contactSchema, duplicateMatchesSchema, eventFileSchema,
   eventSummarySchema, exhibitorSchema, fileContentSchema, retrievedContactsSchema, workspaceDeletedContactsSchema, workspaceDuplicatePairSchema,
@@ -36,6 +37,7 @@ async function errorText(res: Response): Promise<string> {
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  if (method !== 'GET' && !connectionAvailable()) throw new ApiError('Unavailable offline. Reconnect to make changes.', 0);
   let res: Response;
   try {
     res = await apiFetch(path, body !== undefined

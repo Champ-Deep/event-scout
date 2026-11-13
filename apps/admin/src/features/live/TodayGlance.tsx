@@ -5,7 +5,8 @@ import { q } from '../../lib/queries';
 import type { LiveEventMessage } from '../../lib/sse';
 import { Icon, type IconName } from '../../ui/icons';
 import { AnimatedNumber } from '../../ui/micro';
-import { cx, relTime } from '../../ui/kit';
+import { cx } from '../../ui/kit';
+import { useConnection } from '../events/useConnection';
 
 type Tile = {
   key: string; icon: IconName; label: string; value: number | null | undefined; of?: number | undefined;
@@ -32,15 +33,16 @@ export function TodayGlance({ events, describe }: { events: LiveEventMessage[]; 
     { key: 'hot', icon: 'flame', label: 'hot', value: r?.totals.hot, tint: 'text-heat-hot',
       to: '/contacts', search: { since: 'today', band: 'A' }, hint: 'Contacts added today that scored 85 or more. Opens them.', show: 'flex' },
     { key: 'score', icon: 'sparkles', label: 'to score', value: d?.levels.unscored, tint: 'text-warning',
-      to: '/contacts', search: { band: 'U' }, hint: 'Contacts still waiting for an AI score (all time). Opens them.', show: 'hidden lg:flex' },
+      to: '/contacts', search: { band: 'U' }, hint: 'Contacts still waiting for an AI score (all time). Opens them.', show: 'flex' },
     { key: 'reps', icon: 'users', label: 'reps', value: d?.activeReps ?? r?.activeRepsToday, of: d?.totalReps ?? d?.reps, tint: 'text-info',
-      to: '/seats', hint: 'Reps who added at least one contact today, out of all reps. Opens the team.', show: 'hidden xl:flex' },
+      to: '/seats', hint: 'Reps who added at least one contact today, out of all reps. Opens the team.', show: 'flex' },
   ];
-  const latest = events[0];
+  const online = useConnection();
+  void events; void describe;
   const quiet = !!r && !met && !r.activeRepsToday;
 
   return (
-    <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
+    <div className="es-today-glance flex min-w-0 flex-1 flex-wrap items-center gap-3">
       {/* one segmented pill: TODAY · 0 met · 0 hot · 30 to score · 0 of 79 reps */}
       <div role="group" aria-label="Today at a glance"
         className="flex h-8 shrink-0 items-stretch divide-x overflow-hidden rounded-lg border bg-card shadow-card">
@@ -68,15 +70,7 @@ export function TodayGlance({ events, describe }: { events: LiveEventMessage[]; 
         })}
       </div>
 
-      {/* The newest live update (scan, score, merge…), or a calm note before the first scan. */}
-      <span className="hidden min-w-0 items-center gap-1.5 text-xs text-muted-foreground 2xl:flex">
-        {latest ? (
-          <>
-            <Icon name="bolt" size={12} className="shrink-0 text-primary" />
-            <span className="truncate"><span className="text-body">{describe(latest)}</span> · {relTime(latest.timestamp)}</span>
-          </>
-        ) : quiet ? <span className="truncate">Waiting for the first scan of the day</span> : null}
-      </span>
+      {!online ? <span className="text-xs text-muted-foreground">Cached. Last synced: {today.dataUpdatedAt ? new Date(today.dataUpdatedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'long' }) : 'unknown'}.</span> : null}
     </div>
   );
 }

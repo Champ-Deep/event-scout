@@ -1,8 +1,8 @@
 import * as React from "react"
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = 769
 
-/** True below the md breakpoint, where the sidebar becomes a slide-in sheet. */
+/** Use the compact sidebar through tablet width. */
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean>(() =>
     typeof window !== "undefined" ? window.innerWidth < MOBILE_BREAKPOINT : false
