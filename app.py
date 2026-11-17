@@ -1250,8 +1250,17 @@ async def add_contact_logic(contact: Contact, user_id: str, source: str = "manua
         await session.close()
 
 
+def _unique_temp_path(upload_name: str | None) -> str:
+    """One temp file per upload. The app sends every card as 'business-card.jpg', so naming
+    the temp file after the upload let concurrent scans overwrite and delete each other's image."""
+    ext = os.path.splitext(os.path.basename(upload_name or ""))[1].lower()
+    if ext not in (".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".gif", ".bmp"):
+        ext = ".png"
+    return os.path.join(TEMP_DIR, f"{uuid.uuid4().hex}{ext}")
+
+
 async def add_contact_from_qr(file: UploadFile, user_id: str):
-    temp_filename = os.path.join(TEMP_DIR, file.filename or f"{uuid.uuid4()}.png")
+    temp_filename = _unique_temp_path(file.filename)
     content = await file.read()
     with open(temp_filename, "wb") as f:
         f.write(content)
@@ -1277,7 +1286,7 @@ async def add_contact_from_qr(file: UploadFile, user_id: str):
 
 
 async def add_contact_from_image(file: UploadFile, user_id: str):
-    temp_filename = os.path.join(TEMP_DIR, file.filename or f"{uuid.uuid4()}.png")
+    temp_filename = _unique_temp_path(file.filename)
     content = await file.read()
     print(f"[SCAN] Received image: {len(content)} bytes, filename: {file.filename}, content_type: {file.content_type}")
     if len(content) < 1000:
