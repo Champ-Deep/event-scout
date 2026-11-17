@@ -1,0 +1,14 @@
+{
+  "name": "event-scout-cf",
+  "private": true,
+  "scripts": {
+    "prepare-assets": "mkdir -p public && cp ../mobile-frontend.html ../manifest.json public/",
+    "deploy": "npm run prepare-assets && wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261101.0",
+    "typescript": "^5.6.3",
+    "wrangler": "^4.150.0"
+  }
+}

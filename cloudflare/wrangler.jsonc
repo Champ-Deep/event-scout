@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Test deploy of Event Scout on Cloudflare. Separate name so it never touches production.
+  "name": "event-scout-cf-test",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  // The FastAPI backend runs unchanged as a container (same Dockerfile Railway uses).
+  "containers": [
+    {
+      "class_name": "EventScoutBackend",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "base": { "dockerfile": "../Dockerfile", "build_context": ".." }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "BACKEND", "class_name": "EventScoutBackend" }]
+  },
+  "exports": {
+    "EventScoutBackend": { "type": "durable-object", "storage": "sqlite" }
+  },
+  // The mobile app is served from /app on the same origin (public/ is filled by the deploy step).
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
+  "vars": {
+    "AUTO_PIPELINE_ENABLED": "false",
+    "CONTAINER_INSTANCE": "standard-1"
+  }
+  // Secrets (wrangler secret put): DATABASE_URL, APP_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY,
+  // optional ADMIN_EMAILS, WEBHOOK_URL, GAMMA_API_KEY. Optional model overrides: OCR_MODELS,
+  // SCORING_MODELS, CHAT_MODEL, PIPELINE_MODEL (low-cost list only, see ai_models.py).
+}

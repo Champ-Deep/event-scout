@@ -30,6 +30,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 # Copy application code (cache bust: 2026-02-11-v3.4.0-parallel-scan-ocr)
 COPY VERSION .
 COPY database.py .
+COPY ai_models.py .
 COPY app.py .
 COPY export_csv.py .
 

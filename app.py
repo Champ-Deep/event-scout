@@ -56,12 +56,12 @@ GAMMA_API_BASE = "https://public-api.gamma.app/v1.0"
 GAMMA_THEME = "ash"  # Professional B2B theme
 AUTO_PIPELINE_ENABLED = os.environ.get("AUTO_PIPELINE_ENABLED", "false").lower() == "true"
 
-# Available AI models for chat (all via OpenRouter)
-AVAILABLE_MODELS = {
-    "claude-opus": {"id": "anthropic/claude-opus-4", "name": "Claude Opus 4.6", "provider": "Anthropic"},
-    "gpt-5": {"id": "openai/gpt-4.1", "name": "GPT-5.2", "provider": "OpenAI"},
-    "gemini-pro": {"id": "google/gemini-2.5-pro-preview-06-05", "name": "Gemini 2.5 Pro", "provider": "Google"},
-}
+# Available AI models (low-cost only, set by env; see ai_models.py)
+from ai_models import (
+    AVAILABLE_MODELS, DEFAULT_MODEL_KEY, resolve_chat_model,
+    OCR_MODELS, SCORING_MODELS, CHAT_MODEL, PIPELINE_MODEL,
+    GEMINI_TEXT_MODEL, GEMINI_SCORING_MODELS,
+)
 
 BASE_DIR = os.getcwd()
 TEMP_DIR = os.path.join(BASE_DIR, "temp_images")
@@ -157,7 +157,7 @@ class UserProfileUpdate(BaseModel):
     current_event_name: Optional[str] = None
     current_event_description: Optional[str] = None
     event_goals: Optional[List[str]] = None
-    preferred_ai_model: Optional[str] = None  # claude-opus, gpt-5, gemini-pro
+    preferred_ai_model: Optional[str] = None  # claude-haiku, gemini-flash-lite (see ai_models.py)
 
 
 class LeadScoreResult(BaseModel):
@@ -398,7 +398,7 @@ class IntelligenceEngine:
 
     def __init__(self):
         self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
-        self.gemini_model = "gemini-2.5-flash"
+        self.gemini_model = GEMINI_TEXT_MODEL
 
     def _build_system_prompt(self, user_profile: dict = None, exhibitors: list = None) -> str:
         base_prompt = """You are Event Scout AI — a strategic event intelligence partner. You don't just retrieve contacts, you help the user WIN at this event. You think like a sales strategist, relationship builder, and event tactician.
@@ -540,7 +540,7 @@ Important: Only use information from the provided contact/exhibitor context. Do 
                                 query: str, history: list = None, model_id: str = None) -> str:
         """Call OpenRouter API with the specified model."""
         if not model_id:
-            model_id = AVAILABLE_MODELS["claude-opus"]["id"]
+            model_id = CHAT_MODEL
 
         messages = [{"role": "system", "content": system_prompt}]
         if history:
@@ -630,8 +630,8 @@ Important: Only use information from the provided contact/exhibitor context. Do 
         contact_context = self._build_context_from_contacts(retrieved_contacts, all_contacts)
 
         # Get user's preferred model
-        model_key = (user_profile or {}).get("preferred_ai_model", "claude-opus")
-        model_info = AVAILABLE_MODELS.get(model_key, AVAILABLE_MODELS["claude-opus"])
+        model_key = (user_profile or {}).get("preferred_ai_model")
+        model_info = resolve_chat_model(model_key)
         model_id = model_info["id"]
 
         if OPENROUTER_API_KEY:
@@ -980,10 +980,7 @@ async def extract_contact_with_openrouter(image_path: str) -> dict:
     prompt = OCR_PROMPT
 
     # bench/results 2026-10-29: haiku 100% of fields, gemini-3.5-flash-lite 97%, both ~$0.0003 per card
-    or_models = [
-        "anthropic/claude-haiku-5.5",
-        "google/gemini-3.5-flash-lite",
-    ]
+    or_models = OCR_MODELS
 
     for or_model in or_models:
         try:
@@ -1073,7 +1070,7 @@ Rules:
 - Return ONLY the URL or N/A, nothing else."""
 
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel(GEMINI_TEXT_MODEL)
         import google.generativeai.types as genai_types
         request_options = genai_types.RequestOptions(timeout=20)
         response = model.generate_content(prompt, request_options=request_options)
@@ -1406,11 +1403,55 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
 
 
 # --- LEAD SCORING ---
+def _parse_score_json(response_text: str) -> dict:
+    response_text = response_text.strip()
+    if response_text.startswith("```"):
+        parts = response_text.split("```")
+        response_text = parts[1] if len(parts) > 1 else response_text
+        if response_text.startswith("json"):
+            response_text = response_text[4:]
+        response_text = response_text.strip()
+    if not response_text.startswith("{"):
+        json_start = response_text.find("{")
+        json_end = response_text.rfind("}") + 1
+        if json_start != -1 and json_end > json_start:
+            response_text = response_text[json_start:json_end]
+    result = json.loads(response_text)
+    score = result.get("score", 50)
+    result["temperature"] = "hot" if score >= 70 else ("warm" if score >= 40 else "cold")
+    return result
+
+
+def _score_via_openrouter(prompt: str, model_id: str) -> str:
+    with httpx.Client(timeout=30.0) as client:
+        resp = client.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://event-scout-delta.vercel.app",
+                "X-Title": "Event Scout Scoring",
+            },
+            json={
+                "model": model_id,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 600,
+                "temperature": 0.2,
+            },
+        )
+        data = resp.json()
+    if data.get("choices"):
+        return data["choices"][0]["message"]["content"] or ""
+    raise Exception(f"OpenRouter error: {str(data.get('error', data))[:200]}")
+
+
 def score_contact_with_gemini(contact_meta: dict, user_profile: dict) -> dict:
-    if not GEMINI_API_KEY or not gemini_configured:
+    """Score a lead. OpenRouter low-cost models first, direct Gemini as fallback.
+    (Name kept for existing callers.)"""
+    if not OPENROUTER_API_KEY and (not GEMINI_API_KEY or not gemini_configured):
         return {
             "score": 50, "temperature": "warm",
-            "reasoning": "Gemini not configured.",
+            "reasoning": "AI scoring not configured.",
             "recommended_actions": ["Configure Gemini API for AI-powered scoring"],
             "breakdown": {"profile_fit": 10, "role_relevance": 10, "company_fit": 10, "engagement": 10, "timing": 10}
         }
@@ -1445,34 +1486,34 @@ Return ONLY a valid JSON object:
 
 Rules: hot >= 70, warm = 40-69, cold < 40. Return ONLY raw JSON."""
 
-    model_names = ['gemini-2.5-flash', 'gemini-2.0-flash']
-    for model_name in model_names:
-        try:
-            model = genai.GenerativeModel(model_name)
-            import google.generativeai.types as genai_types
-            request_options = genai_types.RequestOptions(timeout=30)
-            response = model.generate_content(prompt, request_options=request_options)
-            if not response or not response.text:
+    if OPENROUTER_API_KEY:
+        for or_model in SCORING_MODELS:
+            try:
+                text = _score_via_openrouter(prompt, or_model)
+                if not text.strip():
+                    continue
+                result = _parse_score_json(text)
+                result["_model"] = f"openrouter:{or_model}"
+                return result
+            except Exception as e:
+                print(f"[SCORING] Error with {or_model}: {e}")
                 continue
-            response_text = response.text.strip()
-            if response_text.startswith("```"):
-                parts = response_text.split("```")
-                response_text = parts[1] if len(parts) > 1 else response_text
-                if response_text.startswith("json"):
-                    response_text = response_text[4:]
-                response_text = response_text.strip()
-            if not response_text.startswith("{"):
-                json_start = response_text.find("{")
-                json_end = response_text.rfind("}") + 1
-                if json_start != -1 and json_end > json_start:
-                    response_text = response_text[json_start:json_end]
-            result = json.loads(response_text)
-            score = result.get("score", 50)
-            result["temperature"] = "hot" if score >= 70 else ("warm" if score >= 40 else "cold")
-            return result
-        except Exception as e:
-            print(f"[SCORING] Error with {model_name}: {e}")
-            continue
+
+    if GEMINI_API_KEY and gemini_configured:
+        for model_name in GEMINI_SCORING_MODELS:
+            try:
+                model = genai.GenerativeModel(model_name)
+                import google.generativeai.types as genai_types
+                request_options = genai_types.RequestOptions(timeout=30)
+                response = model.generate_content(prompt, request_options=request_options)
+                if not response or not response.text:
+                    continue
+                result = _parse_score_json(response.text)
+                result["_model"] = f"gemini:{model_name}"
+                return result
+            except Exception as e:
+                print(f"[SCORING] Error with {model_name}: {e}")
+                continue
 
     return {
         "score": 50, "temperature": "warm",
@@ -1614,7 +1655,7 @@ async def _pipeline_call_openrouter(prompt: str, model_id: str = None, max_token
     if not OPENROUTER_API_KEY:
         raise Exception("OpenRouter API key not configured")
     if not model_id:
-        model_id = AVAILABLE_MODELS["claude-opus"]["id"]
+        model_id = PIPELINE_MODEL
 
     async with httpx.AsyncClient(timeout=90.0) as client:
         resp = await client.post(
@@ -2903,8 +2944,8 @@ async def converse_route(query: ConverseQuery, api_key: str = Depends(verify_api
             await session.close()
 
         # Get model info for response metadata
-        model_key = user_profile.get("preferred_ai_model", "claude-opus")
-        model_info = AVAILABLE_MODELS.get(model_key, AVAILABLE_MODELS["claude-opus"])
+        model_key = user_profile.get("preferred_ai_model")
+        model_info = resolve_chat_model(model_key)
 
         # Detect intent for research/pitch augmented prompting
         intent = detect_intent(query.query)
@@ -4947,7 +4988,7 @@ async def transcribe_audio(
         audio_data = await file.read()
         audio_b64 = base64.b64encode(audio_data).decode("utf-8")
 
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel(GEMINI_TEXT_MODEL)
         try:
             response = await asyncio.wait_for(
                 asyncio.to_thread(

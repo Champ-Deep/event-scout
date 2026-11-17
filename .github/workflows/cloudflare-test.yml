@@ -1,0 +1,96 @@
+# Deploys the Cloudflare TEST copy of Event Scout (worker: event-scout-cf-test).
+# Never touches Railway production or Vercel. Run it from the Actions tab.
+#
+# Repo secrets it needs:
+#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID   deploy (Workers + Containers edit)
+#   CF_TEST_DATABASE_URL                          the NEW Postgres the test deploy uses
+#   APP_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY
+#   RAILWAY_DATABASE_PUBLIC_URL                   only for copy_data; read with pg_dump only
+name: Cloudflare test deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      copy_data:
+        description: "Copy Railway Postgres into CF_TEST_DATABASE_URL first (read-only on Railway; REPLACES the test DB)"
+        type: boolean
+        default: false
+      run_smoke:
+        description: "Run the end-to-end smoke test after deploy"
+        type: boolean
+        default: true
+
+concurrency: cloudflare-test
+
+jobs:
+  copy-data:
+    if: inputs.copy_data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump Railway (read-only) and restore into the test database
+        env:
+          SRC: ${{ secrets.RAILWAY_DATABASE_PUBLIC_URL }}
+          DST: ${{ secrets.CF_TEST_DATABASE_URL }}
+        run: |
+          test -n "$SRC" && test -n "$DST"
+          [ "$SRC" != "$DST" ] || { echo "source and target are the same database"; exit 1; }
+          docker run --rm -e SRC postgres:17 sh -c 'pg_dump --no-owner --no-acl --clean --if-exists -Fc "$SRC"' > dump.pgc
+          ls -lh dump.pgc
+          docker run --rm -i -e DST postgres:17 sh -c 'pg_restore --no-owner --no-acl --clean --if-exists -d "$DST"' < dump.pgc
+          for t in users contacts user_profiles exhibitors; do
+            for u in SRC DST; do
+              n=$(docker run --rm -e U="${!u}" postgres:17 psql "${!u}" -tAc "select count(*) from $t")
+              echo "$u $t $n"
+            done
+          done
+
+  deploy:
+    needs: copy-data
+    if: always() && (needs.copy-data.result == 'success' || needs.copy-data.result == 'skipped')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npx tsc --noEmit
+      - name: Deploy worker + container
+        id: deploy
+        run: |
+          npm run prepare-assets
+          npx wrangler deploy | tee deploy.log
+          url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Test URL: $url  (app: $url/app)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Set secrets
+        env:
+          DATABASE_URL: ${{ secrets.CF_TEST_DATABASE_URL }}
+          APP_API_KEY: ${{ secrets.APP_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          node -e 'const k=["DATABASE_URL","APP_API_KEY","OPENROUTER_API_KEY","GEMINI_API_KEY"];const o={};for(const x of k)if(process.env[x])o[x]=process.env[x];require("fs").writeFileSync("/tmp/s.json",JSON.stringify(o))'
+          npx wrangler secret bulk /tmp/s.json
+          rm /tmp/s.json
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+
+  smoke:
+    needs: deploy
+    if: always() && needs.deploy.result == 'success' && inputs.run_smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install requests
+      - name: End-to-end smoke test
+        env:
+          BASE_URL: ${{ needs.deploy.outputs.url }}
+          APP_API_KEY: ${{ secrets.APP_API_KEY }}
+        run: python scripts/cf_smoke.py
