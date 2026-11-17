@@ -4,8 +4,11 @@
 # Repo secrets it needs:
 #   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID   deploy (Workers + Containers edit)
 #   CF_TEST_DATABASE_URL                          the NEW Postgres the test deploy uses
-#   APP_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY
-#   RAILWAY_DATABASE_PUBLIC_URL                   only for copy_data; read with pg_dump only
+#   APP_API_KEY        a NEW key for the test backend only (the browser never sees it)
+#   BETTER_AUTH_SECRET random 32+ bytes, e.g. `openssl rand -base64 32`
+#   OPENROUTER_API_KEY, GEMINI_API_KEY
+#   RAILWAY_DATABASE_PUBLIC_URL                   read only: pg_dump for copy_data, one count for smoke
+#   SMOKE_EXISTING_EMAIL, SMOKE_EXISTING_PASSWORD an existing account, to prove old logins and contacts work
 name: Cloudflare test deploy
 
 on:
@@ -61,6 +64,10 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - run: npx tsc --noEmit
+      - name: Better Auth tables and backfill from users (test database only; safe to repeat)
+        env:
+          DST: ${{ secrets.CF_TEST_DATABASE_URL }}
+        run: docker run --rm -i -e DST postgres:17 sh -c 'psql "$DST" -v ON_ERROR_STOP=1 -q' < migrations/001_better_auth.sql
       - name: Deploy worker + container
         id: deploy
         run: |
@@ -73,10 +80,13 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.CF_TEST_DATABASE_URL }}
           APP_API_KEY: ${{ secrets.APP_API_KEY }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          node -e 'const k=["DATABASE_URL","APP_API_KEY","OPENROUTER_API_KEY","GEMINI_API_KEY"];const o={};for(const x of k)if(process.env[x])o[x]=process.env[x];require("fs").writeFileSync("/tmp/s.json",JSON.stringify(o))'
+          test -n "$BETTER_AUTH_SECRET"
+          [ "$APP_API_KEY" != "OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s" ] || { echo "APP_API_KEY must be a new key, not the one in the old frontend"; exit 1; }
+          node -e 'const k=["DATABASE_URL","APP_API_KEY","BETTER_AUTH_SECRET","OPENROUTER_API_KEY","GEMINI_API_KEY"];const o={};for(const x of k)if(process.env[x])o[x]=process.env[x];require("fs").writeFileSync("/tmp/s.json",JSON.stringify(o))'
           npx wrangler secret bulk /tmp/s.json
           rm /tmp/s.json
     outputs:
@@ -89,8 +99,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install requests
+      - name: Existing user's contact count on Railway (read-only query)
+        id: railway
+        env:
+          SRC: ${{ secrets.RAILWAY_DATABASE_PUBLIC_URL }}
+          EMAIL: ${{ secrets.SMOKE_EXISTING_EMAIL }}
+        run: |
+          if [ -z "$SRC" ] || [ -z "$EMAIL" ]; then echo "count=" >> "$GITHUB_OUTPUT"; exit 0; fi
+          n=$(docker run --rm -i -e PGOPTIONS='-c default_transaction_read_only=on' postgres:17 \
+            psql "$SRC" -tA -v email="$EMAIL" <<'SQL'
+          select count(*) from contacts c join users u on u.id = c.user_id
+          where lower(trim(u.email)) = lower(trim(:'email'));
+          SQL
+          )
+          echo "count=$n" >> "$GITHUB_OUTPUT"
       - name: End-to-end smoke test
         env:
           BASE_URL: ${{ needs.deploy.outputs.url }}
-          APP_API_KEY: ${{ secrets.APP_API_KEY }}
+          EXISTING_EMAIL: ${{ secrets.SMOKE_EXISTING_EMAIL }}
+          EXISTING_PASSWORD: ${{ secrets.SMOKE_EXISTING_PASSWORD }}
+          EXPECTED_CONTACTS: ${{ steps.railway.outputs.count }}
         run: python scripts/cf_smoke.py

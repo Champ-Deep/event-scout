@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { createAuth, loadAppUser } from "./auth";
 
 interface Env {
   BACKEND: DurableObjectNamespace<EventScoutBackend>;
@@ -7,6 +8,7 @@ interface Env {
   AUTO_PIPELINE_ENABLED: string;
   DATABASE_URL: string;
   APP_API_KEY: string;
+  BETTER_AUTH_SECRET: string;
   OPENROUTER_API_KEY?: string;
   GEMINI_API_KEY?: string;
   ADMIN_EMAILS?: string;
@@ -89,8 +91,25 @@ export class EventScoutBackend extends DurableObject<Env> {
   }
 }
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+// user_id the request claims to act as: query string or JSON body (the app uses both).
+async function claimedUserIds(request: Request, url: URL): Promise<string[]> {
+  const ids = url.searchParams.getAll("user_id");
+  if ((request.headers.get("content-type") || "").includes("application/json") && request.body) {
+    try {
+      const body = (await request.clone().json()) as { user_id?: unknown };
+      if (body && typeof body.user_id === "string") ids.push(body.user_id);
+    } catch {
+      // Not JSON after all; the backend will reject it.
+    }
+  }
+  return ids;
+}
+
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/app" || url.pathname === "/app/") {
       const page = await env.ASSETS.fetch(new Request(new URL("/mobile-frontend.html", url)));
@@ -101,7 +120,48 @@ export default {
     if (url.pathname === "/manifest.json" || url.pathname.startsWith("/icon-")) {
       return env.ASSETS.fetch(request);
     }
-    // One named instance: FAISS lives in process memory, so every request must reach the same backend.
-    return env.BACKEND.getByName("primary").fetch(request);
+
+    const { auth, pool } = createAuth({
+      connectionString: env.DATABASE_URL,
+      secret: env.BETTER_AUTH_SECRET,
+      baseURL: url.origin,
+    });
+    try {
+      if (url.pathname.startsWith("/api/auth/")) {
+        return await auth.handler(request);
+      }
+
+      const session = request.headers.has("cookie")
+        ? await auth.api.getSession({ headers: request.headers })
+        : null;
+
+      if (url.pathname === "/api/me") {
+        if (!session) return json({ detail: "Not signed in" }, 401);
+        const adminEmails = (env.ADMIN_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+        const user = await loadAppUser(pool, session.user.id, adminEmails);
+        return user ? json({ status: "success", ...user }) : json({ detail: "Account not found" }, 404);
+      }
+
+      // Sign-in now goes through Better Auth; the old password endpoints stay closed here.
+      if (url.pathname === "/login/" || url.pathname === "/register/") {
+        return json({ detail: "Use /api/auth/sign-in/email or /api/auth/sign-up/email" }, 410);
+      }
+
+      // The browser never holds the backend key. A signed-in user gets it added here, and only for
+      // requests that act as that same user.
+      const headers = new Headers(request.headers);
+      headers.delete("x-api-key");
+      if (session) {
+        const claimed = await claimedUserIds(request, url);
+        if (claimed.some((id) => id !== session.user.id)) {
+          return json({ detail: "This request is for a different account" }, 403);
+        }
+        headers.set("X-API-Key", env.APP_API_KEY);
+      }
+      // One named instance: FAISS lives in process memory, so every request must reach the same backend.
+      return await env.BACKEND.getByName("primary").fetch(new Request(request, { headers }));
+    } finally {
+      ctx.waitUntil(pool.end().catch(() => undefined));
+    }
   },
 } satisfies ExportedHandler<Env>;

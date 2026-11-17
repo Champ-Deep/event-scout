@@ -1567,8 +1567,28 @@
                 : window.location.hostname.endsWith('.workers.dev')
                     ? window.location.origin
                     : 'https://event-scout-production.up.railway.app',
-            API_KEY: 'OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s'
+            API_KEY: 'OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s',
+            // The Cloudflare deploy signs in with Better Auth (session cookie); the Worker adds the
+            // backend key itself, so the key above is ignored there.
+            USE_BETTER_AUTH: window.location.hostname.endsWith('.workers.dev')
         };
+
+        // Better Auth sign-in or sign-up, then the app's own view of the user.
+        async function betterAuthSignIn(path, payload) {
+            const res = await resilientFetch(`${CONFIG.API_BASE_URL}/api/auth/${path}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                return { ok: false, detail: data.message || (res.status === 401 ? 'Invalid credentials' : 'Sign-in failed') };
+            }
+            const me = await resilientFetch(`${CONFIG.API_BASE_URL}/api/me`, { credentials: 'same-origin' });
+            const meData = await me.json().catch(() => ({}));
+            return me.ok ? { ok: true, user: meData } : { ok: false, detail: meData.detail || 'Could not load your account' };
+        }
 
         // ==================== NETWORK RESILIENCE ====================
         const NETWORK = {
@@ -1663,6 +1683,17 @@
             /** Validate that the current user_id exists in database. Prevents foreign key errors. */
             if (!AppState.currentUser || !AppState.currentUser.user_id) {
                 return false;
+            }
+            if (CONFIG.USE_BETTER_AUTH) {
+                try {
+                    const me = await resilientFetch(`${CONFIG.API_BASE_URL}/api/me`, { credentials: 'same-origin' });
+                    if (me.status === 401 || me.status === 404) return false;
+                    if (!me.ok) return true; // network trouble: keep the user signed in
+                    const meData = await me.json();
+                    return meData.user_id === AppState.currentUser.user_id;
+                } catch (error) {
+                    return true;
+                }
             }
 
             try {
@@ -1767,6 +1798,19 @@
             const password = document.getElementById('loginPassword').value;
 
             try {
+                if (CONFIG.USE_BETTER_AUTH) {
+                    const r = await betterAuthSignIn('sign-in/email', { email, password, rememberMe: true });
+                    if (r.ok) {
+                        const { user_id, name, email: userEmail, is_admin } = r.user;
+                        AppState.currentUser = { user_id, name, email: userEmail, is_admin: is_admin || false };
+                        localStorage.setItem('eventScoutUser', JSON.stringify(AppState.currentUser));
+                        showAlert('authAlert', '✓ Login successful!', 'success');
+                        setTimeout(() => showDashboard(), 500);
+                    } else {
+                        showAlert('authAlert', r.detail, 'error');
+                    }
+                    return;
+                }
                 const response = await resilientFetch(`${CONFIG.API_BASE_URL}/login/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1810,6 +1854,19 @@
             const password = document.getElementById('registerPassword').value;
 
             try {
+                if (CONFIG.USE_BETTER_AUTH) {
+                    const r = await betterAuthSignIn('sign-up/email', { name, email, password });
+                    if (r.ok) {
+                        const { user_id, name: userName, email: userEmail, is_admin } = r.user;
+                        showAlert('authAlert', '✓ Registration successful! Logging you in...', 'success');
+                        AppState.currentUser = { user_id, name: userName, email: userEmail, is_admin: is_admin || false };
+                        localStorage.setItem('eventScoutUser', JSON.stringify(AppState.currentUser));
+                        setTimeout(() => showDashboard(), 1000);
+                    } else {
+                        showAlert('authAlert', r.detail, 'error');
+                    }
+                    return;
+                }
                 const response = await resilientFetch(`${CONFIG.API_BASE_URL}/register/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1842,6 +1899,11 @@
 
         function handleLogout() {
             if (confirm('Are you sure you want to logout?')) {
+                if (CONFIG.USE_BETTER_AUTH) {
+                    fetch(`${CONFIG.API_BASE_URL}/api/auth/sign-out`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: '{}'
+                    }).catch(() => {});
+                }
                 localStorage.removeItem('eventScoutUser');
                 AppState.currentUser = null;
                 AppState.contacts = [];

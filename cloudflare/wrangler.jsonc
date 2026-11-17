@@ -4,6 +4,7 @@
   "name": "event-scout-cf-test",
   "main": "src/index.ts",
   "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   "workers_dev": true,
   // The FastAPI backend runs unchanged as a container (same Dockerfile Railway uses).
@@ -28,7 +29,7 @@
     "AUTO_PIPELINE_ENABLED": "false",
     "CONTAINER_INSTANCE": "standard-1"
   }
-  // Secrets (wrangler secret put): DATABASE_URL, APP_API_KEY, OPENROUTER_API_KEY, GEMINI_API_KEY,
+  // Secrets (wrangler secret put): DATABASE_URL, APP_API_KEY, BETTER_AUTH_SECRET, OPENROUTER_API_KEY, GEMINI_API_KEY,
   // optional ADMIN_EMAILS, WEBHOOK_URL, GAMMA_API_KEY. Optional model overrides: OCR_MODELS,
   // SCORING_MODELS, CHAT_MODEL, PIPELINE_MODEL (low-cost list only, see ai_models.py).
 }
