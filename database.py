@@ -98,6 +98,7 @@ class ContactDB(Base):
     audio_notes = Column(JSON, default=list)  # [{audio_base64, transcript, timestamp}]
     admin_notes = Column(Text, default="")  # Admin-only annotations/intel
     photo_base64 = Column(Text, nullable=True)  # Compressed JPEG thumbnail from scanned card
+    client_scan_id = Column(UUID(as_uuid=True), nullable=True)  # Idempotency-Key of the scan upload
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -454,6 +455,8 @@ async def _init_schema(eng, label="Primary"):
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS photo_base64 TEXT",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS event_name VARCHAR(255) DEFAULT ''",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT ''",
+                "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS client_scan_id UUID",
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_user_client_scan ON contacts (user_id, client_scan_id) WHERE client_scan_id IS NOT NULL",
                 "ALTER TABLE contact_pipelines ADD COLUMN IF NOT EXISTS gamma_deck_url TEXT",
                 "ALTER TABLE admin_broadcasts ADD COLUMN IF NOT EXISTS recipient_ids JSONB",
             ]
