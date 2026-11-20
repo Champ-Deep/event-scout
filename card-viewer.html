@@ -237,8 +237,13 @@
             document.getElementById('cardDisplay').classList.remove('hidden');
 
             // Set photo or initials
-            if (card.photo_base64) {
-                document.getElementById('cardInitials').innerHTML = `<img src="${card.photo_base64}" class="w-full h-full object-cover">`;
+            // Card fields are written by the card owner and this page shares the app's origin: never innerHTML, web links only.
+            const webOnly = (u) => /^https?:\/\//i.test(String(u).trim()) ? String(u).trim() : '#';
+            if (typeof card.photo_base64 === 'string' && card.photo_base64.startsWith('data:image/')) {
+                const img = document.createElement('img');
+                img.src = card.photo_base64;
+                img.className = 'w-full h-full object-cover';
+                document.getElementById('cardInitials').replaceChildren(img);
             } else {
                 const initials = getInitials(card.full_name || 'User');
                 document.getElementById('cardInitials').textContent = initials;
@@ -264,7 +269,7 @@
 
             if (card.linkedin_url) {
                 document.getElementById('linkedinSection').classList.remove('hidden');
-                document.getElementById('linkedinLink').href = card.linkedin_url;
+                document.getElementById('linkedinLink').href = webOnly(card.linkedin_url);
             }
 
             if (card.zoom_number) {
@@ -276,7 +281,7 @@
             if (card.website) {
                 document.getElementById('websiteSection').classList.remove('hidden');
                 document.getElementById('cardWebsite').textContent = card.website.replace(/^https?:\/\//, '');
-                document.getElementById('websiteLink').href = card.website.startsWith('http') ? card.website : `https://${card.website}`;
+                document.getElementById('websiteLink').href = webOnly(card.website.startsWith('http') ? card.website : `https://${card.website}`);
             }
         }
 
