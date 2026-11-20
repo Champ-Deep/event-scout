@@ -127,8 +127,9 @@ export default {
     if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
       res = await handleApi(req, env, exec, url);
     } else if (url.pathname.startsWith("/card/")) {
-      // Public share link: the viewer page reads the token from its own URL.
-      res = await env.ASSETS.fetch(new Request(new URL("/card-viewer.html", url), req));
+      // Public share link: the viewer page reads the token from its own URL. Fetch the canonical
+      // "/card-viewer" path: asking for ".html" returns a 307 to it, and the browser then loses the token.
+      res = await env.ASSETS.fetch(new Request(new URL("/card-viewer", url), req));
     } else {
       res = await env.ASSETS.fetch(req);
     }
