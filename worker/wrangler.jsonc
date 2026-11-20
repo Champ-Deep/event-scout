@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Event Scout, fully on Cloudflare: API (Worker) + D1 + KV (file bytes) + Workers AI + static app.
+  "name": "event-scout",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": { "enabled": true },
+  "limits": { "cpu_ms": 30000 },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/card/*"]
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "event-scout-db", "database_id": "1f31aadc-2db6-49cb-85c2-918ae811d3f2", "migrations_dir": "migrations" }
+  ],
+  "kv_namespaces": [{ "binding": "FILES", "id": "721941d2861d4b128e96750f7bace60c" }],
+  "ai": { "binding": "AI" },
+  "images": { "binding": "IMAGES" },
+  "vars": {
+    "ADMIN_EMAILS": "deep@lakeb2b.com",
+    "PUBLIC_ORIGIN": "https://event-scout.deep-ae0.workers.dev"
+  }
+  // Optional secret: OPENROUTER_API_KEY (OCR/chat try OpenRouter first, then Workers AI).
+}

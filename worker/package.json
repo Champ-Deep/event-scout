@@ -1,0 +1,22 @@
+{
+  "name": "event-scout-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "assets": "sh scripts/build-assets.sh",
+    "typecheck": "tsc --noEmit",
+    "dev": "npm run assets && wrangler dev --port 8791",
+    "migrate": "wrangler d1 migrations apply event-scout-db --remote",
+    "deploy": "npm run typecheck && npm run assets && npm run migrate && wrangler deploy",
+    "smoke": "node test/smoke.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "uqr": "^0.1.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261120.1",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.166.0"
+  }
+}

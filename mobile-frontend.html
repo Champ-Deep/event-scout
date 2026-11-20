@@ -1561,10 +1561,10 @@
     <script>
         // ==================== CONFIGURATION ====================
         const CONFIG = {
-            API_BASE_URL: window.location.hostname === 'localhost'
-                ? 'http://localhost:8000'
-                : 'https://event-scout-production.up.railway.app',
-            API_KEY: 'OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s'
+            // Same origin: the Cloudflare Worker serves this page and the API under /api.
+            API_BASE_URL: '/api',
+            // The X-API-Key header now carries the signed-in user's session token (no shared key in the page).
+            get API_KEY() { return (AppState.currentUser && AppState.currentUser.session_token) || ''; }
         };
 
         // ==================== NETWORK RESILIENCE ====================
@@ -1658,14 +1658,14 @@
         // ==================== INITIALIZATION ====================
         async function validateUserSession() {
             /** Validate that the current user_id exists in database. Prevents foreign key errors. */
-            if (!AppState.currentUser || !AppState.currentUser.user_id) {
+            if (!AppState.currentUser || !AppState.currentUser.user_id || !AppState.currentUser.session_token) {
                 return false;
             }
 
             try {
                 const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/user/validate?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
-                    { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+                    { method: 'GET', headers: { 'Content-Type': 'application/json', 'X-API-Key': CONFIG.API_KEY } }
                 );
 
                 if (!response.ok) {
@@ -1777,7 +1777,8 @@
                         user_id: data.user_id,
                         name: data.name,
                         email: data.email,
-                        is_admin: data.is_admin || false
+                        is_admin: data.is_admin || false,
+                        session_token: data.session_token
                     };
                     localStorage.setItem('eventScoutUser', JSON.stringify(AppState.currentUser));
                     showAlert('authAlert', '✓ Login successful!', 'success');
@@ -1821,7 +1822,8 @@
                         user_id: data.user_id,
                         name: data.name,
                         email: data.email,
-                        is_admin: data.is_admin || false
+                        is_admin: data.is_admin || false,
+                        session_token: data.session_token
                     };
                     localStorage.setItem('eventScoutUser', JSON.stringify(AppState.currentUser));
                     setTimeout(() => showDashboard(), 1000);
@@ -1839,6 +1841,7 @@
 
         function handleLogout() {
             if (confirm('Are you sure you want to logout?')) {
+                fetch(`${CONFIG.API_BASE_URL}/logout/`, { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY } }).catch(() => {});
                 localStorage.removeItem('eventScoutUser');
                 AppState.currentUser = null;
                 AppState.contacts = [];
@@ -3975,7 +3978,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                 const qrImage = document.getElementById('cardQRImage');
                 const urlDisplay = document.getElementById('cardShareableURL');
 
-                qrImage.src = `data:image/png;base64,${data.qr_code_base64}`;
+                qrImage.src = `data:${data.qr_code_mime || 'image/png'};base64,${data.qr_code_base64}`;
                 urlDisplay.textContent = data.shareable_url;
                 qrContainer.classList.remove('hidden');
 
@@ -5792,6 +5795,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 const data = await resp.json();
+                if (!resp.ok) { showToast(data.detail || 'Failed to start pipeline', 'error'); return; }
                 if (data.status === 'already_running') { showToast('Pipeline already running', 'warning'); return; }
                 showToast('Pipeline started! Research in progress...', 'success');
                 setTimeout(() => loadPipelineStatus(contactId, false), 3000);
@@ -5804,6 +5808,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
                 });
                 if (resp.ok) { showToast('Pipeline restarted', 'success'); setTimeout(() => loadPipelineStatus(contactId, true), 3000); }
+                else { const d = await resp.json().catch(() => ({})); showToast(d.detail || 'Retry failed', 'error'); }
             } catch (err) { showToast('Retry failed', 'error'); }
         }
 
