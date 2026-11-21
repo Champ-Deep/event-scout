@@ -31,6 +31,13 @@ function str(v: unknown, field: string, required = true): string {
 }
 
 // ---- auth ----
+const list = (v?: string) => (v || "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
+/** New accounts only: company domains (SIGNUP_DOMAINS) or named addresses (SIGNUP_ALLOW_EMAILS). Existing users always sign in. */
+export function signupAllowed(env: Env, email: string): boolean {
+  const e = email.trim().toLowerCase();
+  const domain = e.slice(e.lastIndexOf("@") + 1);
+  return list(env.SIGNUP_DOMAINS).includes(domain) || list(env.SIGNUP_ALLOW_EMAILS).includes(e) || isAdminEmail(env, e);
+}
 async function register(ctx: Ctx) {
   const b = await ctx.body();
   const name = str(b.name, "name").trim();
@@ -39,6 +46,9 @@ async function register(ctx: Ctx) {
   if (!EMAIL_RE.test(email)) throw new HttpError(422, "value is not a valid email address");
   if (!name) throw new HttpError(422, "name is required");
   if (password.length < 6) throw new HttpError(422, "Password must be at least 6 characters");
+  if (!signupAllowed(ctx.env, email)) {
+    throw new HttpError(403, "Sign-up is limited to company email addresses. Ask your Event Scout admin to add you.");
+  }
   if (await first(ctx.env, "SELECT id FROM users WHERE lower(email) = lower(?)", email)) {
     throw new HttpError(400, "Email already registered");
   }

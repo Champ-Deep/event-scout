@@ -10,6 +10,8 @@ export interface Env {
   PUBLIC_ORIGIN?: string; // e.g. https://event-scout.deep-ae0.workers.dev (used in share links)
   HARBINGER_URL?: string; // ChampHarbinger base URL (var)
   HARBINGER_API_KEY?: string; // chh_ key from Harbinger Settings (secret); unset = sync off
+  SIGNUP_DOMAINS?: string; // comma list of email domains that may create accounts
+  SIGNUP_ALLOW_EMAILS?: string; // comma list of individual addresses that may create accounts
 }
 
 export interface User {

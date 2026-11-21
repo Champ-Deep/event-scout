@@ -19,7 +19,7 @@ const fake = http.createServer((req, res) => {
 
 const persist = ".wrangler/harbinger-test";
 rmSync(persist, { recursive: true, force: true });
-writeFileSync(".dev.vars.harbinger-test", `HARBINGER_API_KEY=chh_test_key_local_only\nHARBINGER_URL=http://127.0.0.1:${FAKE}\n`);
+writeFileSync(".dev.vars.harbinger-test", `HARBINGER_API_KEY=chh_test_key_local_only\nHARBINGER_URL=http://127.0.0.1:${FAKE}\nSIGNUP_ALLOW_EMAILS=sync@example.com\n`);
 const w = (args) => execFileSync("npx", ["wrangler", ...args, "--local", "--persist-to", persist], { stdio: "pipe" }).toString();
 w(["d1", "migrations", "apply", "event-scout-db"]);
 const dev = spawn("npx", ["wrangler", "dev", "--local", "--port", String(PORT), "--persist-to", persist, "--env-file", ".dev.vars.harbinger-test"], { stdio: "pipe" });

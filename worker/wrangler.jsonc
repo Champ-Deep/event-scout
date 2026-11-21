@@ -22,7 +22,10 @@
   "vars": {
     "ADMIN_EMAILS": "deep@lakeb2b.com",
     "PUBLIC_ORIGIN": "https://event-scout.deep-ae0.workers.dev",
-    "HARBINGER_URL": "https://champ-harbinger.deep-ae0.workers.dev"
+    "HARBINGER_URL": "https://champ-harbinger.deep-ae0.workers.dev",
+    // Who may CREATE an account (existing accounts always sign in). Deep's ruling 22 Nov: company domains plus named gmail users.
+    "SIGNUP_DOMAINS": "championsmail.com,championsgroup.com,lakeb2b.com",
+    "SIGNUP_ALLOW_EMAILS": "deep1499@gmail.com,kashikarhemang@gmail.com,omnamah2205@gmail.com"
   },
   // Every 10 minutes: push new or changed contacts to ChampHarbinger (no-op until HARBINGER_API_KEY is set).
   "triggers": { "crons": ["*/10 * * * *"] }
