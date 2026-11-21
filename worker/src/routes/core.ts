@@ -401,6 +401,13 @@ async function putProfile(ctx: Ctx) {
 // ---- digital card ----
 const CARD_KEYS = ["full_name", "job_title", "company_name", "email", "phone", "linkedin_url", "zoom_number", "website", "photo_url", "photo_base64", "bio", "custom_fields"];
 const cardUrl = (ctx: Ctx, token: string) => `${shareOrigin(ctx)}/card/${token}`;
+// The card is shown on the public /card/:token page, same origin as the signed-in app: the photo must be an image data URL.
+const CARD_PHOTO = /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=\s]+$/;
+function checkCardField(k: string, v: unknown) {
+  if (k === "photo_base64" && typeof v === "string" && v.trim() && !CARD_PHOTO.test(v)) {
+    throw new HttpError(422, "photo_base64 must be a data:image/... base64 URL");
+  }
+}
 
 async function getCard(ctx: Ctx) {
   const c = await first<any>(ctx.env, "SELECT * FROM user_cards WHERE user_id = ?", ctx.user.id);
@@ -417,6 +424,7 @@ async function putCard(ctx: Ctx) {
   const keep = (v: unknown) => v !== null && v !== undefined && (typeof v !== "string" || v.trim() !== "");
   const upd = Object.fromEntries(CARD_KEYS.filter((k) => b[k] !== undefined).map((k) => [k, b[k]]));
   if (!Object.keys(upd).length) throw new HttpError(400, "No fields provided for update");
+  for (const [k, v] of Object.entries(upd)) checkCardField(k, v);
   const c = await first<any>(ctx.env, "SELECT * FROM user_cards WHERE user_id = ?", ctx.user.id);
   const data = pj<any>(c?.card_data, {});
   for (const [k, v] of Object.entries(upd)) if (keep(v)) data[k] = v;
