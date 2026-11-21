@@ -1,12 +1,12 @@
 # Run from the repo root with a Playwright-enabled Python against wrangler dev --local.
 # Creates synthetic data only. Never run against a deployed host. No session tokens are written to disk.
-import importlib.util, json, os, pathlib, time, urllib.parse, urllib.request
+import json, os, pathlib, time, urllib.parse, urllib.request
 from playwright.sync_api import sync_playwright, expect
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 BASE=os.environ.get('SCOUT_QA_URL','http://localhost:8792')
 assert urllib.parse.urlparse(BASE).hostname in ('localhost','127.0.0.1'), 'Local QA only'
 OUT=ROOT/'web/qa'; SHOTS=OUT/'screenshots';SHOTS.mkdir(exist_ok=True)
-spec=importlib.util.spec_from_file_location('visual_audit',str(pathlib.Path.home()/'champ-skills/design/skills/visual-verify/scripts/audit.py'));audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
+from audit_probe import audit
 report={'base':BASE,'checks':[],'states':[],'ocr':None,'console_errors':[],'browser_console':[]}
 import atexit
 atexit.register(lambda: (OUT/'playwright-real.json').write_text(json.dumps(report,indent=2)))

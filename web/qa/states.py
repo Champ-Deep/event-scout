@@ -1,10 +1,10 @@
 # Labelled loopback-only response fixtures for queue, auth, injection and recovery states.
 # These are UI contract tests, never evidence of AI-provider success.
-import importlib.util, io, json, pathlib, time
+import io, json, pathlib, time
 from PIL import Image,ImageDraw
 from playwright.sync_api import sync_playwright,expect
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'web/qa';BASE='http://localhost:8792'
-spec=importlib.util.spec_from_file_location('audit',str(pathlib.Path.home()/'champ-skills/design/skills/visual-verify/scripts/audit.py'));audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
+from audit_probe import audit
 results=[];checks=[];frames=[];console=[]
 def passed(s):checks.append(s);print('PASS',s,flush=True)
 image=Image.new('RGB',(480,280),'white');ImageDraw.Draw(image).text((32,40),'SYNTHETIC LOCAL QA\nFixture Labs\nfixture@example.invalid',fill='black');buf=io.BytesIO();image.save(buf,format='PNG');photo={'name':'qa-fixture.png','mimeType':'image/png','buffer':buf.getvalue()}

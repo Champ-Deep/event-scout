@@ -31,8 +31,14 @@ export function Ask({
   const lock = useRef(false);
   const conversation = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (conversation.current)
-      conversation.current.scrollTop = conversation.current.scrollHeight;
+    const pane = conversation.current;
+    if (!pane) return;
+    if (busy || error) pane.scrollTop = pane.scrollHeight;
+    else {
+      const question = pane.querySelector(".turn-user:nth-last-child(2)");
+      if (question)
+        pane.scrollTop += question.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+    }
   }, [turns, busy, error]);
   async function send(value = query) {
     const q = value.trim();

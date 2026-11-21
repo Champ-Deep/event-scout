@@ -1,11 +1,11 @@
 # Responsive QA on the real local Worker, using synthetic accounts and records only.
 # Run: SCOUT_QA_URL=http://localhost:8792 <playwright-python> web/qa/responsive.py
-import importlib.util, io, json, os, pathlib, time, urllib.parse
+import io, json, os, pathlib, time, urllib.parse
 from PIL import Image, ImageDraw
 from playwright.sync_api import sync_playwright, expect
 ROOT=pathlib.Path(__file__).resolve().parents[2];OUT=ROOT/'web/qa';BASE=os.environ.get('SCOUT_QA_URL','http://localhost:8792')
 assert urllib.parse.urlparse(BASE).hostname in ('localhost','127.0.0.1')
-spec=importlib.util.spec_from_file_location('audit',str(pathlib.Path.home()/'champ-skills/design/skills/visual-verify/scripts/audit.py'));audit=importlib.util.module_from_spec(spec);spec.loader.exec_module(audit)
+from audit_probe import audit
 results=[];errors=[]
 with sync_playwright() as pw:
     browser=pw.chromium.launch()
@@ -37,12 +37,17 @@ with sync_playwright() as pw:
         page.get_by_role('button',name='Close contact',exact=True).click();expect(page.get_by_role('dialog')).not_to_be_visible()
         nav('Ask');capture('Ask')
         # Labelled UI-only error/recovery fixture, not an AI success claim.
-        replies=[{'detail':'QA Ask unavailable. Please retry.'},{'response':'QA contract reply','retrieved_contacts':[]}]
+        long_reply='\n'.join(f'Line {i}: labelled layout fixture.' for i in range(1, 49))
+        replies=[{'detail':'QA Ask unavailable. Please retry.'},{'response':long_reply,'retrieved_contacts':[]}]
         def answer(route):
             data=replies.pop(0);route.fulfill(status=500 if 'detail' in data else 200,json=data)
         page.route('**/api/converse/**',answer);page.get_by_label('Ask about your contacts').fill('QA recovery question');page.get_by_role('button',name='Send question').click();expect(page.get_by_role('button',name='Try again',exact=True)).to_be_visible();capture('Ask error fixture',False)
         assert page.evaluate('''() => {const b=document.querySelector('.notice button'),r=b.getBoundingClientRect(),c=document.querySelector('.composer').getBoundingClientRect();return r.bottom<=c.top&&document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('button')===b}'''),(width,'Ask Retry is covered')
-        page.get_by_role('button',name='Try again',exact=True).click();expect(page.get_by_text('QA contract reply',exact=True)).to_be_visible();expect(page.get_by_role('alert')).not_to_be_visible();capture('Ask recovered fixture',False);page.unroute('**/api/converse/**')
+        page.get_by_role('button',name='Try again',exact=True).click();expect(page.locator('.turn-assistant p')).to_have_text(long_reply);expect(page.get_by_role('alert')).not_to_be_visible();capture('Ask recovered fixture',False);page.unroute('**/api/converse/**')
+        pane=page.locator('.conversation').bounding_box();reply=page.locator('.turn-assistant').last.bounding_box()
+        assert reply['height'] > pane['height'] and pane['y'] <= reply['y'] < pane['y']+pane['height'], (width,pane,reply)
+        if width in (360,390,768,1280): page.screenshot(path=OUT/'screenshots'/f'ask-long-{width}.png')
+        print('Ask pane / answer top:',width,pane['y'],reply['y'],flush=True)
         nav('Me');expect(page.get_by_label('Full name',exact=True)).to_be_visible();capture('Profile')
         page.get_by_role('tab',name='Event',exact=True).click();capture('Event')
         page.get_by_role('tab',name='My card',exact=True).click();capture('My card')
