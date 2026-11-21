@@ -91,7 +91,7 @@ r = await call("POST", `/user/card/generate_token/?user_id=${uid}`);
 ok("card token", r.status === 200 && r.data.shareable_url?.startsWith(BASE));
 const pub = await call("GET", `/card/${r.data.shareable_token}`, { auth: false });
 ok("public card", pub.status === 200 && pub.data.status === "success");
-const page = await fetch(r.data.shareable_url);
+const page = await fetch(r.data.shareable_url, { redirect: "manual" }); // a redirect drops the token from the path
 ok("card page", page.status === 200 && (await page.text()).includes("<html"));
 
 const home = await fetch(BASE + "/");
