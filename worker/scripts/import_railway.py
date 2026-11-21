@@ -4,8 +4,10 @@ Usage (from worker/):
   1. Dump Railway read-only (runs inside the Railway service, which can reach Postgres):
        B64=$(base64 -i scripts/dump_railway.py | tr -d '\\n')
        railway ssh --service event-scout -- sh -c "echo $B64 | base64 -d > /tmp/d.py && python /tmp/d.py" > /tmp/dump.raw
-  2. python3 scripts/import_railway.py /tmp/dump.raw OUTDIR
+  2. python3 scripts/import_railway.py /tmp/dump.raw OUTDIR [--new-only]
        writes OUTDIR/import.sql (rows) and OUTDIR/files/<id> (file bytes for KV)
+       --new-only: INSERT OR IGNORE, so rows already in D1 (and edited on Cloudflare since) are kept as they are;
+       use it for every re-sync after the first import.
   3. wrangler d1 execute event-scout-db --remote --file OUTDIR/import.sql
      for f in OUTDIR/files/*; do wrangler kv key put --remote --binding FILES "file:$(basename $f)" --path "$f"; done
 
@@ -73,7 +75,8 @@ def load(path):
     return json.loads(raw[i + 9:j])
 
 
-def main(dump_path, outdir):
+def main(dump_path, outdir, new_only=False):
+    verb = "INSERT OR IGNORE" if new_only else "INSERT OR REPLACE"
     d = load(dump_path)["data"]
     os.makedirs(os.path.join(outdir, "files"), exist_ok=True)
     lines, counts = [], {}
@@ -90,15 +93,17 @@ def main(dump_path, outdir):
             vals = {c: lit(r.get(c)) for c in cols}
             big = [c for c in cols if len(vals[c]) > CHUNK]
             row = {c: ("''" if c in big else vals[c]) for c in cols}
-            lines.append(f"INSERT OR REPLACE INTO {t} ({', '.join(cols)}) VALUES ({', '.join(row[c] for c in cols)});")
+            lines.append(f"{verb} INTO {t} ({', '.join(cols)}) VALUES ({', '.join(row[c] for c in cols)});")
+            # New-only: the appends must not touch a row that already existed, so guard them on the empty insert.
             for c in big:
                 text = r.get(c) if isinstance(r.get(c), str) else json.dumps(r.get(c))
                 for k in range(0, len(text), CHUNK):
-                    lines.append(f"UPDATE {t} SET {c} = {c} || {lit(text[k:k + CHUNK])} WHERE id = {lit(r['id'])};")
+                    guard = f" AND length({c}) = {k}" if new_only else ""
+                    lines.append(f"UPDATE {t} SET {c} = {c} || {lit(text[k:k + CHUNK])} WHERE id = {lit(r['id'])}{guard};")
         counts[t] = len(rows)
     open(os.path.join(outdir, "import.sql"), "w").write("\n".join(lines) + "\n")
     print(json.dumps(counts))
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], new_only="--new-only" in sys.argv[3:])

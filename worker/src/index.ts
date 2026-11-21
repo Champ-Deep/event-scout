@@ -5,6 +5,7 @@ import { routes as core } from "./routes/core";
 import { routes as admin } from "./routes/admin";
 import { routes as files } from "./routes/files";
 import { routes as ai } from "./routes/ai";
+import { sweep } from "./harbinger";
 
 export type Auth = "public" | "user" | "admin";
 export type Handler = (ctx: Ctx) => Promise<Response | unknown>;
@@ -139,5 +140,10 @@ export default {
       out.headers.set("X-Frame-Options", "DENY");
     }
     return out;
+  },
+
+  // Cron: push new or changed contacts (and their notes) to ChampHarbinger.
+  async scheduled(_event: ScheduledController, env: Env, exec: ExecutionContext) {
+    exec.waitUntil(sweep(env).then((r) => console.log("harbinger sweep", JSON.stringify(r))));
   },
 } satisfies ExportedHandler<Env>;
