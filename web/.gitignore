@@ -1,0 +1,12 @@
+dist/
+qa/screenshots/
+qa/look/
+qa/shoot/
+qa/registry/
+qa/registry-source/
+qa/*.json
+qa/*.log
+qa/VERIFICATION.md
+qa/install-deps.py
+qa/install-components.py
+qa/__pycache__/
