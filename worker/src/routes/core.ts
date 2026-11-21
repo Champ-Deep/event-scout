@@ -5,6 +5,7 @@ import {
   now, pipelineMap, pj, q, run, sha256Hex, shareOrigin, sj, uuid, websiteOf,
 } from "../lib";
 import { dropEmbedding, indexContacts, reindexLater } from "../embed";
+import { status as harbingerStatus, sweep as harbingerSweep, syncSoon } from "../harbinger";
 import bcrypt from "bcryptjs";
 import { renderSVG } from "uqr";
 
@@ -121,6 +122,7 @@ async function insertContact(ctx: Ctx, c: any, source: string, photo: string | n
     ).bind(uuid(), id, row.user_id, row.name, row.email, row.phone, row.linkedin, row.company_name, row.notes, sj(row.links), source, ts),
   ]);
   reindexLater(ctx.env, ctx.exec, [row]);
+  syncSoon(ctx.env, ctx.exec, id);
   return id;
 }
 
@@ -323,6 +325,7 @@ async function updateContact(ctx: Ctx) {
   if (!sets.length) throw new HttpError(400, "No fields provided for update");
   await run(ctx.env, `UPDATE contacts SET ${sets.join(", ")}, updated_at = ? WHERE id = ?`, ...args, now(), c.id);
   reindexLater(ctx.env, ctx.exec, [c]);
+  syncSoon(ctx.env, ctx.exec, c.id);
   const links = typeof c.links === "string" ? pj(c.links, []) : c.links;
   return {
     status: "success", message: "Contact updated successfully",
@@ -497,6 +500,12 @@ export const routes: Route[] = [
   ["GET", "/card/:token", viewCard, "public"],
   ["GET", "/shared_contacts/", sharedContacts],
   ["POST", "/admin/ocr_probe", ocrProbe, "admin"],
+  ["GET", "/admin/harbinger/status", (ctx) => harbingerStatus(ctx.env), "admin"],
+  ["POST", "/admin/harbinger/sync", async (ctx) => {
+    // ?reset=1 un-parks contacts that failed too often (after a fix on the Harbinger side).
+    if (q(ctx, "reset") === "1") await run(ctx.env, "UPDATE harbinger_sync SET attempts = 0 WHERE status = 'failed'");
+    return { status: "success", ...(await harbingerSweep(ctx.env, 200)) };
+  }, "admin"],
   ["POST", "/admin/reindex", async (ctx) => {
     const rows = await all<any>(ctx.env, "SELECT * FROM contacts");
     for (let i = 0; i < rows.length; i += 50) await indexContacts(ctx.env, rows.slice(i, i + 50));

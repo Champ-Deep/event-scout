@@ -8,6 +8,8 @@ export interface Env {
   ADMIN_EMAILS?: string;
   OPENROUTER_API_KEY?: string; // optional: OCR/chat via OpenRouter first, Workers AI otherwise
   PUBLIC_ORIGIN?: string; // e.g. https://event-scout.deep-ae0.workers.dev (used in share links)
+  HARBINGER_URL?: string; // ChampHarbinger base URL (var)
+  HARBINGER_API_KEY?: string; // chh_ key from Harbinger Settings (secret); unset = sync off
 }
 
 export interface User {
