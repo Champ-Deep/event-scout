@@ -4,6 +4,8 @@
 // Prints SMOKE_USER_ID at the end so the caller can remove the user row.
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import bcrypt from "bcryptjs";
 
 const BASE = (process.env.BASE || "http://localhost:8791").replace(/\/$/, "");
 const API = `${BASE}/api`;
@@ -32,8 +34,16 @@ ok("health", r.status === 200 && r.data.database_connected, JSON.stringify({ use
 r = await call("GET", "/list_contacts/?user_id=x", { auth: false });
 ok("no session -> 401", r.status === 401);
 
-r = await call("POST", "/register/", { body: { name: "Smoke Test", email, password: "smoke-pass-123" }, auth: false });
-ok("register", r.status === 200 && r.data.session_token, r.status);
+// Sign-up is limited to company domains, so an outsider is refused and the throwaway account is seeded in D1 directly
+// (wrangler on this machine; LOCAL=1 targets a `wrangler dev --local` database instead of the remote one).
+r = await call("POST", "/register/", { body: { name: "Outsider", email: `outsider+${stamp}@example.org`, password: "smoke-pass-123" }, auth: false });
+ok("outsider sign-up -> 403", r.status === 403, r.data.detail);
+{
+  const hash = bcrypt.hashSync("smoke-pass-123", 10);
+  const sql = `INSERT INTO users (id, name, email, password_hash, is_admin, created_at) VALUES ('${crypto.randomUUID()}', 'Smoke Test', '${email}', '${hash}', 0, '${new Date().toISOString()}')`;
+  execFileSync("npx", ["wrangler", "d1", "execute", "event-scout-db", process.env.LOCAL ? "--local" : "--remote", "--command", sql], { stdio: "pipe" });
+  ok("seed test account", true);
+}
 r = await call("POST", "/login/", { body: { email, password: "smoke-pass-123" }, auth: false });
 ok("login", r.status === 200 && r.data.session_token);
 token = r.data.session_token;
