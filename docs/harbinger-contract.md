@@ -7,7 +7,7 @@ is set). The Harbinger side is the route below, built on a ChampHarbinger branch
 ## Transport
 
 `POST {HARBINGER_URL}/api/v1/event-scout/contacts`
-`Authorization: Bearer chh_...` (the ChampIQ API key a Harbinger user creates in Settings; `validateApiKey()` resolves the owner)
+`Authorization: Bearer chh_...` (the Harbinger API key a user creates in Harbinger Settings, a `chh_` key; `validateApiKey()` resolves the owner. ChampIQ is retired: the key was only labelled ChampIQ in older Harbinger builds)
 `Content-Type: application/json`
 
 Event Scout pushes on every create and edit, and a cron sweep every 10 minutes pushes any contact whose payload hash
