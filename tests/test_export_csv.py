@@ -224,7 +224,10 @@ class TestExportRoute:
     def client(self, app_client):
         app_module, client = app_client
         client.app_module = app_module
-        return client
+        original = app_module.get_db_session
+        yield client
+        # The tests below swap in a fake session; restoring it keeps later modules (scan idempotency) on the real one.
+        app_module.get_db_session = original
 
     def _export(self, client, session, user_id):
         async def fake_get_db_session():
