@@ -2108,7 +2108,6 @@
                 const hasNotes = contact.notes && contact.notes.trim() && contact.notes !== 'N/A';
                 const hasLinks = contact.links && contact.links.length > 0;
                 const company = contact.company_name && contact.company_name !== 'N/A' ? contact.company_name : '';
-                const escapedName = contact.name.replace(/'/g, "\\'");
                 const score = contact.lead_score;
                 const temp = contact.lead_temperature;
                 const scoreColor = temp === 'hot' ? 'bg-red-500' : temp === 'warm' ? 'bg-orange-400' : temp === 'cold' ? 'bg-gray-400' : '';
@@ -2123,7 +2122,7 @@
                         <!-- Avatar with score badge -->
                         <div class="relative flex-shrink-0 mt-0.5">
                             ${contact.photo_base64
-                        ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-12 h-12 rounded-full object-cover" alt="${contact.name}">`
+                        ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-12 h-12 rounded-full object-cover" alt="${escapeHtml(contact.name)}">`
                         : `<div class="w-12 h-12 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white font-bold text-lg">
                                     ${contact.name.charAt(0).toUpperCase()}
                                 </div>`}
@@ -2133,17 +2132,17 @@
                         <!-- Info -->
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="font-semibold text-gray-900 truncate">${contact.name}</h3>
+                                <h3 class="font-semibold text-gray-900 truncate">${escapeHtml(contact.name)}</h3>
                                 ${contact.source === 'scan' ? '<span class="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full">scanned</span>' : ''}
                                 ${temp === 'hot' ? '<span class="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">hot</span>' : ''}
                                 ${AppState.currentUser.is_admin && contact.user_name ? `<span class="text-xs bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full">${escapeHtml(contact.user_name)}</span>` : ''}
                             </div>
-                            ${company ? `<p class="text-sm font-medium text-gray-600 truncate">${company}</p>` : ''}
+                            ${company ? `<p class="text-sm font-medium text-gray-600 truncate">${escapeHtml(company)}</p>` : ''}
                             <div class="flex items-center gap-3 mt-1">
-                                ${contact.email && contact.email !== 'N/A' ? `<span class="text-xs text-gray-400 truncate"><i class="fas fa-envelope mr-1"></i>${contact.email}</span>` : ''}
+                                ${contact.email && contact.email !== 'N/A' ? `<span class="text-xs text-gray-400 truncate"><i class="fas fa-envelope mr-1"></i>${escapeHtml(contact.email)}</span>` : ''}
                             </div>
-                            ${hasNotes ? `<p class="text-xs text-gray-400 italic mt-1 truncate"><i class="fas fa-sticky-note mr-1"></i>${contact.notes.substring(0, 60)}${contact.notes.length > 60 ? '...' : ''}</p>` : ''}
-                            ${hasLinks ? `<div class="flex gap-1 mt-1">${contact.links.slice(0, 2).map(l => `<span class="text-xs bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded">${l.label || 'Link'}</span>`).join('')}${contact.links.length > 2 ? `<span class="text-xs text-gray-400">+${contact.links.length - 2}</span>` : ''}</div>` : ''}
+                            ${hasNotes ? `<p class="text-xs text-gray-400 italic mt-1 truncate"><i class="fas fa-sticky-note mr-1"></i>${escapeHtml(contact.notes.substring(0, 60))}${contact.notes.length > 60 ? '...' : ''}</p>` : ''}
+                            ${hasLinks ? `<div class="flex gap-1 mt-1">${contact.links.slice(0, 2).map(l => `<span class="text-xs bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded">${escapeHtml(l.label || 'Link')}</span>`).join('')}${contact.links.length > 2 ? `<span class="text-xs text-gray-400">+${contact.links.length - 2}</span>` : ''}</div>` : ''}
                         </div>
 
                         <!-- Quick Actions -->
@@ -2186,8 +2185,8 @@
                             </div>`}
                         <span class="text-white font-bold text-lg">${c.lead_score || '?'}</span>
                     </div>
-                    <p class="text-white text-sm font-medium truncate">${c.name}</p>
-                    <p class="text-white/70 text-xs truncate">${c.company_name || 'N/A'}</p>
+                    <p class="text-white text-sm font-medium truncate">${escapeHtml(c.name)}</p>
+                    <p class="text-white/70 text-xs truncate">${escapeHtml(c.company_name || 'N/A')}</p>
                 </div>
             `).join('');
         }
@@ -2253,8 +2252,8 @@
             modal.innerHTML = `
                 <div class="bg-white rounded-2xl p-6 max-w-sm w-full">
                     <div class="text-center mb-4">
-                        <h3 class="text-xl font-semibold text-gray-900">${contact.name}</h3>
-                        <p class="text-sm text-gray-500">${contact.company_name || 'No company'}</p>
+                        <h3 class="text-xl font-semibold text-gray-900">${escapeHtml(contact.name)}</h3>
+                        <p class="text-sm text-gray-500">${escapeHtml(contact.company_name || 'No company')}</p>
                     </div>
                     ${contact.qr_base64 ? `
                         <img src="data:image/png;base64,${contact.qr_base64}"
@@ -2656,9 +2655,9 @@
                 const colors = { uploading: 'bg-blue-500/90', done: 'bg-green-500/90', error: 'bg-red-500/90', duplicate: 'bg-yellow-500/90' };
                 const labels = {
                     uploading: 'Processing...',
-                    done: entry.name ? `${entry.name} saved` : 'Saved',
-                    error: entry.name || 'Failed',
-                    duplicate: entry.name ? `Already saved: ${entry.name}` : 'Duplicate'
+                    done: entry.name ? `${escapeHtml(entry.name)} saved` : 'Saved',
+                    error: escapeHtml(entry.name || 'Failed'),
+                    duplicate: entry.name ? `Already saved: ${escapeHtml(entry.name)}` : 'Duplicate'
                 };
                 const fadeClass = (entry.status === 'done' || entry.status === 'duplicate') ? 'opacity-90' : '';
                 return `<div class="flex items-center gap-2 ${colors[entry.status]} text-white px-3 py-1.5 rounded-full text-xs font-medium shadow-lg ${fadeClass}" style="transition: opacity 0.5s">
@@ -3147,10 +3146,22 @@
             }
         }
 
+        // Escapes quotes too, so the result is safe in text and in quoted attributes.
         function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+            return String(text ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+        // A JS string literal for an inline on*="..." handler: JSON quoting, then attribute escaping.
+        function jsArg(value) {
+            return escapeHtml(JSON.stringify(String(value ?? '')));
+        }
+        // Only http(s), mailto and tel links reach an href; anything else becomes '#'.
+        function safeHref(url) {
+            if (!url) return '#';
+            try {
+                const u = new URL(String(url), location.href);
+                if (['http:', 'https:', 'mailto:', 'tel:'].includes(u.protocol)) return escapeHtml(u.href);
+            } catch (e) { }
+            return '#';
         }
 
         function formatAIResponse(text) {
@@ -3207,9 +3218,9 @@
                         ${c.lead_score != null ? `<div class="w-8 h-8 rounded-full ${scoreColor} flex items-center justify-center text-white text-xs font-bold flex-shrink-0">${c.lead_score}</div>` : ''}
                     </div>
                     <div class="flex gap-2 mt-2 ml-14" onclick="event.stopPropagation()">
-                        ${c.phone && c.phone !== 'N/A' ? `<a href="tel:${c.phone}" class="text-xs bg-green-50 text-green-600 px-2.5 py-1 rounded-full"><i class="fas fa-phone mr-1"></i>Call</a>` : ''}
-                        ${c.email && c.email !== 'N/A' ? `<a href="mailto:${c.email}" class="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full"><i class="fas fa-envelope mr-1"></i>Email</a>` : ''}
-                        ${c.linkedin && c.linkedin !== 'N/A' ? `<a href="${c.linkedin}" target="_blank" class="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full"><i class="fab fa-linkedin mr-1"></i>LinkedIn</a>` : ''}
+                        ${c.phone && c.phone !== 'N/A' ? `<a href="${safeHref('tel:' + c.phone)}" class="text-xs bg-green-50 text-green-600 px-2.5 py-1 rounded-full"><i class="fas fa-phone mr-1"></i>Call</a>` : ''}
+                        ${c.email && c.email !== 'N/A' ? `<a href="${safeHref('mailto:' + c.email)}" class="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full"><i class="fas fa-envelope mr-1"></i>Email</a>` : ''}
+                        ${c.linkedin && c.linkedin !== 'N/A' ? `<a href="${safeHref(c.linkedin)}" target="_blank" rel="noopener" class="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full"><i class="fab fa-linkedin mr-1"></i>LinkedIn</a>` : ''}
                     </div>
                 </div>`;
             }).join('') + '</div>';
@@ -3231,7 +3242,7 @@
                     </div>
                     ${e.description ? `<p class="text-xs text-gray-600 mt-2 ml-13 line-clamp-2">${escapeHtml(e.description).substring(0, 120)}${e.description.length > 120 ? '...' : ''}</p>` : ''}
                     <div class="flex gap-2 mt-2 ml-13">
-                        <button onclick="askAI('Tell me about ${escapeHtml(e.name).replace(/'/g, "\\'")} and should I visit their booth?')" class="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full"><i class="fas fa-robot mr-1"></i>Ask AI</button>
+                        <button onclick="askAI(${jsArg(`Tell me about ${e.name} and should I visit their booth?`)})" class="text-xs bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full"><i class="fas fa-robot mr-1"></i>Ask AI</button>
                     </div>
                 </div>
             `).join('') + '</div>';
@@ -3290,12 +3301,12 @@
                 } else if (a.action === 'research') {
                     const contact = AppState.contacts.find(c => c.id === a.contact_id);
                     const company = contact ? contact.company_name : '';
-                    onclick = `askAI('Research ${company || a.label}', true)`;
+                    onclick = `askAI(${jsArg('Research ' + (company || a.label))}, true)`;
                 } else if (a.action === 'pitch') {
-                    onclick = `askAI('Generate pitch for ${a.label.replace("Pitch for ", "")}', true)`;
+                    onclick = `askAI(${jsArg('Generate pitch for ' + a.label.replace("Pitch for ", ""))}, true)`;
                 }
                 return `<button onclick="${onclick}" class="inline-flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 text-purple-700 rounded-xl text-xs font-medium active:scale-95 transition-transform">
-                    <i class="fas ${a.icon || 'fa-bolt'}"></i> ${escapeHtml(a.label)}
+                    <i class="fas ${escapeHtml(a.icon || 'fa-bolt')}"></i> ${escapeHtml(a.label)}
                 </button>`;
             }).join('') + '</div>';
         }
@@ -3303,7 +3314,7 @@
         function renderQuickReplies(replies) {
             if (!replies || !replies.length) return '';
             return '<div class="flex flex-wrap gap-1.5 pt-1">' + replies.map(r =>
-                `<button onclick="askAI('${escapeHtml(r).replace(/'/g, "\\'")}', true)" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition active:bg-gray-300 border border-gray-200">${escapeHtml(r)}</button>`
+                `<button onclick="askAI(${jsArg(r)}, true)" class="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full transition active:bg-gray-300 border border-gray-200">${escapeHtml(r)}</button>`
             ).join('') + '</div>';
         }
 
@@ -3324,7 +3335,7 @@
                     <button onclick="saveResearchToContact('${data.contact_id}')" class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1">
                         <i class="fas fa-save"></i> Save to Contact
                     </button>
-                    <button onclick="askAI('Generate pitch for ${escapeHtml(data.contact_name || '').replace(/'/g, "\\'")}', true)" class="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1">
+                    <button onclick="askAI(${jsArg('Generate pitch for ' + (data.contact_name || ''))}, true)" class="text-xs bg-purple-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1">
                         <i class="fas fa-file-powerpoint"></i> Generate Pitch
                     </button>
                 </div>
@@ -3483,8 +3494,6 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             const hasNotes = contact.notes && contact.notes.trim() && contact.notes !== 'N/A';
             const hasLinks = contact.links && contact.links.length > 0;
             const linkedin = contact.linkedin && contact.linkedin !== 'N/A' ? contact.linkedin : '';
-            const escapedName = contact.name.replace(/'/g, "\\'");
-
             detailContent.innerHTML = `
                 <!-- Header -->
                 <div class="bg-gradient-to-br from-gray-900 to-gray-700 text-white p-6 pt-16 safe-area-inset-top">
@@ -3494,13 +3503,13 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     </button>
                     <div class="flex items-center gap-4">
                         ${contact.photo_base64
-                    ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-white/30" alt="${contact.name}">`
+                    ? `<img src="data:image/jpeg;base64,${contact.photo_base64}" class="w-16 h-16 rounded-full object-cover flex-shrink-0 border-2 border-white/30" alt="${escapeHtml(contact.name)}">`
                     : `<div class="w-16 h-16 rounded-full ${getAvatarClass(contact.name)} flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
                                 ${contact.name.charAt(0).toUpperCase()}
                             </div>`}
                         <div>
-                            <h1 class="text-xl font-bold">${contact.name}</h1>
-                            ${company ? `<p class="text-white/70 text-sm">${company}</p>` : ''}
+                            <h1 class="text-xl font-bold">${escapeHtml(contact.name)}</h1>
+                            ${company ? `<p class="text-white/70 text-sm">${escapeHtml(company)}</p>` : ''}
                             ${contact.source === 'scan' ? '<span class="text-xs bg-white/20 px-2 py-0.5 rounded-full mt-1 inline-block">Scanned</span>' : ''}
                         </div>
                     </div>
@@ -3509,21 +3518,21 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                 <!-- Quick Actions -->
                 <div class="flex justify-around py-4 bg-white border-b border-gray-100">
                     ${contact.phone && contact.phone !== 'N/A' ? `
-                        <a href="tel:${contact.phone}" class="flex flex-col items-center gap-1 text-blue-600">
+                        <a href="${safeHref('tel:' + contact.phone)}" class="flex flex-col items-center gap-1 text-blue-600">
                             <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shadow-sm"><i class="fas fa-phone text-base"></i></div>
                             <span class="text-xs">Call</span>
                         </a>` : ''}
                     ${contact.email && contact.email !== 'N/A' ? `
-                        <a href="mailto:${contact.email}" class="flex flex-col items-center gap-1 text-green-600">
+                        <a href="${safeHref('mailto:' + contact.email)}" class="flex flex-col items-center gap-1 text-green-600">
                             <div class="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center shadow-sm"><i class="fas fa-envelope text-base"></i></div>
                             <span class="text-xs">Email</span>
                         </a>` : ''}
                     ${linkedin ? `
-                        <a href="${linkedin.startsWith('http') ? linkedin : 'https://' + linkedin}" target="_blank" class="flex flex-col items-center gap-1 text-blue-700">
+                        <a href="${safeHref(linkedin.startsWith('http') ? linkedin : 'https://' + linkedin)}" target="_blank" rel="noopener" class="flex flex-col items-center gap-1 text-blue-700">
                             <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shadow-sm"><i class="fab fa-linkedin text-base"></i></div>
                             <span class="text-xs">LinkedIn</span>
                         </a>` : `
-                        <button onclick="findLinkedIn('${escapedName}', '${(company || '').replace(/'/g, "\\'")}')" class="flex flex-col items-center gap-1 text-blue-700">
+                        <button onclick="findLinkedIn(${jsArg(contact.name)}, ${jsArg(company)})" class="flex flex-col items-center gap-1 text-blue-700">
                             <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shadow-sm"><i class="fab fa-linkedin text-base"></i></div>
                             <span class="text-xs">Find</span>
                         </button>`}
@@ -3545,7 +3554,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         <div class="flex items-center gap-3">
                             <i class="fas fa-envelope text-gray-400 w-5 text-center"></i>
                             <div>
-                                <p class="text-sm text-gray-900">${contact.email}</p>
+                                <p class="text-sm text-gray-900">${escapeHtml(contact.email)}</p>
                                 <p class="text-xs text-gray-400">Email</p>
                             </div>
                         </div>` : ''}
@@ -3553,7 +3562,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         <div class="flex items-center gap-3">
                             <i class="fas fa-phone text-gray-400 w-5 text-center"></i>
                             <div>
-                                <p class="text-sm text-gray-900">${contact.phone}</p>
+                                <p class="text-sm text-gray-900">${escapeHtml(contact.phone)}</p>
                                 <p class="text-xs text-gray-400">Phone</p>
                             </div>
                         </div>` : ''}
@@ -3561,14 +3570,14 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         <div class="flex items-center gap-3">
                             <i class="fab fa-linkedin text-gray-400 w-5 text-center"></i>
                             <div>
-                                <p class="text-sm text-blue-600 truncate">${linkedin}</p>
+                                <p class="text-sm text-blue-600 truncate">${escapeHtml(linkedin)}</p>
                                 <p class="text-xs text-gray-400">LinkedIn ${contact.linkedin_source === 'ai_detected' ? '<span class="bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded text-[10px] ml-1">AI found</span>' : ''}</p>
                             </div>
                         </div>` : `
                         <div class="flex items-center gap-3">
                             <i class="fab fa-linkedin text-gray-400 w-5 text-center"></i>
                             <div class="flex-1">
-                                <button onclick="findLinkedIn('${escapedName}', '${(company || '').replace(/'/g, "\\'")}')" class="text-sm text-blue-600">
+                                <button onclick="findLinkedIn(${jsArg(contact.name)}, ${jsArg(company)})" class="text-sm text-blue-600">
                                     <i class="fas fa-search text-xs mr-1"></i>Find on LinkedIn
                                 </button>
                                 <p class="text-xs text-gray-400">Opens LinkedIn search</p>
@@ -3578,7 +3587,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         <div class="flex items-center gap-3">
                             <i class="fas fa-building text-gray-400 w-5 text-center"></i>
                             <div>
-                                <p class="text-sm text-gray-900">${company}</p>
+                                <p class="text-sm text-gray-900">${escapeHtml(company)}</p>
                                 <p class="text-xs text-gray-400">Company</p>
                             </div>
                         </div>` : ''}
@@ -3591,7 +3600,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                             <button onclick="editContact('${contact.id}')" class="text-xs text-blue-600">Edit</button>
                         </div>
                         ${hasNotes
-                    ? `<p class="text-sm text-gray-700 whitespace-pre-wrap">${contact.notes}</p>`
+                    ? `<p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(contact.notes)}</p>`
                     : `<p class="text-sm text-gray-400 italic">No notes yet. Tap Edit to add notes about this contact.</p>`
                 }
                     </div>
@@ -3602,9 +3611,9 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Links & Attachments</h3>
                         <div class="space-y-2">
                             ${contact.links.map(link => `
-                                <a href="${link.url}" target="_blank" class="link-chip ${link.added_by === 'n8n' ? 'auto' : ''}">
+                                <a href="${safeHref(link.url)}" target="_blank" rel="noopener" class="link-chip ${link.added_by === 'n8n' ? 'auto' : ''}">
                                     <i class="fas fa-external-link-alt text-xs"></i>
-                                    ${link.label || 'Link'}
+                                    ${escapeHtml(link.label || 'Link')}
                                     ${link.added_by === 'n8n' ? '<span class="text-xs opacity-60">auto</span>' : ''}
                                 </a>
                             `).join('')}
@@ -3615,7 +3624,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     ${contact.admin_notes ? `
                     <div class="bg-purple-50 rounded-xl p-4 shadow-sm border border-purple-200">
                         <h3 class="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-2"><i class="fas fa-shield-alt mr-1"></i>Intel from HQ</h3>
-                        <p class="text-sm text-gray-700 whitespace-pre-wrap">${contact.admin_notes}</p>
+                        <p class="text-sm text-gray-700 whitespace-pre-wrap">${escapeHtml(contact.admin_notes)}</p>
                     </div>` : ''}
 
                     <!-- Documents from HQ -->
@@ -3654,11 +3663,11 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
                     <!-- Intelligence Actions -->
                     <div class="flex gap-2 mb-3">
-                        <button onclick="getPitchAngle('${contact.id}', '${escapedName}', '${(company || '').replace(/'/g, "\\'")}')"
+                        <button onclick="getPitchAngle('${contact.id}', ${jsArg(contact.name)}, ${jsArg(company)})"
                                 class="flex-1 py-3 bg-purple-600 text-white rounded-lg font-semibold text-sm active:bg-purple-700">
                             <i class="fas fa-lightbulb mr-1"></i>Pitch Angle
                         </button>
-                        <button onclick="getBriefing('${contact.id}', '${escapedName}', '${(company || '').replace(/'/g, "\\'")}')"
+                        <button onclick="getBriefing('${contact.id}', ${jsArg(contact.name)}, ${jsArg(company)})"
                                 class="flex-1 py-3 bg-indigo-600 text-white rounded-lg font-semibold text-sm active:bg-indigo-700">
                             <i class="fas fa-file-alt mr-1"></i>Brief Me
                         </button>
@@ -3684,7 +3693,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         <button onclick="editContact('${contact.id}')" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold active:bg-blue-700 transition">
                             <i class="fas fa-pen mr-2"></i>Edit
                         </button>
-                        <button onclick="deleteContact('${contact.id}', '${escapedName}')" class="bg-red-50 text-red-600 px-6 py-3 rounded-xl font-semibold active:bg-red-100 transition">
+                        <button onclick="deleteContact('${contact.id}', ${jsArg(contact.name)})" class="bg-red-50 text-red-600 px-6 py-3 rounded-xl font-semibold active:bg-red-100 transition">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -4061,7 +4070,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         function showAlert(containerId, message, type) {
             const container = document.getElementById(containerId);
             const bgColor = type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200';
-            container.innerHTML = `<div class="border rounded-lg p-3 text-sm ${bgColor}">${message}</div>`;
+            container.innerHTML = `<div class="border rounded-lg p-3 text-sm ${bgColor}">${escapeHtml(message)}</div>`;
         }
 
         function showToast(message, type = 'info') {
@@ -4074,7 +4083,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             toast.innerHTML = `
                 <div class="flex items-center gap-3">
                     <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} text-lg"></i>
-                    <p class="flex-1 text-sm font-medium">${message}</p>
+                    <p class="flex-1 text-sm font-medium">${escapeHtml(message)}</p>
                     <button onclick="this.parentElement.parentElement.style.opacity='0';this.parentElement.parentElement.style.transform='translateY(-100%)';setTimeout(()=>this.parentElement.parentElement.remove(),300)" class="text-white/70 active:text-white ml-2">
                         <i class="fas fa-times"></i>
                     </button>
@@ -4621,7 +4630,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             const container = document.getElementById('categoryFilter');
             let html = '<button onclick="filterByCategory(\'\')" class="category-btn active px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full whitespace-nowrap text-xs font-medium">All</button>';
             exhibitorCategories.forEach(cat => {
-                html += `<button onclick="filterByCategory('${cat.replace(/'/g, "\\'")}')" class="category-btn px-3 py-1 bg-gray-100 text-gray-600 rounded-full whitespace-nowrap text-xs font-medium">${cat}</button>`;
+                html += `<button onclick="filterByCategory(${jsArg(cat)})" class="category-btn px-3 py-1 bg-gray-100 text-gray-600 rounded-full whitespace-nowrap text-xs font-medium">${escapeHtml(cat)}</button>`;
             });
             container.innerHTML = html;
         }
@@ -4668,25 +4677,25 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                 }
 
                 html += `
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100" onclick="showExhibitorDetail('${ex.name.replace(/'/g, "\\'")}')">
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100" onclick="showExhibitorDetail(${jsArg(ex.name)})">
                     <div class="flex items-start justify-between">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-1">
-                                <h4 class="font-semibold text-gray-900 truncate">${ex.name}</h4>
+                                <h4 class="font-semibold text-gray-900 truncate">${escapeHtml(ex.name)}</h4>
                                 ${verificationBadge}
                             </div>
-                            ${ex.category ? `<p class="text-xs text-emerald-600 mt-0.5">${ex.category}</p>` : ''}
+                            ${ex.category ? `<p class="text-xs text-emerald-600 mt-0.5">${escapeHtml(ex.category)}</p>` : ''}
                             <div class="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                                ${ex.booth ? `<span><i class="fas fa-map-pin mr-1"></i>${ex.booth}${ex.hall ? `, ${ex.hall}` : ''}</span>` : ''}
-                                ${ex.country ? `<span><i class="fas fa-globe mr-1"></i>${ex.country}</span>` : ''}
+                                ${ex.booth ? `<span><i class="fas fa-map-pin mr-1"></i>${escapeHtml(ex.booth)}${ex.hall ? `, ${escapeHtml(ex.hall)}` : ''}</span>` : ''}
+                                ${ex.country ? `<span><i class="fas fa-globe mr-1"></i>${escapeHtml(ex.country)}</span>` : ''}
                             </div>
                         </div>
-                        <button onclick="event.stopPropagation(); askAIAboutExhibitor('${ex.name.replace(/'/g, "\\'")}')"
+                        <button onclick="event.stopPropagation(); askAIAboutExhibitor(${jsArg(ex.name)})"
                                 class="ml-2 px-3 py-1.5 bg-purple-50 text-purple-600 rounded-lg text-xs font-medium active:bg-purple-100">
                             <i class="fas fa-robot mr-1"></i>Ask AI
                         </button>
                     </div>
-                    ${ex.description ? `<p class="text-xs text-gray-500 mt-2 line-clamp-2">${ex.description}</p>` : ''}
+                    ${ex.description ? `<p class="text-xs text-gray-500 mt-2 line-clamp-2">${escapeHtml(ex.description)}</p>` : ''}
                 </div>`;
             });
             container.innerHTML = html;
@@ -4873,11 +4882,11 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     const hotPct = total ? Math.round((u.hot_count || 0) / total * 100) : 0;
                     const warmPct = total ? Math.round((u.warm_count || 0) / total * 100) : 0;
                     const coldPct = total ? 100 - hotPct - warmPct : 0;
-                    return `<div onclick="openUserDrilldown('${u.user_id}', '${escapeHtml(u.name)}', '${escapeHtml(u.email)}')" class="py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-lg px-2 -mx-2 transition">
+                    return `<div onclick="openUserDrilldown('${u.user_id}', ${jsArg(u.name)}, ${jsArg(u.email)})" class="py-3 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 rounded-lg px-2 -mx-2 transition">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
                                 <div class="relative">
-                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-white font-bold text-sm">${u.name.charAt(0).toUpperCase()}</div>
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-white font-bold text-sm">${escapeHtml(u.name.charAt(0).toUpperCase())}</div>
                                     <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${activityDot} rounded-full border-2 border-white"></div>
                                 </div>
                                 <div>
@@ -4896,8 +4905,8 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         </div>
                         ${total > 0 ? `<div class="flex h-1.5 rounded-full overflow-hidden mt-2 bg-gray-100"><div class="bg-red-500" style="width:${hotPct}%"></div><div class="bg-orange-400" style="width:${warmPct}%"></div><div class="bg-gray-300" style="width:${coldPct}%"></div></div>` : ''}
                         ${!u.is_admin ? `<div class="flex gap-3 mt-2">
-                            <button onclick="event.stopPropagation(); startUserMerge('${u.user_id}', '${escapeHtml(u.name)}')" class="text-xs text-purple-400 hover:text-purple-600"><i class="fas fa-code-branch mr-1"></i>Merge into...</button>
-                            <button onclick="event.stopPropagation(); adminDeleteUser('${u.user_id}', '${escapeHtml(u.name)}')" class="text-xs text-red-400 hover:text-red-600"><i class="fas fa-trash mr-1"></i>Remove user</button>
+                            <button onclick="event.stopPropagation(); startUserMerge('${u.user_id}', ${jsArg(u.name)})" class="text-xs text-purple-400 hover:text-purple-600"><i class="fas fa-code-branch mr-1"></i>Merge into...</button>
+                            <button onclick="event.stopPropagation(); adminDeleteUser('${u.user_id}', ${jsArg(u.name)})" class="text-xs text-red-400 hover:text-red-600"><i class="fas fa-trash mr-1"></i>Remove user</button>
                         </div>` : ''}
                     </div>`;
                 }).join('');
@@ -5269,7 +5278,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         `<div class="px-4 py-3 ${b.priority === 'urgent' ? 'bg-red-600' : 'bg-blue-600'} text-white text-sm flex items-center gap-2">
                             <i class="fas ${b.priority === 'urgent' ? 'fa-exclamation-triangle' : 'fa-bullhorn'} flex-shrink-0"></i>
                             <span class="flex-1">${escapeHtml(b.message)}</span>
-                            <span class="text-xs opacity-70 flex-shrink-0">${b.admin_name}</span>
+                            <span class="text-xs opacity-70 flex-shrink-0">${escapeHtml(b.admin_name)}</span>
                         </div>`
                     ).join('');
                 } else { banner.classList.add('hidden'); banner.innerHTML = ''; }
@@ -5435,12 +5444,12 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         contact.lead_temperature === 'cold' ? '<span class="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-xs font-semibold">Cold</span>' :
                             '<span class="px-2 py-1 bg-gray-100 text-gray-400 rounded-full text-xs">Unscored</span>';
 
-                const linkedinLink = contact.linkedin && contact.linkedin !== 'N/A' ? `<a href="${contact.linkedin.startsWith('http') ? contact.linkedin : 'https://linkedin.com/in/' + contact.linkedin}" target="_blank" class="text-blue-600 hover:underline text-sm"><i class="fab fa-linkedin mr-1"></i>${escapeHtml(contact.linkedin)}</a>` : '';
+                const linkedinLink = contact.linkedin && contact.linkedin !== 'N/A' ? `<a href="${safeHref(contact.linkedin.startsWith('http') ? contact.linkedin : 'https://linkedin.com/in/' + contact.linkedin)}" target="_blank" rel="noopener" class="text-blue-600 hover:underline text-sm"><i class="fab fa-linkedin mr-1"></i>${escapeHtml(contact.linkedin)}</a>` : '';
 
                 content.innerHTML = `
                     <!-- Header -->
                     <div class="text-center">
-                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-white font-bold text-2xl mx-auto mb-2">${contact.name.charAt(0).toUpperCase()}</div>
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center text-white font-bold text-2xl mx-auto mb-2">${escapeHtml(contact.name.charAt(0).toUpperCase())}</div>
                         <h3 class="text-xl font-bold text-gray-900">${escapeHtml(contact.name)}</h3>
                         <p class="text-sm text-gray-500">${escapeHtml(contact.company_name)}</p>
                         <div class="flex items-center justify-center gap-2 mt-2">
@@ -5453,10 +5462,10 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     <!-- Contact Info -->
                     <div class="bg-gray-50 rounded-xl p-4 space-y-2">
                         <h4 class="text-xs font-semibold text-gray-400 uppercase">Contact Info</h4>
-                        ${contact.email && contact.email !== 'N/A' ? `<p class="text-sm"><i class="fas fa-envelope text-gray-400 w-5"></i> <a href="mailto:${contact.email}" class="text-blue-600">${escapeHtml(contact.email)}</a></p>` : ''}
-                        ${contact.phone && contact.phone !== 'N/A' ? `<p class="text-sm"><i class="fas fa-phone text-gray-400 w-5"></i> <a href="tel:${contact.phone}" class="text-blue-600">${escapeHtml(contact.phone)}</a></p>` : ''}
+                        ${contact.email && contact.email !== 'N/A' ? `<p class="text-sm"><i class="fas fa-envelope text-gray-400 w-5"></i> <a href="${safeHref('mailto:' + contact.email)}" class="text-blue-600">${escapeHtml(contact.email)}</a></p>` : ''}
+                        ${contact.phone && contact.phone !== 'N/A' ? `<p class="text-sm"><i class="fas fa-phone text-gray-400 w-5"></i> <a href="${safeHref('tel:' + contact.phone)}" class="text-blue-600">${escapeHtml(contact.phone)}</a></p>` : ''}
                         ${linkedinLink ? `<p class="text-sm"><i class="fab fa-linkedin text-gray-400 w-5"></i> ${linkedinLink}</p>` : ''}
-                        <p class="text-sm"><i class="fas ${contact.source === 'scan' ? 'fa-camera' : 'fa-user-plus'} text-gray-400 w-5"></i> Source: ${contact.source}</p>
+                        <p class="text-sm"><i class="fas ${contact.source === 'scan' ? 'fa-camera' : 'fa-user-plus'} text-gray-400 w-5"></i> Source: ${escapeHtml(contact.source)}</p>
                     </div>
 
                     <!-- Lead Intelligence -->
@@ -5529,7 +5538,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     <!-- Links -->
                     ${contact.links?.length ? `<div class="bg-gray-50 rounded-xl p-4">
                         <h4 class="text-xs font-semibold text-gray-400 uppercase mb-2">Enrichment Links</h4>
-                        ${contact.links.map(l => `<a href="${l.url}" target="_blank" class="block text-sm text-blue-600 hover:underline truncate mb-1"><i class="fas fa-external-link-alt text-xs mr-1"></i>${escapeHtml(l.label || l.url)}</a>`).join('')}
+                        ${contact.links.map(l => `<a href="${safeHref(l.url)}" target="_blank" rel="noopener" class="block text-sm text-blue-600 hover:underline truncate mb-1"><i class="fas fa-external-link-alt text-xs mr-1"></i>${escapeHtml(l.label || l.url)}</a>`).join('')}
                     </div>` : ''}
 
                     <!-- Actions -->
@@ -5617,9 +5626,9 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-xs font-medium text-gray-800 truncate">${escapeHtml(f.original_filename)}</p>
-                            <p class="text-[10px] text-gray-400">${formatFileSize(f.file_size)} &middot; ${f.category}${f.description ? ' &middot; ' + escapeHtml(f.description) : ''}</p>
+                            <p class="text-[10px] text-gray-400">${formatFileSize(f.file_size)} &middot; ${escapeHtml(f.category)}${f.description ? ' &middot; ' + escapeHtml(f.description) : ''}</p>
                         </div>
-                        <button onclick="downloadContactFile('${f.id}', '${escapeHtml(f.original_filename).replace(/'/g, "\\'")}')" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 active:bg-blue-100">
+                        <button onclick="downloadContactFile('${f.id}', ${jsArg(f.original_filename)})" class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 active:bg-blue-100">
                             <i class="fas fa-download text-xs"></i>
                         </button>
                         ${isAdmin ? `<button onclick="deleteContactFile('${f.id}', '${contactId}', '${containerId}')" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center flex-shrink-0 active:bg-red-100">
@@ -5758,7 +5767,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         }
                     }
                     if (deckSection) {
-                        deckSection.innerHTML = `<a href="${data.gamma_deck_url}" target="_blank"
+                        deckSection.innerHTML = `<a href="${safeHref(data.gamma_deck_url)}" target="_blank"
                             class="flex items-center justify-center gap-2 w-full py-2 mb-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg text-xs font-medium">
                             <i class="fas fa-file-powerpoint"></i> Open Pitch Deck ↗
                         </a>`;
@@ -5973,14 +5982,14 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     </div>
                     ${data.duplicate_groups.map(g => `
                         <div class="bg-orange-50 rounded-xl p-3 border border-orange-200 mb-3">
-                            <p class="text-[10px] text-orange-500 font-medium mb-2"><i class="fas fa-link mr-1"></i>${g.match_reasons.join(', ')}</p>
+                            <p class="text-[10px] text-orange-500 font-medium mb-2"><i class="fas fa-link mr-1"></i>${escapeHtml(g.match_reasons.join(', '))}</p>
                             <div class="space-y-2">
                                 ${g.contacts.map((c, i) => `
                                     <div class="flex items-center justify-between bg-white rounded-lg p-2 ${i === 0 ? 'ring-2 ring-orange-300' : ''}">
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(c.name)}${i === 0 ? ' <span class="text-[9px] bg-orange-100 text-orange-600 px-1 rounded">PRIMARY</span>' : ''}</p>
-                                            <p class="text-[10px] text-gray-400 truncate">${c.email !== 'n/a' ? c.email : ''} ${c.phone || ''}</p>
-                                            <p class="text-[10px] text-gray-400">${c.company_name !== 'n/a' ? c.company_name : ''} · ${c.source} · ${c.lead_temperature || 'unscored'}</p>
+                                            <p class="text-[10px] text-gray-400 truncate">${escapeHtml(c.email !== 'n/a' ? c.email : '')} ${escapeHtml(c.phone || '')}</p>
+                                            <p class="text-[10px] text-gray-400">${escapeHtml(c.company_name !== 'n/a' ? c.company_name : '')} · ${escapeHtml(c.source)} · ${escapeHtml(c.lead_temperature || 'unscored')}</p>
                                         </div>
                                     </div>
                                 `).join('')}
@@ -6109,7 +6118,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                 document.getElementById('addToListContent').innerHTML = lists.length
                     ? lists.map(l => `<div class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                         <div><p class="text-sm font-medium text-gray-900">${escapeHtml(l.name)}</p><p class="text-xs text-gray-400">${l.contact_count} contacts</p></div>
-                        <button onclick="addToExistingList('${l.id}','${escapeHtml(l.name)}')" class="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-medium">Add</button>
+                        <button onclick="addToExistingList('${l.id}', ${jsArg(l.name)})" class="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-medium">Add</button>
                     </div>`).join('')
                     : '<p class="text-xs text-gray-400 text-center py-3">No lists yet. Create one below.</p>';
             } catch (err) { document.getElementById('addToListContent').innerHTML = '<p class="text-xs text-red-400 text-center py-3">Failed to load lists</p>'; }
@@ -6226,11 +6235,11 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                             <div class="flex items-center gap-3 flex-1 min-w-0">
                                 <i class="fas ${icon} text-xl"></i>
                                 <div class="min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 truncate">${f.filename}</p>
-                                    <p class="text-xs text-gray-500">${f.file_size_mb}MB &middot; ${f.category} &middot; ${f.download_count} downloads</p>
+                                    <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(f.filename)}</p>
+                                    <p class="text-xs text-gray-500">${f.file_size_mb}MB &middot; ${escapeHtml(f.category)} &middot; ${f.download_count} downloads</p>
                                 </div>
                             </div>
-                            <button onclick="deleteAdminFile('${f.id}', '${f.filename.replace(/'/g, "\\'")}')" class="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                            <button onclick="deleteAdminFile('${f.id}', ${jsArg(f.filename)})" class="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-lg">
                                 <i class="fas fa-trash text-sm"></i>
                             </button>
                         </div>`;
@@ -6434,14 +6443,14 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                 if (resp.ok && data.files && data.files.length > 0) {
                     container.innerHTML = data.files.map(f => {
                         const icon = f.file_type === 'pdf' ? 'fa-file-pdf text-red-500' : 'fa-file-powerpoint text-orange-500';
-                        return `<div class="bg-white rounded-lg p-3 shadow-sm active:bg-gray-50 transition cursor-pointer" onclick="downloadEventFile('${f.id}', '${f.filename.replace(/'/g, "\\'")}')">
+                        return `<div class="bg-white rounded-lg p-3 shadow-sm active:bg-gray-50 transition cursor-pointer" onclick="downloadEventFile('${f.id}', ${jsArg(f.filename)})">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                     <i class="fas ${icon} text-xl"></i>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 truncate">${f.filename}</p>
-                                    <p class="text-xs text-gray-500">${f.file_size_mb}MB${f.description ? ' &middot; ' + f.description : ''}</p>
+                                    <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(f.filename)}</p>
+                                    <p class="text-xs text-gray-500">${f.file_size_mb}MB${f.description ? ' &middot; ' + escapeHtml(f.description) : ''}</p>
                                 </div>
                                 <i class="fas fa-download text-gray-400 flex-shrink-0"></i>
                             </div>
@@ -6946,7 +6955,6 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             const badge = exp.format === 'csv'
                 ? '<span class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-medium">CSV</span>'
                 : '<span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">JSON</span>';
-            const safeFilename = exp.filename.replace(/'/g, "\\'");
             return `
             <div class="flex items-center gap-2 py-2.5 border-b border-gray-100 last:border-0">
                 <div class="flex-1 min-w-0">
@@ -6954,7 +6962,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     <p class="text-xs text-gray-400 mt-0.5">${exp.contact_count} contacts · ${date}</p>
                     <p class="text-xs text-gray-300 truncate">${escapeHtml(exp.filename)}</p>
                 </div>
-                <button onclick="downloadExport('${exp.id}','${safeFilename}')"
+                <button onclick="downloadExport('${exp.id}', ${jsArg(exp.filename)})"
                     class="w-9 h-9 flex items-center justify-center text-blue-600 active:bg-blue-50 rounded-lg transition flex-shrink-0" title="Download">
                     <i class="fas fa-download text-sm"></i>
                 </button>

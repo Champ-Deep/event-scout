@@ -13,7 +13,7 @@ from sqlalchemy import (
     Column, String, Text, Boolean, Integer, Float, DateTime,
     ForeignKey, Index, JSON, LargeBinary, create_engine, text
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, relationship
 
@@ -67,6 +67,8 @@ class UserDB(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False, server_default="false")
+    # SET NULL so the legacy user delete/merge never trips over a lead pointer
+    team_lead_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Relationships
@@ -98,6 +100,7 @@ class ContactDB(Base):
     audio_notes = Column(JSON, default=list)  # [{audio_base64, transcript, timestamp}]
     admin_notes = Column(Text, default="")  # Admin-only annotations/intel
     photo_base64 = Column(Text, nullable=True)  # Compressed JPEG thumbnail from scanned card
+    client_scan_id = Column(UUID(as_uuid=True), nullable=True)  # Idempotency-Key of the scan upload
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
@@ -314,6 +317,16 @@ class AdminBroadcastDB(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class AppSettingDB(Base):
+    """Admin-editable settings that must survive a restart (webhook_url, auto_pipeline_enabled)."""
+    __tablename__ = "app_settings"
+
+    key = Column(String(100), primary_key=True)
+    value = Column(JSONB, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_by = Column(UUID(as_uuid=True), nullable=True)
+
+
 class ContactListDB(Base):
     """Named contact lists created by admins for grouping/targeting."""
     __tablename__ = "contact_lists"
@@ -454,8 +467,11 @@ async def _init_schema(eng, label="Primary"):
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS photo_base64 TEXT",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS event_name VARCHAR(255) DEFAULT ''",
                 "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS title VARCHAR(255) DEFAULT ''",
+                "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS client_scan_id UUID",
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_user_client_scan ON contacts (user_id, client_scan_id) WHERE client_scan_id IS NOT NULL",
                 "ALTER TABLE contact_pipelines ADD COLUMN IF NOT EXISTS gamma_deck_url TEXT",
                 "ALTER TABLE admin_broadcasts ADD COLUMN IF NOT EXISTS recipient_ids JSONB",
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS team_lead_id UUID REFERENCES users(id) ON DELETE SET NULL",
             ]
             for sql in migrations:
                 try:

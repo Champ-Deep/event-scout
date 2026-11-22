@@ -10,6 +10,7 @@ Run: python -m pytest tests/test_export_csv.py -v
 """
 import csv
 import io
+import os
 import sys
 import types
 import uuid
@@ -223,7 +224,10 @@ class TestExportRoute:
     def client(self, app_client):
         app_module, client = app_client
         client.app_module = app_module
-        return client
+        original = app_module.get_db_session
+        yield client
+        # The tests below swap in a fake session; restoring it keeps later modules (scan idempotency) on the real one.
+        app_module.get_db_session = original
 
     def _export(self, client, session, user_id):
         async def fake_get_db_session():
@@ -231,7 +235,7 @@ class TestExportRoute:
         client.app_module.get_db_session = fake_get_db_session
         return client.get(
             f"/export_contacts/?user_id={user_id}&format=csv",
-            headers={"X-API-Key": "1234"},
+            headers={"X-API-Key": os.environ["APP_API_KEY"]},
         )
 
     def test_csv_response_shape(self, client):
@@ -285,7 +289,7 @@ class TestExportRoute:
         session_holder = [sess]
         client.app_module.get_db_session = fake_get_db_session
         r = client.get(f"/export_contacts/?user_id={uid}&format=json",
-                       headers={"X-API-Key": "1234"})
+                       headers={"X-API-Key": os.environ["APP_API_KEY"]})
         assert r.status_code == 200
         data = r.json()
         assert data["status"] == "success"
