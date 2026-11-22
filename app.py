@@ -31,6 +31,7 @@ import google.generativeai as genai
 
 from sqlalchemy import select, update, delete, func, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from lead_scoring import score_contact
 from exhibitor_ranking import rank_exhibitors
@@ -1165,7 +1166,7 @@ async def check_duplicate_contact(user_id: str, email: str, phone: str) -> dict 
 
 
 # --- CONTACT LOGIC (now using Postgres) ---
-async def add_contact_logic(contact: Contact, user_id: str, source: str = "manual", photo_base64: str = None) -> dict:
+async def add_contact_logic(contact: Contact, user_id: str, source: str = "manual", photo_base64: str = None, client_scan_id: Optional[uuid.UUID] = None) -> dict:
     """Add contact to PostgreSQL and FAISS index."""
     session = await get_db_session()
     try:
@@ -1199,6 +1200,7 @@ async def add_contact_logic(contact: Contact, user_id: str, source: str = "manua
             source=source,
             photo_base64=photo_base64,
             event_name=event_name,
+            client_scan_id=client_scan_id,
         )
         session.add(db_contact)
 
@@ -1288,7 +1290,30 @@ async def add_contact_from_qr(file: UploadFile, user_id: str):
             os.remove(temp_filename)
 
 
-async def add_contact_from_image(file: UploadFile, user_id: str):
+async def _scan_replay(user_id: str, key: uuid.UUID) -> Optional[dict]:
+    """Replay body for the contact this (user, Idempotency-Key) already created, else None."""
+    session = await get_db_session()
+    try:
+        row = (await session.execute(
+            select(ContactDB).where(ContactDB.user_id == uuid.UUID(user_id), ContactDB.client_scan_id == key)
+        )).scalar_one_or_none()
+    finally:
+        await session.close()
+    if not row:
+        return None
+    return {
+        "status": "success",
+        "contact_id": str(row.id),
+        "extracted_fields": {k: getattr(row, k) for k in ("name", "email", "phone", "company_name", "title", "linkedin")},
+        "idempotent_replay": True,
+    }
+
+
+async def add_contact_from_image(file: UploadFile, user_id: str, idempotency_key: Optional[uuid.UUID] = None):
+    if idempotency_key:
+        replay = await _scan_replay(user_id, idempotency_key)
+        if replay:
+            return replay
     temp_filename = _unique_temp_path(file.filename)
     content = await file.read()
     print(f"[SCAN] Received image: {len(content)} bytes, filename: {file.filename}, content_type: {file.content_type}")
@@ -1361,6 +1386,11 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
             fields.get("email", "N/A"),
             fields.get("phone", "N/A")
         )
+        if duplicate and idempotency_key:
+            # A racing request with this key may have just created that contact.
+            replay = await _scan_replay(user_id, idempotency_key)
+            if replay:
+                return replay
         if duplicate:
             print(f"[SCAN] Duplicate detected: {duplicate['name']} (matched on {duplicate['matched_on']})")
             return {
@@ -1373,7 +1403,14 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
             }
 
         contact_obj = Contact(**{k: v for k, v in fields.items() if k in Contact.model_fields})
-        result = await add_contact_logic(contact_obj, user_id, source="scan", photo_base64=photo_base64)
+        try:
+            result = await add_contact_logic(contact_obj, user_id, source="scan", photo_base64=photo_base64, client_scan_id=idempotency_key)
+        except IntegrityError:
+            # Lost the race on idx_contacts_user_client_scan; add_contact_logic already rolled back.
+            replay = idempotency_key and await _scan_replay(user_id, idempotency_key)
+            if not replay:
+                raise
+            return replay
 
         # If LinkedIn was AI-detected, update the source in DB
         if fields.get("linkedin_source") == "ai_detected":
@@ -1402,6 +1439,7 @@ async def add_contact_from_image(file: UploadFile, user_id: str):
             "qr_base64": result["qr_base64"],
             "photo_base64": photo_base64,
             "pipeline_started": AUTO_PIPELINE_ENABLED and bool(OPENROUTER_API_KEY),
+            "idempotent_replay": False,
         }
     finally:
         if os.path.exists(temp_filename):
@@ -2467,9 +2505,16 @@ async def add_contact_image_route(
     file: UploadFile = File(...),
     user_id: str = Query(..., description="User ID"),
     api_key: str = Depends(verify_api_key),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
 ):
+    key = None
+    if idempotency_key is not None:
+        try:
+            key = uuid.UUID(idempotency_key)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Idempotency-Key must be a UUID")
     try:
-        return await add_contact_from_image(file, user_id)
+        return await add_contact_from_image(file, user_id, key)
     except HTTPException:
         raise
     except TimeoutError as e:
