@@ -49,7 +49,8 @@ def schema():
 
 
 @pytest.fixture
-def env(monkeypatch):
+def env(monkeypatch, tmp_path):
+    monkeypatch.setattr(app_module, "QR_DIR", str(tmp_path))  # keep QR PNGs out of the repo's saved_qr/
     calls = {"ocr": 0, "pipeline": 0, "webhook": 0}
 
     async def ocr(path):
