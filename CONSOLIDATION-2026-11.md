@@ -48,7 +48,7 @@ Fresh clone of the pushed branch (e633cb5, `git clone -b v2/consolidated-2026-11
 
 Baseline before any merge, same commands on the base: web 14 passed, worker typecheck clean, pytest 23 passed (the 3 test files the base had; the rest did not exist yet).
 
-Provider runners, PR #24, run 45010952850 on code commit 3f8cd8b (QR cleanup): **CI gate pass, Python tests pass (196 passed, 6 deselected, with libzzbar0 and Postgres service), Worker typecheck pass, Web tests and build pass (14 passed), Docker image builds pass.** Earlier runs 45007968731 (e633cb5) and 45009618830 (5dbb356) were green too. The commit that records this adds only this report, so its own run is in the PR checks.
+Provider runners, PR #24, run 45010952850 on code commit 3f8cd8b (QR cleanup): **CI gate pass, Python tests pass (196 passed, 6 deselected, with libzbar0 and Postgres service), Worker typecheck pass, Web tests and build pass (14 passed), Docker image builds pass.** Earlier runs 45007968731 (e633cb5) and 45009618830 (5dbb356) were green too. The commit that records this adds only this report, so its own run is in the PR checks.
 
 Test titles: 136 unique `def test_` titles across the base, master, v2/consolidated-rebase, scan-idempotency, test-coverage and prod-smoke trees; 0 are missing from V2 (`comm -23`). Web has one test file, unchanged.
 
