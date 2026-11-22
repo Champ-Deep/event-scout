@@ -1,6 +1,13 @@
 venv/
+.venv/
 __pycache__/
 *.pyc
+
+# Test/coverage artifacts
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 .idea/
 .vscode/
 node_modules/

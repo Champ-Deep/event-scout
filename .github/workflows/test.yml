@@ -1,0 +1,45 @@
+name: Tests
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main, "feature/**", "claude/**"]
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libzbar0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run unit tests
+        env:
+          # The in-process TestClient uses this key. Live tests skip
+          # because LIVE_API_KEY is not set.
+          APP_API_KEY: test-api-key
+          # Empty so app.py doesn't try to talk to Gemini at import time.
+          GEMINI_API_KEY: ""
+        run: |
+          pytest -m "not live" --cov=app --cov=database --cov-report=term-missing
