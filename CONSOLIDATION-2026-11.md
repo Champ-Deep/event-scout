@@ -6,7 +6,9 @@ Branch `v2/consolidated-2026-11`, draft PR #24 into `cf/native`. Nothing was mer
 
 Merge this draft with a **merge commit, not a squash**. A squash would make the 9 branches it carries look unmerged and drop their history, and the branch deletions below depend on them being ancestors of `cf/native`.
 
-Production does not change. `git diff origin/cf/release-2026-11-22 v2/consolidated-2026-11 -- worker web` is empty: the Cloudflare Worker and the new web UI are byte identical to what runs today. V2 adds only the FastAPI archive work, the pytest suite, and CI.
+Merging this PR lands #21, #22 and #23 on `cf/native`. The PR targets `cf/native`, and `git diff --shortstat origin/cf/native v2/consolidated-2026-11 -- worker web` is 43 files changed, 7673 insertions, 1 deletion: that is the card XSS fix (#21), the admin XSS fix (#22) and the new web UI (#23). Per the task brief that content equals the release branch `cf/release-2026-11-22`, which is what production runs; `git diff origin/cf/release-2026-11-22 v2/consolidated-2026-11 -- worker web` is empty. **One exception outside those folders:** the Worker's asset build copies the root `mobile-frontend.html` to `/admin.html`, and V2 adds 319 lines to it (a Scout tab that calls a route the Worker lacks). Nothing changes until the next manual Worker deploy; see "What changes on the base". The rest of the diff against `cf/native` (58 files outside `worker/` and `web/`) is the FastAPI archive work, the pytest suite, and CI.
+
+Does a push to `cf/native` deploy? Nothing in the repo does: `cf/native` has no workflow, and V2 adds only `test.yml`, which has no deploy step. A Cloudflare Workers Builds git trigger for the `event-scout` Worker is **unverified**: reading it needs the Cloudflare dashboard or an API token scope I do not have. Evidence against one: `wrangler deployments list` shows 8 deployments, all authored by deep@championsmail.com with source Upload or Unknown and none from a git build, and the GitHub check runs and statuses on the `cf/native` head and on PR #24 contain no Cloudflare entry. Treat the merge as code-only until Deep confirms the trigger is off in the dashboard.
 
 One product call is left to Deep and is not in V2: the **beta monorepo lineage** (6 branches, 4 open PRs: #11, #15, #17, #19). It replaces the FastAPI app with `apps/backend`, `apps/admin` (React console) and `apps/mobile` (Expo). See the section on it.
 
@@ -34,7 +36,7 @@ Conflicts: none of the 6 merges had a textual conflict (checked with `git merge-
 
 ## Verification (commands named)
 
-Fresh clone of the pushed branch (e633cb5, `git clone -b v2/consolidated-2026-11`), on this Mac:
+Fresh clone of the pushed branch (e633cb5, `git clone -b v2/consolidated-2026-11`), on this Mac. Since then the branch changed by one test file (`tests/test_scan_idempotency.py`, tmp `QR_DIR`), three deleted PNGs and this report; the Mac figures below were not re-run from a new clone, the runner figures after them were:
 
 | Check | Command | Result |
 |---|---|---|
@@ -46,9 +48,26 @@ Fresh clone of the pushed branch (e633cb5, `git clone -b v2/consolidated-2026-11
 
 Baseline before any merge, same commands on the base: web 14 passed, worker typecheck clean, pytest 23 passed (the 3 test files the base had; the rest did not exist yet).
 
-Provider runners, PR #24, run 45007968731 on the code commit: **CI gate pass, Python tests pass (196 passed, 6 deselected, 0 skipped, with libzbar and Postgres service), Worker typecheck pass, Web tests and build pass, Docker image builds pass (2m24s).** The report commit that follows this file triggers a second run; its result is in the PR checks.
+Provider runners, PR #24, run 45010952850 on code commit 3f8cd8b (QR cleanup): **CI gate pass, Python tests pass (196 passed, 6 deselected, with libzzbar0 and Postgres service), Worker typecheck pass, Web tests and build pass (14 passed), Docker image builds pass.** Earlier runs 45007968731 (e633cb5) and 45009618830 (5dbb356) were green too. The commit that records this adds only this report, so its own run is in the PR checks.
 
 Test titles: 136 unique `def test_` titles across the base, master, v2/consolidated-rebase, scan-idempotency, test-coverage and prod-smoke trees; 0 are missing from V2 (`comm -23`). Web has one test file, unchanged.
+
+Test titles on the branches V2 does not carry, against V2 (`git grep -hE '^[[:space:]]*(async )?def test_' <ref> -- '*.py'`, names stripped of arguments, `sort -u`, `comm -23 <branch> <V2>`; the all-languages column adds `it(` and `test(` titles from `*.ts *.tsx *.mjs *.js` the same way). V2 has 152 Python titles and 166 in all languages:
+
+| Branch | Python titles | Missing from V2 (Python) | All-language titles | Missing from V2 (all) |
+|---|---|---|---|---|
+| feature/cloudflare-backend | 58 | 4 (`tests/test_ai_models.py`) | 64 | 10 (the 4 plus 6 in `cloudflare/test/auth.local.test.ts`) |
+| beta-version | 63 | 33 | 236 | 206 |
+| validate/beta-build | 63 | 33 | 236 | 206 |
+| feat/events-exhibitors-admin-tab | 63 | 33 | 247 | 217 |
+| feat/admin-export-presets | 67 | 37 | 245 | 215 |
+| feat/event-scrape-wire | 136 | 106 | 309 | 279 |
+| fix/event-scrape-sqlite-race | 137 | 107 | 310 | 280 |
+| claude/eventscout-timeouts-dedup-ru3jx6 | 31 | 0 | 31 | 0 |
+
+These titles are not lost: all 7 branches stay in the repo and none is on the delete list. The beta rows are the event scraper, floor map, export presets and the React and Expo apps; they travel with the lineage decision.
+
+Test artifacts: e633cb5 had committed three QR PNGs that `tests/test_scan_idempotency.py` wrote into `saved_qr/` through `app.QR_DIR` (synthetic vCards: Test Person, TestCo, t@example.com). They are removed in their own commit (3f8cd8b) and that test now points `QR_DIR` at `tmp_path`, as `tests/unit/test_qr_round_trip.py` does. The history still holds them: only a squash merge keeps them out of `cf/native`, and a merge commit (the recommended option) carries them. They are synthetic, so this is not a leak, but it is a reason to weigh a squash against the ancestor proofs above. After the fix the 4 idempotency tests pass locally against a throwaway Postgres 17 (`TEST_DATABASE_URL=... pytest tests/test_scan_idempotency.py`, 4 passed) and write no file into `saved_qr/`.
 
 Secret scan: `gitleaks detect --log-opts=origin/cf/release-2026-11-22..HEAD`, 13 commits, no leaks.
 
@@ -87,8 +106,8 @@ Proof column: A = `git merge-base --is-ancestor origin/<branch> origin/cf/releas
 | feat/scan-idempotency | b6d98f1 | none | UNIQUE WORK carried: b6d98f1 | B |
 | feat/prod-smoke-script | aaf8241 | #18 | UNIQUE WORK carried: aaf8241 | B |
 | claude/analyze-test-coverage-Bj8LB | 8f28cfe | none | UNIQUE WORK carried: 8f28cfe, c579dca | B |
-| claude/eventscout-timeouts-dedup-ru3jx6 | 5857e46 | none | UNIQUE WORK, NOT carried: ee228e5 conflicts with the Hi-Fi scan flow in `mobile-frontend.html` (two redesigns of one screen, a product call). 5857e46 is patch-equivalent to the vercel fix already in V2 (`git cherry`). Port candidate below | `git merge-tree` conflict, `git cherry` |
-| feature/cloudflare-backend | da3395b | none | SUPERSEDED by the D1 Worker in `worker/` (same job, other design: `cloudflare/` Worker plus Container plus Postgres plus Better Auth, worker name `event-scout-cf-test`, versus `worker/wrangler.jsonc` name `event-scout`, D1 `event-scout-db`). Conflicts on `mobile-frontend.html`. Its workflow `cloudflare-test.yml` deploys the test copy and needs secrets, so it is not carried | `worker/wrangler.jsonc`, `worker/migrations/0001_init.sql` |
+| claude/eventscout-timeouts-dedup-ru3jx6 | 5857e46 | none | UNIQUE WORK, NOT carried: ee228e5 is cellular retry and backoff in `mobile-frontend.html` plus a duplicate-scan upsert in `app.py`. `git merge-tree --write-tree --name-only` against V2 conflicts only on `mobile-frontend.html`; `app.py` merges clean. Reason for leaving it out: (a) the HTML half patches a legacy page that nothing serves any more, the Vercel project `event-scout` was deleted on 22 Nov and the old URL returns 404 (card t_36f99fa9, 22 Nov comment), so the retry half has no consumer; (b) the `app.py` half changes what a duplicate scan does on the archive app (it now writes the new OCR fields onto the existing contact) and edits the same duplicate path of `POST /add_contact_from_image/` that b6d98f1 (scan idempotency, carried) guards with `client_scan_id`; making the two agree needs a test of upsert against that path and a product call that a rescan may mutate a saved contact. Both halves are one commit, so carrying only the backend half would ship a response field (`updated_fields`) no client reads. 5857e46 is patch-equivalent to the vercel fix already in V2 (`git cherry`). 0 test titles are missing from V2 (the branch has no tests of its own). Port candidate below | `git merge-tree`, `git cherry` |
+| feature/cloudflare-backend | da3395b | none | SUPERSEDED by the D1 Worker in `worker/`, piece by piece. (1) Deploy design (801da99, da3395b): `cloudflare/` Worker plus Container plus Postgres, worker name `event-scout-cf-test`, replaced by `worker/wrangler.jsonc` (name `event-scout`, D1 `event-scout-db`); its workflow `cloudflare-test.yml` deploys the test copy and needs secrets, so it is not carried. (2) Better Auth sign-in with legacy accounts (`cloudflare/src/auth.ts`, `cloudflare/migrations/001_better_auth.sql`, `cloudflare/test/auth.local.test.ts`, 6 TS tests): replaced by the Worker's own per-user sessions in `worker/`, with the sign-up allowlist from t_4f31c564. (3) `ai_models.py` (low-cost model allowlist, `preferred_ai_model` mapped to a cheap default), OpenRouter-first scoring in `app.py` and `tests/test_ai_models.py` (4 tests): the Worker does not have the allowlist. `chat()` at `worker/src/lib.ts:197-221` calls the fixed `OR_TEXT_MODEL` (`lib.ts:195`, claude-haiku-5.5) and falls back to Workers AI; OCR uses fixed lists at `worker/src/routes/core.ts:169-170` (`OCR_WAI_MODELS`, `OCR_OR_MODELS`); `preferred_ai_model` is stored (`core.ts:391`) but nothing reads it. So the cost guarantee holds by hard-coding, not by selection, and the 4 `ai_models` tests have no Worker equivalent. See the port candidate on `admin.ts:62-66` below. Conflicts on `mobile-frontend.html` | `worker/wrangler.jsonc`, `worker/migrations/0001_init.sql`, `worker/src/lib.ts`, `worker/src/routes/core.ts` |
 | beta-version | d3bab47 | none | UNIQUE WORK, NOT carried (product call) | conflict map below |
 | validate/beta-build | 86850f9 | none | same | same |
 | feat/admin-export-presets | 524a308 | #11 | same | same |
@@ -120,15 +139,17 @@ Checked by grep over `worker/src` and `web/src`:
 5. Duplicate upsert on rescan, case-insensitive email and name plus company match (`ee228e5`).
 6. Event scraper and floor map, export column picker and presets (beta lineage).
 7. `inboxkit_send.py` is carried but wired to nothing (no importer, not in the Dockerfile).
+8. Frontier models in the Worker's models endpoint. `worker/src/routes/admin.ts:62-66` (`AVAILABLE_MODELS`, served by `listModels` at line 71) still lists `claude-opus` (anthropic/claude-opus-4), `gpt-5` (openai/gpt-4.1) and `gemini-pro` (google/gemini-2.5-pro-preview-06-05). That is what `test_app_has_no_hardcoded_frontier_models` (feature/cloudflare-backend, `tests/test_ai_models.py`) guards against on the FastAPI side. Nothing reads the choice today (`preferred_ai_model` is never read), so it is a listing, not a spend, but it advertises models the Worker will not call. Port: replace the list with the two low-cost ids and port the 4 tests.
 
 Hi-Fi scan-to-score on `mobile-frontend.html` is SUPERSEDED in production by `web/src/surfaces/Scan.tsx` (#23); it is carried only because it rides in the rebase.
 
 ## What changes on the base when V2 lands
 
-- Cloudflare Worker, D1, web UI: nothing (`worker/` and `web/` diff is empty). No D1 migration is added; I did not run `wrangler d1 migrations list`, and none is needed for V2.
+- Cloudflare Worker, D1, web UI: against `cf/native` the merge lands #21, #22 and #23 (43 files in `worker/` and `web/`, +7673/-1, the same content as the live release). Against the release branch V2 adds nothing there. No D1 migration is added by V2 (`git diff --name-only origin/cf/native HEAD -- worker/migrations` is empty); I did not run `wrangler d1 migrations list`. Deploy trigger on push: see "Decision first", unverified.
+- Worker assets: `worker/scripts/build-assets.sh` line 8 copies the root `mobile-frontend.html` to `public/admin.html`, and `npm run deploy` runs that build. V2 changes `mobile-frontend.html` against the release branch (`git diff --shortstat origin/cf/release-2026-11-22 HEAD -- mobile-frontend.html`: 319 insertions, 3 deletions). So the next Worker deploy from `cf/native` after this merge changes the live admin page: a new Scout tab (ranked exhibitor feed) and a viewport meta that drops `maximum-scale` and `user-scalable=no`. The Scout tab fetches `/exhibitors/ranked/`, and the Worker routes only `/exhibitors/` and `/exhibitors/categories/` (`worker/src/routes/admin.ts:684-685`), so the tab would hit a missing route. Read from source, not run in a browser. The merge itself deploys nothing; the exposure is the next manual deploy. If that matters, deploy only from the release branch until the Scout route is ported (port candidate 3), or drop the Scout change from V2 first.
 - New CI: one workflow, 4 jobs and a gate, on pushes to master, main, cf/native and PRs into master, main, cf/**, feature/**, claude/**.
 - FastAPI archive app (Railway, only if redeployed): new routes `POST /scan/extract`, `POST /scan/analyze`, `GET /exhibitors/ranked/` behind `verify_api_key`, and the `admin_api` router behind `verify_admin`. No new unauthenticated route. Schema self-migrates at startup (`ALTER TABLE ... IF NOT EXISTS`): `contacts.client_scan_id` plus a partial unique index, `users.team_lead_id`, table `app_settings`. Dockerfile gains 4 COPY lines (admin_api, exhibitor_ranking, lead_scoring, scan_analysis).
-- Legacy `mobile-frontend.html` (Vercel) gets the Hi-Fi scan flow. I did not check what the Vercel project serves today.
+- Legacy `mobile-frontend.html` gets the Hi-Fi scan flow. The old Vercel host is gone (the Vercel project `event-scout` was deleted on 22 Nov and the old URL returns 404, card t_36f99fa9). The file is still live in one place: the Worker serves it as `/admin.html` after the next asset build, see "Worker assets" above.
 - Public repo: `docs/scan-to-score-screens/` (9 PNGs) is carried from #14. I opened all 9: synthetic data only (Asha Rao, PayCo, +91 99999 11111). `tests/fixtures/scout-ranked.json` is synthetic ("Exhibitor 000"). No card photos, no contact data. `.gitleaksignore` entries reference beta paths that V2 does not contain; harmless.
 - Secrets: `feature/cloudflare-backend` carries a workflow whose comment embeds the old frontend API key (not reproduced here). The key is already public in that branch and in the legacy frontend, so deleting the branch does not remove it. Rotate if it is still live. Not touched.
 
@@ -139,10 +160,12 @@ The shared checkout has 33 non-merge commits on local-only branches: `feat/event
 ## What I did not do, and why
 
 - Did not carry the beta lineage: product call, see above.
-- Did not carry `claude/eventscout-timeouts-dedup-ru3jx6` or `feature/cloudflare-backend`: conflict and supersession as in the table.
+- Did not carry `claude/eventscout-timeouts-dedup-ru3jx6`: one commit mixes a retry change for a page nobody hosts any more with a duplicate-scan upsert that mutates saved contacts, on the path b6d98f1 already guards; reasons in the verdict table. Did not carry `feature/cloudflare-backend`: superseded by `worker/` piece by piece, as in the table.
 - Did not port any FastAPI behaviour into `worker/`: out of scope for a rescue.
 - Did not wire `inboxkit_send.py` into the Dockerfile or app.
 - Did not run the Worker smoke tests (`worker/test/*.mjs` need a running `wrangler dev` with D1) or any deploy.
+- Did not read the Cloudflare Workers Builds trigger for `event-scout`: unverified, see "Decision first".
+- Did not browser-test the Scout tab on `/admin.html`: its failure mode is read from the route table.
 
 ## Suggested merge order
 
