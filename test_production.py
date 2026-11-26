@@ -4,7 +4,7 @@ Event Scout Production Backend Test Suite
 Tests all critical endpoints against the live Railway API.
 Run: python test_production.py
 
-Usage: export TEST_PASSWORD=yourpassword && python test_production.py
+Usage: export APP_API_KEY=YOUR_APP_API_KEY TEST_PASSWORD=yourpassword && python test_production.py
 """
 
 import requests
@@ -17,7 +17,7 @@ from datetime import datetime
 
 # --- CONFIG ---
 API_BASE = "https://event-scout-production.up.railway.app"
-API_KEY = "OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s"
+API_KEY = os.environ.get("APP_API_KEY", "").strip()
 TEST_EMAIL = "deep@lakeb2b.com"
 TEST_PASSWORD = os.environ.get("TEST_PASSWORD", "")  # Set via: export TEST_PASSWORD=yourpass
 TIMEOUT = 60  # seconds per request (scan can be slow)
@@ -495,6 +495,9 @@ def test_multiple_cards():
 # MAIN
 # ============================================================
 def main():
+    if not API_KEY:
+        print("APP_API_KEY environment variable is required")
+        return False
     print("=" * 60)
     print("EVENT SCOUT PRODUCTION BACKEND TEST SUITE")
     print("=" * 60)

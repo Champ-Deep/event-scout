@@ -5,20 +5,20 @@
 ### Prerequisites
 - Vercel account (free tier works)
 - Railway backend deployed and running
-- Your `APP_API_KEY` value
+
+`APP_API_KEY` and `GEMINI_API_KEY` stay on the server. The page only needs the public API origin.
 
 ### Step 1: Update Config
 
-Open `mobile-frontend.html` and find the CONFIG block near line 1300:
+Open `mobile-frontend.html` and find the CONFIG block:
 
 ```javascript
 const CONFIG = {
-    API_BASE_URL: 'https://your-railway-app.railway.app', // Your Railway URL
-    API_KEY: 'your-app-api-key-here' // Your production API key
+    API_BASE_URL: 'https://your-railway-app.railway.app'
 };
 ```
 
-Replace both values with your actual Railway backend URL and API key.
+Replace the origin with your Railway URL. Do not add an API key to this file. A public override is `window.EVENT_SCOUT_PUBLIC_CONFIG = { apiBaseUrl: "https://your-railway-app.railway.app" }`.
 
 ### Step 2: Deploy to Vercel
 
@@ -124,8 +124,9 @@ app.py                 ← Backend (deployed separately on Railway)
 - Fallback: use "Upload" button instead
 
 **Contacts not loading:**
-- Check `API_KEY` matches the `APP_API_KEY` env var on Railway
-- Check the `X-API-Key` header is being sent
+- Log in again so the browser receives a session token
+- Confirm the deployed backend is the version that issues `session_token`
+- Scripts still send `X-API-Key` from the `APP_API_KEY` environment variable; the browser does not
 
 **PWA not installing:**
 - Must be served over HTTPS

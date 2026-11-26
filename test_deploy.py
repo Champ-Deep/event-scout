@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Test deployed backend for generative UI components."""
+"""Test deployed backend for generative UI components.
+
+Requires APP_API_KEY in the environment. The value is not stored in this file.
+"""
 import json
+import os
+import sys
 import urllib.request
 
 BASE = "https://event-scout-production.up.railway.app"
-API_KEY = "OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s"
+API_KEY = os.environ.get("APP_API_KEY", "").strip()
 USER_ID = "6fc69c2d-d8e0-40b8-8631-a3909c89233b"  # Sreedeep (6 contacts)
 
 def test_converse(query, label=""):
@@ -65,6 +70,8 @@ def test_converse(query, label=""):
         return False
 
 if __name__ == "__main__":
+    if not API_KEY:
+        sys.exit("APP_API_KEY environment variable is required")
     test_converse("Who are my contacts?", "Contact listing (expects contact_cards)")
     test_converse("Show my hot leads", "Hot leads (expects score_summary)")
     print("\n\nAll tests complete!")

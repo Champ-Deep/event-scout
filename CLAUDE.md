@@ -60,10 +60,11 @@ Vanilla JS + Tailwind CSS (CDN). Screens:
 Config is at the top of the file:
 ```javascript
 const CONFIG = {
-    API_BASE_URL: 'https://event-scout-production.up.railway.app',
-    API_KEY: '...'  // Note: hardcoded in frontend
+    API_BASE_URL: 'https://event-scout-production.up.railway.app'
 };
 ```
+
+The browser does not receive `APP_API_KEY` or `GEMINI_API_KEY`. Login returns a session token sent as `Authorization: Bearer`. Server-side scripts still send `X-API-Key` from the environment.
 
 ## API Endpoints (22 existing + new Phase 1 additions)
 

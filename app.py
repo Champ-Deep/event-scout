@@ -3,6 +3,9 @@ import re
 import json
 import uuid
 import asyncio
+import hmac
+import hashlib
+import time
 import qrcode
 try:
     from pyzbar.pyzbar import decode as decode_qr
@@ -214,10 +217,75 @@ class ContactAcceptedWebhook(BaseModel):
 
 
 # --- AUTH ---
-def verify_api_key(x_api_key: str = Header(None)):
-    if x_api_key != APP_API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
-    return x_api_key
+# Browser clients never receive APP_API_KEY. Login issues an HMAC session token
+# signed with that server-side key. Scripts and tests still send X-API-Key.
+SESSION_TTL_SECONDS = int(os.environ.get("SESSION_TTL_SECONDS", str(30 * 24 * 60 * 60)))
+
+
+def _constant_time_equal(left: str, right: str) -> bool:
+    left_b = left.encode("utf-8")
+    right_b = right.encode("utf-8")
+    if len(left_b) != len(right_b):
+        return False
+    return hmac.compare_digest(left_b, right_b)
+
+
+def issue_session_token(user_id: str) -> str:
+    expires_at = int(time.time()) + SESSION_TTL_SECONDS
+    payload = f"{user_id}.{expires_at}"
+    signature = hmac.new(
+        APP_API_KEY.encode("utf-8"),
+        payload.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"{payload}.{signature}"
+
+
+def read_session_token(token: str) -> Optional[str]:
+    """Return the user id for a valid session token, otherwise None."""
+    try:
+        user_id, expires_at, signature = token.split(".", 2)
+        uuid.UUID(user_id)
+        payload = f"{user_id}.{expires_at}"
+        expected = hmac.new(
+            APP_API_KEY.encode("utf-8"),
+            payload.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        if not _constant_time_equal(expected, signature):
+            return None
+        if int(expires_at) < int(time.time()):
+            return None
+        return user_id
+    except (ValueError, TypeError):
+        return None
+
+
+def verify_api_key(
+    request: Request,
+    x_api_key: str = Header(None),
+    authorization: str = Header(None),
+):
+    """Accept the server API key or a browser session token.
+
+    APP_API_KEY stays on the server for scripts, n8n, and tests.
+    Browsers send Authorization: Bearer issued by login or register.
+    """
+    if x_api_key and _constant_time_equal(x_api_key, APP_API_KEY):
+        return x_api_key
+
+    if authorization:
+        scheme, _, rest = authorization.partition(" ")
+        if scheme.lower() == "bearer" and rest.strip():
+            token = rest.strip()
+            session_user = read_session_token(token)
+            if session_user:
+                requested_user = request.query_params.get("user_id")
+                if requested_user and requested_user != session_user:
+                    raise HTTPException(status_code=403, detail="Session does not match user")
+                return token
+
+    raise HTTPException(status_code=401, detail="Invalid API Key")
 
 
 async def verify_admin(user_id: str = Query(...), api_key: str = Depends(verify_api_key)):
@@ -2099,6 +2167,7 @@ async def startup_event():
             db_url_status = f"invalid format (starts with: {ASYNC_DATABASE_URL[:30]}...)"
     print(f"[STARTUP] Database: {db_url_status}")
     
+    print("[STARTUP] Client auth: session tokens; shared API key stays on the server")
     print(f"[STARTUP] Gemini configured: {gemini_configured} (OCR/scoring)")
     print(f"[STARTUP] OpenRouter configured: {bool(OPENROUTER_API_KEY)} (AI chat)")
     print(f"[STARTUP] Available models: {', '.join(m['name'] for m in AVAILABLE_MODELS.values())}")
@@ -2292,6 +2361,15 @@ async def root():
     return {"message": "Event Scout Intelligence API", "version": "3.4.0"}
 
 
+@app.get("/public-config")
+async def public_config():
+    """Non-secret bootstrap for the browser. Never include API keys or tokens."""
+    return {
+        "auth_mode": "session",
+        "api_key_in_client": False,
+    }
+
+
 @app.get("/health/")
 async def health_check(debug: bool = Query(False, description="Include debug information")):
     """Health check with graceful degradation. Returns partial status even if DB is unavailable."""
@@ -2469,6 +2547,7 @@ async def register_user(user: UserRegister):
             "name": user.name,
             "email": user.email,
             "is_admin": is_admin,
+            "session_token": issue_session_token(str(user_id)),
         }
     except HTTPException:
         raise
@@ -2508,6 +2587,7 @@ async def login_user(credentials: UserLogin):
             "name": user.name,
             "email": user.email,
             "is_admin": is_admin,
+            "session_token": issue_session_token(str(user.id)),
         }
     except HTTPException:
         raise

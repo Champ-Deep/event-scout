@@ -1560,11 +1560,15 @@
     ======================================== -->
     <script>
         // ==================== CONFIGURATION ====================
+        // Public origin only. Shared credentials stay on the server.
+        // Login returns a per-user session token; calls send Authorization: Bearer.
+        // Optional public override: window.EVENT_SCOUT_PUBLIC_CONFIG = { apiBaseUrl: "https://..." }
+        const _publicConfig = window.EVENT_SCOUT_PUBLIC_CONFIG || {};
         const CONFIG = {
-            API_BASE_URL: window.location.hostname === 'localhost'
-                ? 'http://localhost:8000'
-                : 'https://event-scout-production.up.railway.app',
-            API_KEY: 'OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s'
+            API_BASE_URL: _publicConfig.apiBaseUrl
+                || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                    ? 'http://localhost:8000'
+                    : 'https://event-scout-production.up.railway.app'),
         };
 
         // ==================== NETWORK RESILIENCE ====================
@@ -1585,11 +1589,33 @@
         }
 
         const _nativeFetch = window.fetch.bind(window);
+
+        function withSessionAuth(options) {
+            const headers = new Headers(options.headers || {});
+            headers.delete('X-API-Key');
+            const token = AppState.currentUser && AppState.currentUser.session_token;
+            if (token) headers.set('Authorization', 'Bearer ' + token);
+            return Object.assign({}, options, { headers });
+        }
+
+        async function loadPublicConfig() {
+            try {
+                const response = await _nativeFetch(`${CONFIG.API_BASE_URL}/public-config`);
+                if (!response.ok) return;
+                const data = await response.json();
+                if (data.auth_mode !== 'session') {
+                    console.warn('[CONFIG] Backend is not using session auth');
+                }
+            } catch (err) {
+                console.warn('[CONFIG] Public config unavailable');
+            }
+        }
+
         async function resilientFetch(url, options = {}, retries = NETWORK.MAX_RETRIES) {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), NETWORK.TIMEOUT_MS);
             try {
-                const response = await _nativeFetch(url, { ...options, signal: controller.signal });
+                const response = await _nativeFetch(url, withSessionAuth({ ...options, signal: controller.signal }));
                 clearTimeout(timeout);
                 return response;
             } catch (error) {
@@ -1609,7 +1635,7 @@
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), NETWORK.ADMIN_TIMEOUT_MS);
             try {
-                const response = await _nativeFetch(url, { ...options, signal: controller.signal });
+                const response = await _nativeFetch(url, withSessionAuth({ ...options, signal: controller.signal }));
                 clearTimeout(timeout);
                 return response;
             } catch (error) {
@@ -1688,27 +1714,47 @@
             }
         }
 
+        function rememberUser(data) {
+            if (!data.session_token) return false;
+            AppState.currentUser = {
+                user_id: data.user_id,
+                name: data.name,
+                email: data.email,
+                is_admin: data.is_admin || false,
+                session_token: data.session_token
+            };
+            localStorage.setItem('eventScoutUser', JSON.stringify(AppState.currentUser));
+            return true;
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
+            loadPublicConfig();
             // Check for saved session FIRST (instant, no network call)
             const savedUser = localStorage.getItem('eventScoutUser');
             if (savedUser) {
-                AppState.currentUser = JSON.parse(savedUser);
+                const parsed = JSON.parse(savedUser);
+                if (!parsed.session_token) {
+                    localStorage.removeItem('eventScoutUser');
+                    showAlert('authAlert', 'Please log in again to start a new session.', 'error');
+                } else {
+                    AppState.currentUser = parsed;
 
-                // Show dashboard IMMEDIATELY — don't block on network
-                showDashboard();
+                    // Show dashboard IMMEDIATELY — don't block on network
+                    showDashboard();
 
-                // Validate in background — only force re-login if user truly doesn't exist
-                validateUserSession().then(isValid => {
-                    if (!isValid) {
-                        console.log('[INIT] User not found in DB, forcing re-login');
-                        AppState.currentUser = null;
-                        localStorage.removeItem('eventScoutUser');
-                        AppState.contacts = [];
-                        document.getElementById('mainApp').classList.add('hidden');
-                        document.getElementById('authScreen').classList.remove('hidden');
-                        showAlert('authAlert', 'Your session has expired. Please log in again.', 'error');
-                    }
-                });
+                    // Validate in background — only force re-login if user truly doesn't exist
+                    validateUserSession().then(isValid => {
+                        if (!isValid) {
+                            console.log('[INIT] User not found in DB, forcing re-login');
+                            AppState.currentUser = null;
+                            localStorage.removeItem('eventScoutUser');
+                            AppState.contacts = [];
+                            document.getElementById('mainApp').classList.add('hidden');
+                            document.getElementById('authScreen').classList.remove('hidden');
+                            showAlert('authAlert', 'Your session has expired. Please log in again.', 'error');
+                        }
+                    });
+                }
             } else {
                 // No saved user — check connectivity for login screen
                 try {
@@ -1772,16 +1818,11 @@
 
                 const data = await response.json();
 
-                if (response.ok && data.status === 'success') {
-                    AppState.currentUser = {
-                        user_id: data.user_id,
-                        name: data.name,
-                        email: data.email,
-                        is_admin: data.is_admin || false
-                    };
-                    localStorage.setItem('eventScoutUser', JSON.stringify(AppState.currentUser));
+                if (response.ok && data.status === 'success' && rememberUser(data)) {
                     showAlert('authAlert', '✓ Login successful!', 'success');
                     setTimeout(() => showDashboard(), 500);
+                } else if (response.ok && data.status === 'success') {
+                    showAlert('authAlert', 'Server did not return a session. Deploy the updated backend.', 'error');
                 } else {
                     showAlert('authAlert', data.detail || 'Login failed', 'error');
                 }
@@ -1815,16 +1856,11 @@
 
                 const data = await response.json();
 
-                if (response.ok && data.status === 'success') {
+                if (response.ok && data.status === 'success' && rememberUser(data)) {
                     showAlert('authAlert', '✓ Registration successful! Logging you in...', 'success');
-                    AppState.currentUser = {
-                        user_id: data.user_id,
-                        name: data.name,
-                        email: data.email,
-                        is_admin: data.is_admin || false
-                    };
-                    localStorage.setItem('eventScoutUser', JSON.stringify(AppState.currentUser));
                     setTimeout(() => showDashboard(), 1000);
+                } else if (response.ok && data.status === 'success') {
+                    showAlert('authAlert', 'Server did not return a session. Deploy the updated backend.', 'error');
                 } else {
                     showAlert('authAlert', data.detail || 'Registration failed', 'error');
                 }
@@ -2033,7 +2069,7 @@
                         : `${CONFIG.API_BASE_URL}/list_contacts/?user_id=${AppState.currentUser.user_id}${dfParam}`;
 
                     const response = await resilientFetch(url, {
-                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                        headers: { }
                     });
 
                     const data = await response.json();
@@ -2420,8 +2456,7 @@
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'X-API-Key': CONFIG.API_KEY
-                            },
+},
                             body: JSON.stringify(contactData)
                         }
                     );
@@ -2431,8 +2466,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-API-Key': CONFIG.API_KEY
-                        },
+},
                         body: JSON.stringify({
                             contact: contactData,
                             user_id: AppState.currentUser.user_id
@@ -2477,7 +2511,7 @@
                     `${CONFIG.API_BASE_URL}/contact/${contactId}?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'DELETE',
-                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                        headers: { }
                     }
                 );
 
@@ -2754,12 +2788,11 @@
                 const scanTimeout = setTimeout(() => controller.abort(), 30000);
                 let response;
                 try {
-                    response = await _nativeFetch(url, {
+                    response = await _nativeFetch(url, withSessionAuth({
                         method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY },
                         body: formData,
                         signal: controller.signal
-                    });
+                    }));
                 } finally {
                     clearTimeout(scanTimeout);
                 }
@@ -3054,8 +3087,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-API-Key': CONFIG.API_KEY
-                    },
+},
                     body: JSON.stringify({
                         user_id: AppState.currentUser.user_id,
                         query: query,
@@ -3357,7 +3389,7 @@
             showToast('Scoring lead...', 'info');
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/score?user_id=${AppState.currentUser.user_id}`, {
-                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
+                    method: 'POST', headers: { }
                 });
                 const data = await resp.json();
                 if (resp.ok && data.status === 'success') {
@@ -3378,7 +3410,7 @@
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/enrich`, {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: AppState.currentUser.user_id,
                         notes_append: `\n\n--- AI Research (${new Date().toLocaleDateString()}) ---\n${lastResearch.content.substring(0, 2000)}`
@@ -3398,7 +3430,7 @@
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/enrich`, {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         user_id: AppState.currentUser.user_id,
                         notes_append: `\n\n--- Pitch Deck (${new Date().toLocaleDateString()}) ---\n${lastPitch.content.substring(0, 3000)}`,
@@ -3726,7 +3758,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const response = await resilientFetch(`${CONFIG.API_BASE_URL}/converse/`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-API-Key': CONFIG.API_KEY },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: AppState.currentUser.user_id, query, conversation_history: [] })
                 });
                 const data = await response.json();
@@ -3755,7 +3787,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const response = await resilientFetch(`${CONFIG.API_BASE_URL}/converse/`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-API-Key': CONFIG.API_KEY },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ user_id: AppState.currentUser.user_id, query, conversation_history: [] })
                 });
                 const data = await response.json();
@@ -3793,7 +3825,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     // CSV export via backend
                     const url = `${CONFIG.API_BASE_URL}/export_contacts/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}&format=csv`;
                     const response = await resilientFetch(url, {
-                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                        headers: { }
                     });
 
                     if (!response.ok) throw new Error('Export failed');
@@ -3852,7 +3884,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
             try {
                 const response = await resilientFetch(`${CONFIG.API_BASE_URL}/user/card/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
 
                 if (!response.ok) throw new Error('Failed to load card');
@@ -3925,8 +3957,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-API-Key': CONFIG.API_KEY
-                    },
+},
                     body: JSON.stringify(cardData)
                 });
 
@@ -3963,7 +3994,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const response = await resilientFetch(`${CONFIG.API_BASE_URL}/user/card/generate_token/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
 
                 if (!response.ok) throw new Error('Failed to generate QR');
@@ -4037,7 +4068,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const response = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/accepted?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`, {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
 
                 if (response.ok) {
@@ -4106,7 +4137,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
                 // Add default headers
                 const headers = {
-                    'X-API-Key': CONFIG.API_KEY,
+
                     ...options.headers
                 };
 
@@ -4162,7 +4193,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/user/profile/?user_id=${AppState.currentUser.user_id}`,
-                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    { headers: { } }
                 );
                 const data = await response.json();
                 if (response.ok && data.status === 'success') {
@@ -4186,8 +4217,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-API-Key': CONFIG.API_KEY
-                    },
+},
                     body: JSON.stringify({ preferred_ai_model: model })
                 });
                 AppState.userProfile.preferred_ai_model = model;
@@ -4217,8 +4247,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-API-Key': CONFIG.API_KEY
-                        },
+},
                         body: JSON.stringify(updates)
                     }
                 );
@@ -4581,7 +4610,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
             try {
                 const response = await resilientFetch(`${CONFIG.API_BASE_URL}/exhibitors/?event=${encodeURIComponent(eventName)}&limit=200`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
@@ -4602,7 +4631,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
             try {
                 const response = await resilientFetch(`${CONFIG.API_BASE_URL}/exhibitors/categories/?event=${encodeURIComponent(eventName)}`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
@@ -4715,7 +4744,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     `${CONFIG.API_BASE_URL}/contact/${contactId}/score?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                        headers: { }
                     }
                 );
                 const data = await response.json();
@@ -4751,7 +4780,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     `${CONFIG.API_BASE_URL}/contacts/score_all?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                        headers: { }
                     }
                 );
                 const data = await response.json();
@@ -4775,7 +4804,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/dashboard?user_id=${AppState.currentUser.user_id}`,
-                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    { headers: { } }
                 );
                 const data = await response.json();
                 if (response.ok && data.status === 'success') {
@@ -4851,7 +4880,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         // ==================== ADMIN DASHBOARD ====================
         async function loadAdminDashboard() {
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/dashboard?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/dashboard?user_id=${AppState.currentUser.user_id}`, { headers: { } });
                 const data = await resp.json();
                 if (!resp.ok || data.status !== 'success') { showToast(data.detail || 'Admin access denied', 'error'); return; }
                 document.getElementById('adminStatUsers').textContent = data.total_users;
@@ -4942,7 +4971,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
                 const fetchOpts = {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 };
                 if (customPayload) {
                     fetchOpts.headers['Content-Type'] = 'application/json';
@@ -4989,7 +5018,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
             try {
                 let url = `${CONFIG.API_BASE_URL}/admin/webhook/test?user_id=${AppState.currentUser.user_id}&webhook_url=${encodeURIComponent(customUrl)}&save=true`;
-                const response = await resilientFetch(url, { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const response = await resilientFetch(url, { method: 'POST', headers: { } });
                 const data = await response.json();
                 if (data.status === 'success') {
                     showToast('Webhook URL saved and tested!', 'success');
@@ -5013,7 +5042,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const response = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/admin/activity?user_id=${AppState.currentUser.user_id}&limit=20`,
-                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    { headers: { } }
                 );
                 const data = await response.json();
 
@@ -5068,7 +5097,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     `${CONFIG.API_BASE_URL}/admin/contact/${contactId}?user_id=${AppState.currentUser.user_id}`,
                     {
                         method: 'DELETE',
-                        headers: { 'X-API-Key': CONFIG.API_KEY }
+                        headers: { }
                     }
                 );
 
@@ -5141,7 +5170,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             resultsDiv.classList.remove('hidden');
             resultsDiv.innerHTML = '<p class="text-sm text-gray-400 text-center py-3"><i class="fas fa-spinner fa-spin mr-1"></i>Searching...</p>';
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/search?q=${encodeURIComponent(term)}&user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/search?q=${encodeURIComponent(term)}&user_id=${AppState.currentUser.user_id}`, { headers: { } });
                 const data = await resp.json();
                 if (!resp.ok || !data.contacts || data.contacts.length === 0) {
                     resultsDiv.innerHTML = '<p class="text-sm text-gray-400 text-center py-3">No results found</p>';
@@ -5181,7 +5210,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/broadcast?user_id=${AppState.currentUser.user_id}&message=${encodeURIComponent(msg)}&priority=${priority}${recipientParam}`, {
-                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
+                    method: 'POST', headers: { }
                 });
                 const data = await resp.json();
                 if (resp.ok && data.status === 'success') {
@@ -5208,7 +5237,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         async function loadBroadcastTeamPicker() {
             const picker = document.getElementById('broadcastRecipientPicker');
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/users?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/users?user_id=${AppState.currentUser.user_id}`, { headers: { } });
                 const data = await resp.json();
                 const members = (data.users || []).filter(u => u.user_id !== AppState.currentUser.user_id);
                 if (members.length === 0) { picker.innerHTML = '<p class="text-xs text-gray-400">No other team members</p>'; return; }
@@ -5224,7 +5253,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
         async function loadBroadcastHistory() {
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/broadcasts/active?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/broadcasts/active?user_id=${AppState.currentUser.user_id}`, { headers: { } });
                 const data = await resp.json();
                 const container = document.getElementById('broadcastHistory');
                 if (!container) return;
@@ -5246,7 +5275,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         async function dismissBroadcast(broadcastId) {
             try {
                 await resilientFetch(`${CONFIG.API_BASE_URL}/broadcasts/${broadcastId}/dismiss?user_id=${AppState.currentUser.user_id}`, {
-                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
+                    method: 'POST', headers: { }
                 });
                 loadBroadcastHistory();
                 checkBroadcasts();
@@ -5256,7 +5285,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         // Check and display broadcasts for all users (banner at top)
         async function checkBroadcasts() {
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/broadcasts/active?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/broadcasts/active?user_id=${AppState.currentUser.user_id}`, { headers: { } });
                 const data = await resp.json();
                 const banner = document.getElementById('broadcastBanner');
                 if (!banner) return;
@@ -5323,7 +5352,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                 if (drilldownDateFilter) url += `&date_filter=${drilldownDateFilter}`;
                 if (drilldownEventFilter) url += `&event_filter=${encodeURIComponent(drilldownEventFilter)}`;
 
-                const resp = await resilientFetch(url, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(url, { headers: { } });
                 const data = await resp.json();
                 if (!resp.ok) { list.innerHTML = `<p class="text-sm text-red-500 text-center py-4">Failed to load contacts</p>`; return; }
 
@@ -5422,7 +5451,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             content.innerHTML = '<p class="text-sm text-gray-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</p>';
 
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&filter_user=${contactUserId}&limit=500`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts?user_id=${AppState.currentUser.user_id}&filter_user=${contactUserId}&limit=500`, { headers: { } });
                 const data = await resp.json();
                 const contact = data.contacts?.find(c => c.id === contactId);
                 if (!contact) { content.innerHTML = '<p class="text-sm text-red-500 text-center py-4">Contact not found</p>'; return; }
@@ -5558,7 +5587,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             const note = document.getElementById('adminNoteTextarea')?.value || '';
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact/${contactId}/note?user_id=${AppState.currentUser.user_id}&note=${encodeURIComponent(note)}`, {
-                    method: 'PUT', headers: { 'X-API-Key': CONFIG.API_KEY }
+                    method: 'PUT', headers: { }
                 });
                 if (resp.ok) { showToast('Admin note saved', 'success'); }
             } catch (err) { console.error('Save admin note error:', err); }
@@ -5579,7 +5608,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 showToast('Uploading...', 'info');
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact/${contactId}/files?user_id=${AppState.currentUser.user_id}`, {
-                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }, body: formData
+                    method: 'POST', headers: { }, body: formData
                 });
                 const data = await resp.json();
                 if (resp.ok) {
@@ -5598,7 +5627,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             if (!container) return;
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/files?user_id=${AppState.currentUser.user_id}`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 const data = await resp.json();
                 if (!resp.ok || !data.files?.length) {
@@ -5634,7 +5663,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 showToast('Downloading...', 'info');
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/files/download/${fileId}?user_id=${AppState.currentUser.user_id}`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 if (!resp.ok) throw new Error('Download failed');
                 const blob = await resp.blob();
@@ -5650,7 +5679,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             if (!confirm('Delete this document?')) return;
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact/files/${fileId}?user_id=${AppState.currentUser.user_id}`, {
-                    method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY }
+                    method: 'DELETE', headers: { }
                 });
                 if (resp.ok) { showToast('Document deleted', 'success'); loadContactFiles(contactId, containerId, true); }
                 else { showToast('Delete failed', 'error'); }
@@ -5709,7 +5738,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             const stepTextId = isAdmin ? 'adminPipelineStep' : 'pipelineCurrentStep';
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/pipeline?user_id=${AppState.currentUser.user_id}`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 const data = await resp.json();
                 if (data.status === 'none') {
@@ -5789,7 +5818,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 showToast('Starting AI pipeline...', 'info');
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/pipeline/run?user_id=${AppState.currentUser.user_id}`, {
-                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
+                    method: 'POST', headers: { }
                 });
                 const data = await resp.json();
                 if (data.status === 'already_running') { showToast('Pipeline already running', 'warning'); return; }
@@ -5801,7 +5830,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         async function retryContactPipeline(contactId) {
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/pipeline/retry?user_id=${AppState.currentUser.user_id}`, {
-                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
+                    method: 'POST', headers: { }
                 });
                 if (resp.ok) { showToast('Pipeline restarted', 'success'); setTimeout(() => loadPipelineStatus(contactId, true), 3000); }
             } catch (err) { showToast('Retry failed', 'error'); }
@@ -5857,7 +5886,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                 const url = `${CONFIG.API_BASE_URL}/admin/webhook/test?user_id=${AppState.currentUser.user_id}&webhook_url=${encodeURIComponent(webhookUrl)}`;
                 const resp = await resilientFetch(url, {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 const data = await resp.json();
@@ -5873,7 +5902,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         function adminExportAll() {
             const url = `${CONFIG.API_BASE_URL}/admin/export?user_id=${AppState.currentUser.user_id}&format=csv`;
             // Create a hidden link with API key header - use fetch + blob for auth
-            resilientFetch(url, { headers: { 'X-API-Key': CONFIG.API_KEY } })
+            resilientFetch(url, { headers: { } })
                 .then(resp => resp.blob())
                 .then(blob => {
                     const a = document.createElement('a');
@@ -5892,7 +5921,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             if (!confirm(`Are you absolutely sure? This will permanently delete ${userName} and all their data.`)) return;
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/users?user_id=${AppState.currentUser.user_id}&action=delete&target_user_id=${userId}`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 const data = await resp.json();
                 if (resp.ok && data.status === 'success') {
@@ -5932,7 +5961,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/users/merge?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ primary_user_id: primary.user_id, secondary_user_id: secondaryId })
                 });
                 const data = await resp.json();
@@ -5951,7 +5980,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
 
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contacts/duplicates?target_user_id=${currentDrilldownUserId}&user_id=${AppState.currentUser.user_id}`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 const data = await resp.json();
                 if (!resp.ok) { showToast(data.detail || 'Failed to find duplicates', 'error'); return; }
@@ -6001,7 +6030,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const resp = await adminFetch(`${CONFIG.API_BASE_URL}/admin/contacts/merge?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ primary_id: primaryId, secondary_id: secondaryId })
                 });
                 const data = await resp.json();
@@ -6029,7 +6058,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     try {
                         const resp = await adminFetch(`${CONFIG.API_BASE_URL}/admin/contacts/merge?user_id=${AppState.currentUser.user_id}`, {
                             method: 'POST',
-                            headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ primary_id: primaryId, secondary_id: ids[i] })
                         });
                         const data = await resp.json();
@@ -6098,7 +6127,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             document.getElementById('addToListModal').classList.remove('hidden');
             document.getElementById('addToListContent').innerHTML = '<p class="text-xs text-gray-400 text-center py-4"><i class="fas fa-spinner fa-spin"></i></p>';
             try {
-                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact_lists?user_id=${AppState.currentUser.user_id}`, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact_lists?user_id=${AppState.currentUser.user_id}`, { headers: { } });
                 const data = await resp.json();
                 const lists = data.lists || [];
                 document.getElementById('addToListContent').innerHTML = lists.length
@@ -6113,7 +6142,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         async function addToExistingList(listId, listName) {
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact_lists/${listId}/contacts?user_id=${AppState.currentUser.user_id}`, {
-                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contact_ids: [...drilldownSelectedIds] })
                 });
                 const data = await resp.json();
@@ -6127,7 +6156,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             if (!name) { showToast('Enter a list name', 'error'); return; }
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/contact_lists?user_id=${AppState.currentUser.user_id}`, {
-                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name })
                 });
                 const data = await resp.json();
@@ -6144,7 +6173,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const resp = await adminFetch(`${CONFIG.API_BASE_URL}/admin/contacts/batch_delete?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contact_ids: [...drilldownSelectedIds] })
                 });
                 const data = await resp.json();
@@ -6190,7 +6219,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const resp = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/admin/files/upload?user_id=${AppState.currentUser.user_id}&description=${encodeURIComponent(description)}&category=${encodeURIComponent(category)}`,
-                    { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }, body: formData }
+                    { method: 'POST', headers: { }, body: formData }
                 );
                 const data = await resp.json();
                 if (resp.ok) {
@@ -6211,7 +6240,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const resp = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/files/list?user_id=${AppState.currentUser.user_id}`,
-                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    { headers: { } }
                 );
                 const data = await resp.json();
                 if (resp.ok && data.files && data.files.length > 0) {
@@ -6241,7 +6270,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const resp = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/admin/files/${fileId}?user_id=${AppState.currentUser.user_id}`,
-                    { method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    { method: 'DELETE', headers: { } }
                 );
                 if (resp.ok) { showToast('File deleted', 'success'); refreshAdminFiles(); refreshEventFiles(); }
                 else { const d = await resp.json(); showToast(d.detail || 'Delete failed', 'error'); }
@@ -6253,7 +6282,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         async function loadPipelineMonitor() {
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/pipelines?user_id=${AppState.currentUser.user_id}&limit=20`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 const data = await resp.json();
                 const counts = data.status_counts || {};
@@ -6311,7 +6340,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             const currentlyOn = btn?.textContent?.trim() === 'ON';
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/pipeline/settings?user_id=${AppState.currentUser.user_id}&auto_enabled=${!currentlyOn}`, {
-                    method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }
+                    method: 'POST', headers: { }
                 });
                 const data = await resp.json();
                 const enabled = data.current_settings?.auto_pipeline_enabled;
@@ -6331,7 +6360,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/backup?user_id=${AppState.currentUser.user_id}`, {
                     method: 'POST',
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 const data = await resp.json();
 
@@ -6353,7 +6382,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
         async function checkBackupStatus() {
             try {
                 const resp = await resilientFetch(`${CONFIG.API_BASE_URL}/admin/backup/status?user_id=${AppState.currentUser.user_id}`, {
-                    headers: { 'X-API-Key': CONFIG.API_KEY }
+                    headers: { }
                 });
                 const data = await resp.json();
 
@@ -6424,7 +6453,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 let url = `${CONFIG.API_BASE_URL}/files/list?user_id=${AppState.currentUser.user_id}`;
                 if (currentFileCategory) url += `&category=${encodeURIComponent(currentFileCategory)}`;
-                const resp = await resilientFetch(url, { headers: { 'X-API-Key': CONFIG.API_KEY } });
+                const resp = await resilientFetch(url, { headers: { } });
                 const data = await resp.json();
                 if (resp.ok && data.files && data.files.length > 0) {
                     container.innerHTML = data.files.map(f => {
@@ -6464,7 +6493,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const resp = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/files/download/${fileId}?user_id=${AppState.currentUser.user_id}`,
-                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    { headers: { } }
                 );
                 if (!resp.ok) throw new Error('Download failed');
                 const blob = await resp.blob();
@@ -6546,7 +6575,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                 try {
                     const resp = await resilientFetch(
                         CONFIG.API_BASE_URL + '/contact/' + contactId + '?user_id=' + AppState.currentUser.user_id,
-                        { method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY } }
+                        { method: 'DELETE', headers: { } }
                     );
                     if (resp.ok) {
                         showToast(contactName + ' deleted', 'success');
@@ -6622,10 +6651,10 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             var contactId = AppState._voiceContactId, transcript = AppState._voiceTranscript, audioBlob = AppState._voiceAudioBlob;
             if (!contactId) return;
             document.getElementById('voiceStatus').textContent = 'Saving...'; document.getElementById('voiceSaveBtn').disabled = true;
-            if (!transcript && audioBlob) { try { var fd = new FormData(); fd.append('file', audioBlob, 'voice_note.webm'); var r = await resilientFetch(CONFIG.API_BASE_URL + '/transcribe_audio/?user_id=' + AppState.currentUser.user_id, { method: 'POST', headers: { 'X-API-Key': CONFIG.API_KEY }, body: fd }); var d = await r.json(); if (r.ok && d.transcript) transcript = d.transcript; } catch (err) { console.error('[Voice] Gemini transcription failed:', err); } }
+            if (!transcript && audioBlob) { try { var fd = new FormData(); fd.append('file', audioBlob, 'voice_note.webm'); var r = await resilientFetch(CONFIG.API_BASE_URL + '/transcribe_audio/?user_id=' + AppState.currentUser.user_id, { method: 'POST', headers: { }, body: fd }); var d = await r.json(); if (r.ok && d.transcript) transcript = d.transcript; } catch (err) { console.error('[Voice] Gemini transcription failed:', err); } }
             var audioBase64 = '';
             if (audioBlob) { try { var buf = await audioBlob.arrayBuffer(); var bytes = new Uint8Array(buf); var bin = ''; bytes.forEach(function (b) { bin += String.fromCharCode(b); }); audioBase64 = btoa(bin); } catch (err) { console.warn('[Voice] Audio encode failed:', err); } }
-            try { var response = await resilientFetch(CONFIG.API_BASE_URL + '/contact/' + contactId + '/audio_note?user_id=' + AppState.currentUser.user_id, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': CONFIG.API_KEY }, body: JSON.stringify({ contact_id: contactId, transcript: transcript || '(no transcription)', audio_base64: audioBase64 }) }); if (response.ok) { showToast('Voice note saved!', 'success'); loadContacts(); } else showToast('Failed to save voice note', 'error'); } catch (err) { showToast('Network error saving voice note', 'error'); }
+            try { var response = await resilientFetch(CONFIG.API_BASE_URL + '/contact/' + contactId + '/audio_note?user_id=' + AppState.currentUser.user_id, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contact_id: contactId, transcript: transcript || '(no transcription)', audio_base64: audioBase64 }) }); if (response.ok) { showToast('Voice note saved!', 'success'); loadContacts(); } else showToast('Failed to save voice note', 'error'); } catch (err) { showToast('Network error saving voice note', 'error'); }
             AppState._voiceContactId = null; AppState._voiceTranscript = ''; AppState._voiceAudioBlob = null;
             document.getElementById('voiceRecordingOverlay').classList.add('hidden'); document.getElementById('voiceSaveBtn').disabled = false;
         }
@@ -6720,7 +6749,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
                     {
                         method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contact_ids: AppState.contacts.map(c => c.id), format, filter_label: filterLabel }),
                     }
                 );
@@ -6858,7 +6887,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
                     {
                         method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             contact_ids: contactIds,
                             format,
@@ -6902,7 +6931,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
                     `${CONFIG.API_BASE_URL}/exports/create?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
                     {
                         method: 'POST',
-                        headers: { 'X-API-Key': CONFIG.API_KEY, 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contact_ids: contactIds, format, filter_label: filterLabel }),
                     }
                 );
@@ -6922,7 +6951,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const res = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/exports/?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
-                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    { headers: { } }
                 );
                 if (!res.ok) return;
                 const data = await res.json();
@@ -6984,7 +7013,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const res = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/exports/${exportId}/download?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
-                    { headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    { headers: { } }
                 );
                 if (!res.ok) throw new Error('Download failed');
                 const blob = await res.blob();
@@ -7004,7 +7033,7 @@ ${content.split(/##\s+Slide\s+\d+:/i).filter(s => s.trim()).map(slide => {
             try {
                 const res = await resilientFetch(
                     `${CONFIG.API_BASE_URL}/exports/${exportId}?user_id=${encodeURIComponent(AppState.currentUser.user_id)}`,
-                    { method: 'DELETE', headers: { 'X-API-Key': CONFIG.API_KEY } }
+                    { method: 'DELETE', headers: { } }
                 );
                 if (!res.ok) throw new Error('Delete failed');
                 showToast('Export deleted', 'success');

@@ -69,8 +69,8 @@ Gemini API Key: ________________________________
 In Railway dashboard → Variables:
 
 ```
-APP_API_KEY = <your-production-key-from-step-1.1>
-GEMINI_API_KEY = <your-gemini-key-from-step-1.2>
+APP_API_KEY = YOUR_APP_API_KEY
+GEMINI_API_KEY = YOUR_GEMINI_API_KEY
 ```
 
 - [ ] `APP_API_KEY` added
@@ -141,28 +141,19 @@ chmod +x test_railway_deployment.sh
 
 ### Step 3.1: Update Frontend Configuration
 
-Open `frontend.html` in your editor.
+Open `mobile-frontend.html` or `frontend.html`.
 
-Find lines 367-370:
-
-```javascript
-const CONFIG = {
-    API_BASE_URL: 'https://your-railway-app.railway.app', // UPDATE THIS
-    API_KEY: 'your-app-api-key-here' // UPDATE THIS
-};
-```
-
-**Replace with your actual values:**
+Set only the public API origin:
 
 ```javascript
 const CONFIG = {
-    API_BASE_URL: 'https://<your-railway-url>.railway.app',
-    API_KEY: '<your-production-api-key>'
+    API_BASE_URL: 'https://<your-railway-url>.railway.app'
 };
 ```
 
 - [ ] `API_BASE_URL` updated (no trailing slash!)
-- [ ] `API_KEY` updated with production key
+- [ ] No API key added to the HTML
+- [ ] `APP_API_KEY` and `GEMINI_API_KEY` set on the server only
 - [ ] Changes saved
 
 ### Step 3.2: Test Frontend Locally (Optional)

@@ -27,7 +27,7 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
 Example output:
 ```
-ZPtQtufMnSQh-fKmyOs_Z5qrgyKdQ1jAwqSI06skGM4
+YOUR_APP_API_KEY
 ```
 
 ### Step 2: Get Gemini API Key
@@ -65,8 +65,8 @@ ZPtQtufMnSQh-fKmyOs_Z5qrgyKdQ1jAwqSI06skGM4
 
    | Variable Name | Value |
    |---------------|-------|
-   | `APP_API_KEY` | `<your-generated-key-from-step-1>` |
-   | `GEMINI_API_KEY` | `<your-gemini-key-from-step-2>` |
+   | `APP_API_KEY` | `YOUR_APP_API_KEY` |
+   | `GEMINI_API_KEY` | `YOUR_GEMINI_API_KEY` |
 
 3. **Click "Deploy"** to apply environment variables
 
@@ -272,8 +272,8 @@ Create a secure note with these critical values:
 === Event Scout Railway Deployment ===
 
 Railway URL: https://<your-app>.railway.app
-APP_API_KEY: <your-generated-key>
-GEMINI_API_KEY: <your-gemini-key>
+APP_API_KEY: YOUR_APP_API_KEY
+GEMINI_API_KEY: YOUR_GEMINI_API_KEY
 
 First Test User:
 - Email: test@example.com

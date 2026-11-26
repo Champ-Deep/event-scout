@@ -36,6 +36,9 @@ def register_new_user():
         return None, None
 
 def main():
+    if not API_KEY:
+        print("APP_API_KEY environment variable is required")
+        sys.exit(1)
     print("============================================================")
     print("SETTING UP TEST ENVIRONMENT WITH NEW USER")
     print("============================================================")

@@ -8,11 +8,13 @@ To run actual tests, you need to:
 3. Run: python test_multi_user_flow.py
 """
 
+import os
 import requests
 import json
 
 BASE_URL = "http://localhost:8000"
-API_KEY = "1234"
+# Local server default when APP_API_KEY is unset. Override with the env var for any other target.
+API_KEY = os.environ.get("APP_API_KEY", "1234")
 
 def test_health_check():
     """Test the health check endpoint"""
