@@ -54,8 +54,8 @@ cp .env.example .env
 Edit `.env` and add your keys:
 
 ```env
-APP_API_KEY=<your-generated-key>
-GEMINI_API_KEY=<your-gemini-key>
+APP_API_KEY=YOUR_APP_API_KEY
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 ```
 
 Get your Gemini API key from: https://aistudio.google.com/app/apikey
@@ -94,8 +94,8 @@ python app.py
 In Railway dashboard, add these variables:
 
 ```env
-APP_API_KEY=<your-secure-key>
-GEMINI_API_KEY=<your-gemini-key>
+APP_API_KEY=YOUR_APP_API_KEY
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 ```
 
 ### Step 3: Configure Persistent Volumes

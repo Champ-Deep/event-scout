@@ -7,6 +7,11 @@ node_modules/
 
 # Environment variables (contains secrets)
 .env
+.env.*
+!.env.example
+.envrc
+*.pem
+*.key
 
 # OS and log files
 .DS_Store

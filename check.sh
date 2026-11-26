@@ -52,7 +52,7 @@ CORS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
     -X OPTIONS "${PROD_URL}/health/" \
     -H "Origin: ${FRONTEND_URL}" \
     -H "Access-Control-Request-Method: POST" \
-    -H "Access-Control-Request-Headers: X-API-Key,Content-Type" 2>/dev/null || echo "000")
+    -H "Access-Control-Request-Headers: Authorization,Content-Type" 2>/dev/null || echo "000")
 if [ "$CORS_STATUS" = "200" ]; then
     ok "CORS preflight: HTTP $CORS_STATUS"
 else

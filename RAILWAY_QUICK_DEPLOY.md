@@ -19,8 +19,8 @@
 2. Go to "Variables" tab
 3. Add these variables:
    ```
-   APP_API_KEY=OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s
-   GEMINI_API_KEY=AIzaSyAvIxbwsd1HeCEokTAQrwJH_-a_Ypf9sJQ
+   APP_API_KEY=YOUR_APP_API_KEY
+   GEMINI_API_KEY=YOUR_GEMINI_API_KEY
    ```
 4. Click "Add" for each variable
 5. Railway will automatically redeploy
@@ -73,8 +73,8 @@ railway init
 ### Step 3: Link and Deploy
 ```bash
 # Set environment variables
-railway variables set APP_API_KEY="OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s"
-railway variables set GEMINI_API_KEY="AIzaSyAvIxbwsd1HeCEokTAQrwJH_-a_Ypf9sJQ"
+railway variables set APP_API_KEY="YOUR_APP_API_KEY"
+railway variables set GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 
 # Deploy
 railway up

@@ -472,7 +472,7 @@ if (contactId) {
 async function triggerCardAcceptedWebhook(contactId, contactName) {
     const response = await fetch(`${CONFIG.API_BASE_URL}/contact/${contactId}/accepted?user_id=...`, {
         method: 'POST',
-        headers: { 'X-API-Key': CONFIG.API_KEY }
+        headers: { 'Authorization': 'Bearer <session_token>' }
     });
 }
 // ✅ Webhook caller implemented

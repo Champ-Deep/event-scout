@@ -10,7 +10,7 @@
 #   ./test_railway_deployment.sh <RAILWAY_URL> <APP_API_KEY>
 #
 # Example:
-#   ./test_railway_deployment.sh https://myapp.railway.app ZPtQtufMnSQh-fKmyOs_Z5qr...
+#   ./test_railway_deployment.sh https://myapp.railway.app YOUR_APP_API_KEY
 # ============================================
 
 set -e  # Exit on error
@@ -25,7 +25,7 @@ NC='\033[0m' # No Color
 if [ "$#" -ne 2 ]; then
     echo -e "${RED}Error: Missing required arguments${NC}"
     echo "Usage: $0 <RAILWAY_URL> <APP_API_KEY>"
-    echo "Example: $0 https://myapp.railway.app ZPtQtufMnSQh-fKmyOs_Z5qr..."
+    echo "Example: $0 https://myapp.railway.app YOUR_APP_API_KEY"
     exit 1
 fi
 

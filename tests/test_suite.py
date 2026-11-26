@@ -12,6 +12,7 @@ Usage:
   python tests/test_suite.py --output json            # Machine-readable output
 
 Environment:
+  APP_API_KEY    — Server API key (required)
   TEST_PASSWORD  — Password for test account (required for tier 2+)
   TEST_EMAIL     — Test account email (default: deep@lakeb2b.com)
 """
@@ -29,7 +30,6 @@ import requests
 # Defaults
 DEFAULT_TARGET = "https://event-scout-production.up.railway.app"
 DEFAULT_FRONTEND = "https://event-scout-delta.vercel.app"
-DEFAULT_API_KEY = "OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s"
 TIMEOUT = 60
 
 
@@ -635,10 +635,12 @@ def main():
     parser = argparse.ArgumentParser(description="Event Scout Test Suite")
     parser.add_argument("--target", default=DEFAULT_TARGET, help="Backend API URL")
     parser.add_argument("--frontend", default=DEFAULT_FRONTEND, help="Frontend URL")
-    parser.add_argument("--api-key", default=DEFAULT_API_KEY, help="API key")
+    parser.add_argument("--api-key", default=os.environ.get("APP_API_KEY", ""), help="API key (defaults to APP_API_KEY)")
     parser.add_argument("--tier", type=int, default=1, choices=[1, 2, 3], help="Test tier (1=smoke, 2=functional, 3=integration)")
     parser.add_argument("--output", default="text", choices=["text", "json"], help="Output format")
     args = parser.parse_args()
+    if not args.api_key:
+        parser.error("Set the APP_API_KEY environment variable or pass --api-key")
 
     runner = TestRunner(args.target, args.api_key, args.frontend, args.tier, args.output)
     success = runner.run()

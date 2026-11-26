@@ -2,18 +2,20 @@
 Import WHX Dubai 2026 exhibitor data into Event Scout.
 
 Usage:
-    python import_exhibitors.py
+    APP_API_KEY=YOUR_APP_API_KEY python import_exhibitors.py
 
 Reads exhibitor data from whx_exhibitors.json and imports via the Event Scout API.
+APP_API_KEY is read from the environment and is not stored in this file.
 """
 
 import json
+import os
 import requests
 import sys
 
 # Configuration
 API_BASE = "https://event-scout-production.up.railway.app"
-API_KEY = "OGibuBdW6KP52UMTpv8g46Zs37g47d9SGv4w21W-o6s"
+API_KEY = os.environ.get("APP_API_KEY", "").strip()
 
 # Load exhibitors from JSON file
 print("Loading exhibitor data from whx_exhibitors.json...")
@@ -149,6 +151,9 @@ EXHIBITORS_HARDCODED = [
 
 def import_to_api():
     """Import exhibitors via the Event Scout API."""
+    if not API_KEY:
+        print("APP_API_KEY environment variable is required")
+        sys.exit(1)
     url = f"{API_BASE}/admin/import_exhibitors/"
     headers = {
         "X-API-Key": API_KEY,

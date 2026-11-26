@@ -9,31 +9,34 @@
 You need:
 - [ ] Railway backend deployed and working
 - [ ] Railway URL (e.g., `https://myapp.railway.app`)
-- [ ] Your `APP_API_KEY` from Railway environment variables
+
+`APP_API_KEY` and `GEMINI_API_KEY` stay in the backend environment. The browser does not receive them. After login the API returns a session token.
 
 ---
 
 ## Step 1: Configure Frontend
 
-Open `frontend.html` and update lines 367-370:
+Set only the public API origin in `mobile-frontend.html` or `frontend.html`:
 
 ```javascript
 const CONFIG = {
-    API_BASE_URL: 'https://your-railway-app.railway.app', // UPDATE THIS
-    API_KEY: 'your-app-api-key-here' // UPDATE THIS
+    API_BASE_URL: 'https://your-railway-app.railway.app'
 };
 ```
 
-**Replace with your actual values:**
+Or set the same public origin before the app script loads:
 
-```javascript
-const CONFIG = {
-    API_BASE_URL: 'https://round-table-app-production.up.railway.app',
-    API_KEY: 'ZPtQtufMnSQh-fKmyOs_Z5qrgyKdQ1jAwqSI06skGM4'
-};
+```html
+<script>
+  window.EVENT_SCOUT_PUBLIC_CONFIG = {
+    apiBaseUrl: 'https://your-railway-app.railway.app'
+  };
+</script>
 ```
 
-**⚠️ Important**: Remove the trailing slash from `API_BASE_URL` if present.
+Do not put `APP_API_KEY`, `GEMINI_API_KEY`, or any other secret in a frontend file or in `EVENT_SCOUT_PUBLIC_CONFIG`.
+
+**Important**: Remove the trailing slash from `API_BASE_URL` if present.
 
 ---
 
@@ -259,15 +262,14 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], ...)
 
 If still seeing CORS errors, check Railway logs for errors.
 
-### Issue: "Invalid API Key" errors
+### Issue: "Invalid API Key" or logged-in calls return 401
 
-**Cause**: `API_KEY` in frontend doesn't match Railway `APP_API_KEY`
+**Cause**: The saved browser session has no session token, or the backend was not updated with this change.
 
 **Fix**:
-1. Check Railway environment variables
-2. Copy exact `APP_API_KEY` value
-3. Update `CONFIG.API_KEY` in `frontend.html`
-4. Redeploy frontend
+1. Deploy the backend and frontend from this change together.
+2. Log out and log in again so the server can issue a session token.
+3. Confirm `APP_API_KEY` is set on the server for scripts. The browser does not send it.
 
 ### Issue: QR codes not displaying
 
@@ -294,22 +296,9 @@ If still seeing CORS errors, check Railway logs for errors.
 
 ## Production Hardening (Optional)
 
-### 1. Environment-Based Configuration
+### 1. Public API origin
 
-Instead of hardcoding API credentials in `frontend.html`, use environment variables:
-
-**Create `config.js`:**
-
-```javascript
-window.ENV = {
-    API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
-    API_KEY: import.meta.env.VITE_API_KEY || 'default-key'
-};
-```
-
-**In Vercel:**
-- Settings → Environment Variables
-- Add `VITE_API_URL` and `VITE_API_KEY`
+The frontend reads `window.EVENT_SCOUT_PUBLIC_CONFIG.apiBaseUrl` when that value is set. It is a public URL, not a secret. Do not add a client API key variable or embed `APP_API_KEY` in the page.
 
 ### 2. Add Analytics
 
